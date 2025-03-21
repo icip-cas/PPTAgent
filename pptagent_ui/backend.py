@@ -64,8 +64,6 @@ REFINE_TEMPLATE = Template(package_join("prompts", "document_refine.txt"))
 language_model = AsyncLLM("gpt-4o")
 vision_model = AsyncLLM("gpt-4o")
 text_embedder = AsyncLLM("text-embedding-3-small")
-image_model = None
-marker_model = None
 image_model = get_image_model(device=DEVICE)
 marker_model = create_model_dict(device=DEVICE, dtype=torch.float16)
 
@@ -378,8 +376,6 @@ async def test_connection(*models: AsyncLLM):
 
 if __name__ == "__main__":
     import uvicorn
-
-    api_base = "http://api.cipsup.cn/v1"
 
     asyncio.run(test_connection(language_model, vision_model, text_embedder))
     ip = "0.0.0.0"
