@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -10,7 +9,6 @@ from typing import Dict, List, Optional
 from pptagent.agent import Agent, AsyncAgent
 from pptagent.apis import API_TYPES, CodeExecutor
 from pptagent.llms import LLM, AsyncLLM
-from pptagent import llms
 from pptagent.presentation import Presentation, SlidePage, StyleArg
 from pptagent.utils import Config, edit_distance, get_logger
 from pptagent.layout import Layout
@@ -89,7 +87,6 @@ class PPTGen(ABC):
     def generate_pres(
         self,
         source_doc: Document,
-        file_prefix: str = "final",
         num_slides: Optional[int] = None,
         outline: Optional[List[OutlineItem]] = None,
     ):
@@ -98,7 +95,6 @@ class PPTGen(ABC):
 
         Args:
             source_doc (Document): The source document.
-            file_prefix (str): The prefix for the output file.
             num_slides (Optional[int]): The number of slides to generate.
             outline (Optional[List[OutlineItem]]): The outline of the presentation.
 
@@ -126,15 +122,19 @@ class PPTGen(ABC):
         for slide_idx, outline_item in enumerate(self.outline):
             if self.force_pages and slide_idx == num_slides:
                 break
-            slide_data = self._generate_slide(slide_idx, outline_item)
-            if slide_data is not None:
-                slide, code_executor = slide_data
+            try:
+                slide, code_executor = self._generate_slide(slide_idx, outline_item)
                 generated_slides.append(slide)
                 code_executors.append(code_executor)
-                continue
-            if self.error_exit:
-                succ_flag = False
-                break
+            except Exception as e:
+                logger.error(
+                    "Failed to generate slide, error_exit=%s",
+                    self.error_exit,
+                    exc_info=e,
+                )
+                if self.error_exit:
+                    succ_flag = False
+                    break
 
         # Collect history data
         history = self._collect_history(
@@ -205,7 +205,7 @@ class PPTGen(ABC):
     @abstractmethod
     def _generate_slide(
         self, slide_idx: int, outline_item: OutlineItem
-    ) -> tuple[SlidePage, CodeExecutor] | None:
+    ) -> tuple[SlidePage, CodeExecutor]:
         """
         Generate a slide from the outline item.
         """
@@ -263,7 +263,7 @@ class PPTAgent(PPTGen):
 
     def _generate_slide(
         self, slide_idx: int, outline_item: OutlineItem
-    ) -> tuple[SlidePage, CodeExecutor] | None:
+    ) -> tuple[SlidePage, CodeExecutor]:
         """
         Generate a slide from the outline item.
         """
@@ -299,7 +299,7 @@ class PPTAgent(PPTGen):
         layout: Layout,
         slide_content: str,
         slide_description: str,
-    ) -> Optional[tuple[SlidePage, CodeExecutor]]:
+    ) -> tuple[SlidePage, CodeExecutor]:
         """
         Synergize Agents to generate a slide.
 
@@ -309,7 +309,7 @@ class PPTAgent(PPTGen):
             slide_description (str): The description of the slide.
 
         Returns:
-            Optional[tuple[SlidePage, CodeExecutor]]: The generated slide and code executor, or None if generation failed.
+            tuple[SlidePage, CodeExecutor]: The generated slide and code executor.
         """
         code_executor = CodeExecutor(self.retry_times)
         editor_output = self.staffs["editor"](
@@ -369,6 +369,10 @@ class PPTAgent(PPTGen):
                     retry + 1,
                 )
                 return self._generate_commands(new_output, layout, retry + 1)
+            else:
+                raise Exception(
+                    f"Failed to generate commands, tried too many times at editing\ntraceback: {e}"
+                )
 
         old_data = layout.get_old_data(editor_output)
         for el_name, old_content in old_data.items():
@@ -433,8 +437,16 @@ class PPTAgentAsync(PPTGen):
         """
         Asynchronously generate a PowerPoint presentation.
 
+        Args:
+            source_doc (Document): The source document.
+            num_slides (Optional[int]): The number of slides to generate.
+            outline (Optional[List[OutlineItem]]): The outline of the presentation.
+
         Returns:
             tuple: A tuple containing the presentation object and history.
+
+        Raise:
+            ValueError: if failed to generate presentation outline.
         """
         assert (
             self._initialized
@@ -464,6 +476,11 @@ class PPTAgentAsync(PPTGen):
         code_executors = []
         for result in slide_results:
             if isinstance(result, Exception):
+                logger.error(
+                    "Failed to generate slide, error_exit=%s",
+                    self.error_exit,
+                    exc_info=result,
+                )
                 if self.error_exit:
                     succ_flag = False
                     break
@@ -537,7 +554,7 @@ class PPTAgentAsync(PPTGen):
 
     async def _generate_slide(
         self, slide_idx: int, outline_item: OutlineItem
-    ) -> tuple[SlidePage, CodeExecutor] | None:
+    ) -> tuple[SlidePage, CodeExecutor]:
         """
         Asynchronously generate a slide from the outline item.
         """
@@ -575,7 +592,7 @@ class PPTAgentAsync(PPTGen):
         layout: Layout,
         slide_content: str,
         slide_description: str,
-    ) -> Optional[tuple[SlidePage, CodeExecutor]]:
+    ) -> tuple[SlidePage, CodeExecutor]:
         """
         Asynchronously synergize Agents to generate a slide.
 
@@ -585,7 +602,7 @@ class PPTAgentAsync(PPTGen):
             slide_description (str): The description of the slide.
 
         Returns:
-            Optional[tuple[SlidePage, CodeExecutor]]: The generated slide and code executor, or None if generation failed.
+            tuple[SlidePage, CodeExecutor]: The generated slide and code executor.
         """
         code_executor = CodeExecutor(self.retry_times)
         editor_output = await self.staffs["editor"](
@@ -647,6 +664,10 @@ class PPTAgentAsync(PPTGen):
                     retry + 1,
                 )
                 return await self._generate_commands(new_output, layout, retry + 1)
+            else:
+                raise Exception(
+                    f"Failed to generate commands, tried too many times at editing\ntraceback: {e}"
+                )
 
         old_data = layout.get_old_data(editor_output)
         for el_name, old_content in old_data.items():
