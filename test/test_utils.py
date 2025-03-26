@@ -1,18 +1,19 @@
-import pytest
 import tempfile
+from test.conftest import test_config
+
+import pytest
 from bs4 import BeautifulSoup
 from markdown import markdown
 
 import pptagent.utils as utils
 from pptagent.utils import get_json_from_response, split_markdown_to_chunks
-from test.conftest import test_config
 
 
 def test_extract_json_from_markdown_block():
     """Test extracting JSON from a markdown code block."""
     response = """
     Here's the JSON you requested:
-    
+
     ```json
     {
         "name": "John",
@@ -20,7 +21,7 @@ def test_extract_json_from_markdown_block():
         "city": "New York"
     }
     ```
-    
+
     Let me know if you need anything else.
     """
 
@@ -35,13 +36,13 @@ def test_extract_json_from_text():
     """Test extracting JSON directly from text."""
     response = """
     Here's the JSON:
-    
+
     {
         "name": "John",
         "age": 30,
         "city": "New York"
     }
-    
+
     Let me know if you need anything else.
     """
 
@@ -56,13 +57,13 @@ def test_extract_json_with_repair():
     """Test extracting JSON with minor syntax errors that can be repaired."""
     response = """
     Here's the JSON:
-    
+
     {
         'name': 'John',
         'age': 30,
         'city': 'New York'
     }
-    
+
     Let me know if you need anything else.
     """
 
@@ -77,7 +78,7 @@ def test_extract_nested_json():
     """Test extracting nested JSON objects."""
     response = """
     Here's the JSON:
-    
+
     {
         "person": {
             "name": "John",
@@ -113,7 +114,7 @@ def test_ppt_to_images_conversion():
 
 
 def test_markdown_splits():
-    markdown_content = open(f"{test_config.document}/source.md", "r").read()
+    markdown_content = open(f"{test_config.document}/source.md").read()
     chunks = split_markdown_to_chunks(markdown_content)
     assert len(chunks) == 5
     markdown_html = markdown(markdown_content, extensions=["tables"])

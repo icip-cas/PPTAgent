@@ -1,12 +1,13 @@
-from dataclasses import dataclass, asdict
-from typing import List, Literal
-from os.path import join as pjoin, exists as pexists, basename as pbasename
+from dataclasses import asdict, dataclass
+from typing import Literal
+
+from pptagent.utils import pbasename, pexists, pjoin
 
 
 @dataclass
 class Element:
     el_name: str
-    content: List[str]
+    content: list[str]
     description: str
     el_type: Literal["text", "image"]
     suggested_characters: int | None
@@ -53,7 +54,7 @@ class Element:
 class Layout:
     title: str
     slide_id: int
-    elements: List[Element]
+    elements: list[Element]
     vary_mapping: dict[int, int] | None  # mapping for variable elements
 
     def get_slide_id(self, data: dict):

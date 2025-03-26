@@ -2,13 +2,13 @@ import base64
 import re
 import threading
 from dataclasses import dataclass
-from typing import Union, List, Dict, Tuple, Optional
+from typing import Optional, Union
 
-from oaib import Auto
-from openai import AsyncOpenAI, OpenAI
 import torch
+from oaib import Auto
+from openai import OpenAI
 
-from pptagent.utils import get_json_from_response, tenacity, get_logger
+from pptagent.utils import get_json_from_response, get_logger, tenacity
 
 logger = get_logger(__name__)
 
@@ -33,13 +33,13 @@ class LLM:
     def __call__(
         self,
         content: str,
-        images: Optional[Union[str, List[str]]] = None,
+        images: Optional[Union[str, list[str]]] = None,
         system_message: Optional[str] = None,
-        history: Optional[List] = None,
+        history: Optional[list] = None,
         return_json: bool = False,
         return_message: bool = False,
         **client_kwargs,
-    ) -> Union[str, Dict, List, Tuple]:
+    ) -> Union[str, dict, list, tuple]:
         """
         Call the language model with a prompt and optional images.
 
@@ -68,10 +68,10 @@ class LLM:
     def __post_process__(
         self,
         response: str,
-        message: List,
+        message: list,
         return_json: bool = False,
         return_message: bool = False,
-    ) -> Union[str, Dict, Tuple]:
+    ) -> Union[str, dict, tuple]:
         """
         Process the response based on return options.
 
@@ -113,9 +113,9 @@ class LLM:
     def format_message(
         self,
         content: str,
-        images: Optional[Union[str, List[str]]] = None,
+        images: Optional[Union[str, list[str]]] = None,
         system_message: Optional[str] = None,
-    ) -> Tuple[List, List]:
+    ) -> tuple[list, list]:
         """
         Format messages for OpenAI server call.
 
@@ -173,7 +173,7 @@ class LLM:
         encoding_format: str = "float",
         to_tensor: bool = True,
         **kwargs,
-    ) -> torch.Tensor | List[float]:
+    ) -> torch.Tensor | list[float]:
         """
         Get the embedding of a text.
         """
@@ -222,13 +222,13 @@ class AsyncLLM(LLM):
     async def __call__(
         self,
         content: str,
-        images: Optional[Union[str, List[str]]] = None,
+        images: Optional[Union[str, list[str]]] = None,
         system_message: Optional[str] = None,
-        history: Optional[List] = None,
+        history: Optional[list] = None,
         return_json: bool = False,
         return_message: bool = False,
         **client_kwargs,
-    ) -> Union[str, Dict, Tuple]:
+    ) -> Union[str, dict, tuple]:
         """
         Asynchronously call the language model with a prompt and optional images.
 
@@ -311,7 +311,7 @@ class AsyncLLM(LLM):
         encoding_format: str = "float",
         to_tensor: bool = True,
         **kwargs,
-    ) -> torch.Tensor | List[float]:
+    ) -> torch.Tensor | list[float]:
         """
         Get the embedding of a text asynchronously.
 
@@ -346,7 +346,7 @@ class AsyncLLM(LLM):
         return LLM(model=self.model, base_url=self.base_url, api_key=self.api_key)
 
 
-def get_model_abbr(llms: Union[LLM, List[LLM]]) -> str:
+def get_model_abbr(llms: Union[LLM, list[LLM]]) -> str:
     """
     Get abbreviated model names from LLM instances.
 

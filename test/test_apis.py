@@ -1,7 +1,9 @@
-from pptagent.apis import CodeExecutor, API_TYPES, replace_para
-from pptagent.utils import package_join
-from pptx import Presentation
 from test.conftest import test_config
+
+from pptx import Presentation
+
+from pptagent.apis import API_TYPES, CodeExecutor, replace_para
+from pptagent.utils import package_join
 
 
 def test_api_docs():

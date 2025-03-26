@@ -1,5 +1,6 @@
-from pptagent.layout import Layout
 from test.conftest import test_config
+
+from pptagent.layout import Layout
 
 
 def test_layout():

@@ -1,5 +1,5 @@
-Given a list of dictionaries containing metadata extracted from different sections of a document in the order of those sections, 
-your task is to merge and refine this metadata into a single, coherent dictionary. 
+Given a list of dictionaries containing metadata extracted from different sections of a document in the order of those sections,
+your task is to merge and refine this metadata into a single, coherent dictionary.
 The provided metadata may be unreliable (e.g., containing meaningless, redundant, or inconsistent entries), and you should resolve these issues during the merging process.
 
 {{metadata}}

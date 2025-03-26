@@ -38,7 +38,7 @@ template: |
 jinja_args:
   - outline
   - slide_description
-  - slide_content 
+  - slide_content
   - available_layouts
   - functional_layouts
 use_model: language

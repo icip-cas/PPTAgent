@@ -11,10 +11,9 @@ from PIL import Image
 from torch import Tensor, cosine_similarity
 
 from pptagent.llms import LLM, AsyncLLM
+from pptagent.utils import get_json_from_response, package_join, pexists, pjoin
 
 ENCODING = tiktoken.encoding_for_model("gpt-4o")
-from pptagent import llms
-from pptagent.utils import get_json_from_response, package_join, pexists, pjoin
 
 
 @dataclass
@@ -76,15 +75,11 @@ class Agent:
         self.name = name
         self.config = config
         if self.config is None:
-            with open(package_join("roles", f"{name}.yaml"), "r") as f:
+            with open(package_join("roles", f"{name}.yaml")) as f:
                 self.config = yaml.safe_load(f)
         self.llm_mapping = llm_mapping
-        if self.llm_mapping is not None:
-            llm = self.llm_mapping[self.config["use_model"]]
-        else:
-            llm = getattr(llms, self.config["use_model"] + "_model")
-        self.llm = llm
-        self.model = llm.model
+        self.llm = self.llm_mapping[self.config["use_model"]]
+        self.model = self.llm.model
         self.record_cost = record_cost
         self.text_model = text_model
         self.return_json = self.config.get("return_json", False)

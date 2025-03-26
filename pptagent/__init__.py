@@ -12,17 +12,17 @@ __email__ = "wszh712811@gmail.com"
 
 # Import main modules to make them directly accessible when importing the package
 from .agent import *
-from .pptgen import *
-from .document import *
-from .llms import *
-from .presentation import *
-from .utils import *
-from .shapes import *
-from .layout import *
 from .apis import *
+from .document import *
+from .induct import *
+from .layout import *
+from .llms import *
 from .model_utils import *
 from .multimodal import *
-from .induct import *
+from .pptgen import *
+from .presentation import *
+from .shapes import *
+from .utils import *
 
 # Define the top-level exports
 __all__ = [

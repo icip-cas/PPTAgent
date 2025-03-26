@@ -1,5 +1,6 @@
-import pytest
 from test.conftest import test_config
+
+import pytest
 
 
 @pytest.mark.asyncio

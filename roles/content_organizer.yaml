@@ -4,10 +4,10 @@ template: |
   Key Points Extraction
     - Extract all key points from the input content, such as challenges, models, methods, results, etc.
     - Express each extracted key point in two formats:
-      a) Paragraph form: Fewer but longer paragraphs, usually 1-3 items, with each paragraph typically exceeding 30 words.  
-      b) Bullet form: More but shorter bullet points, usually 3-8 items, with each point typically fewer than 20 words.  
+      a) Paragraph form: Fewer but longer paragraphs, usually 1-3 items, with each paragraph typically exceeding 30 words.
+      b) Bullet form: More but shorter bullet points, usually 3-8 items, with each point typically fewer than 20 words.
     - If no content is provided, leave the key points an empty list.
-  Example Output:  
+  Example Output:
 
   ```json
   [
@@ -38,7 +38,7 @@ template: |
       }
   ]
   ```
-    
+
   Input:
   {{content_source}}
 

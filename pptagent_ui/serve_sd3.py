@@ -1,5 +1,5 @@
-import sys
 import base64
+import sys
 from datetime import datetime
 from io import BytesIO
 from typing import Optional, Union
@@ -29,7 +29,9 @@ class ImageRequest(BaseModel):
 
 @app.post("/v1/images/generations")
 async def generate_images(request: ImageRequest) -> ImagesResponse:
-    assert request.model == SERVE_NAME, f"Model {request.model} is not available, only {SERVE_NAME} is available"
+    assert (
+        request.model == SERVE_NAME
+    ), f"Model {request.model} is not available, only {SERVE_NAME} is available"
     try:
         images = pipe(
             request.prompt,
@@ -65,7 +67,11 @@ async def generate_images(request: ImageRequest) -> ImagesResponse:
 
 
 try:
-    device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
     pipe = StableDiffusion3Pipeline.from_pretrained(
         MODEL, torch_dtype=torch.bfloat16
     ).to(device)

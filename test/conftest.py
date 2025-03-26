@@ -1,5 +1,5 @@
-import os
 import json
+
 from pptagent.llms import AsyncLLM
 from pptagent.utils import Config, pjoin
 
@@ -23,12 +23,12 @@ class TestConfig:
     def get_slide_induction(self):
         """Load slide induction data"""
         return json.load(
-            open(pjoin(self.template, "template_induct/backend/induct_cache.json"), "r")
+            open(pjoin(self.template, "template_induct/backend/induct_cache.json"))
         )
 
     def get_document_json(self):
         """Load document JSON"""
-        return json.load(open(f"{self.document}/refined_doc.json", "r"))
+        return json.load(open(f"{self.document}/refined_doc.json"))
 
     def get_outline(self):
         """Load outline data"""

@@ -1,28 +1,28 @@
 import asyncio
+import logging
 import os
 import shutil
 import subprocess
 import tempfile
 import traceback
 from itertools import product
+from shutil import which
 from time import sleep, time
 from types import SimpleNamespace
-from typing import Dict, List, Optional, Set, Any
-import logging
+from typing import Any, Optional
 
-from html2image import Html2Image
 import json_repair
 import Levenshtein
+from html2image import Html2Image
 from mistune import html as markdown
-from PIL import Image as PILImage
-from shutil import which
 from pdf2image import convert_from_path
+from PIL import Image as PILImage
 from pptx.dml.color import RGBColor
 from pptx.oxml import parse_xml
+from pptx.parts.image import Image
 from pptx.shapes.group import GroupShape
 from pptx.text.text import _Paragraph, _Run
 from pptx.util import Length, Pt
-from pptx.parts.image import Image
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
 
@@ -67,7 +67,7 @@ if which("soffice") is None:
     logging.warning("soffice is not installed, pptx to images conversion will not work")
 
 # Set of supported image extensions
-IMAGE_EXTENSIONS: Set[str] = {
+IMAGE_EXTENSIONS: set[str] = {
     "bmp",
     "jpg",
     "jpeg",
@@ -102,7 +102,7 @@ def is_image_path(file: str) -> bool:
     return file.split(".")[-1].lower() in IMAGE_EXTENSIONS
 
 
-def get_font_style(font: Dict[str, Any]) -> str:
+def get_font_style(font: dict[str, Any]) -> str:
     """
     Convert a font dictionary to a CSS style string.
 
@@ -219,7 +219,7 @@ def tenacity_log(retry_state: RetryCallState) -> None:
     traceback.print_tb(retry_state.outcome.exception().__traceback__)
 
 
-def get_json_from_response(response: str) -> Dict[str, Any]:
+def get_json_from_response(response: str) -> dict[str, Any]:
     """
     Extract JSON from a text response.
 
@@ -302,7 +302,7 @@ def split_markdown_by_level(text: str, level: int = 1):
 
 def split_markdown_to_chunks(
     markdown_text: str, max_length: int = 16384, max_level: int = 3
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Split a markdown document into chunks of a maximum length.
 
@@ -488,7 +488,7 @@ def wmf_to_images(blob: bytes, filepath: str):
     assert pexists(filepath), f"File {filepath} does not exist"
 
 
-def parse_groupshape(groupshape: GroupShape) -> List[Dict[str, Length]]:
+def parse_groupshape(groupshape: GroupShape) -> list[dict[str, Length]]:
     """
     Parse a group shape to get the bounds of its child shapes.
 
@@ -561,14 +561,14 @@ def is_primitive(obj: Any) -> bool:
     )
 
 
-DEFAULT_EXCLUDE: Set[str] = set(["element", "language_id", "ln", "placeholder_format"])
+DEFAULT_EXCLUDE: set[str] = {"element", "language_id", "ln", "placeholder_format"}
 
 
 def object_to_dict(
     obj: Any,
-    result: Optional[Dict[str, Any]] = None,
-    exclude: Optional[Set[str]] = None,
-) -> Dict[str, Any]:
+    result: Optional[dict[str, Any]] = None,
+    exclude: Optional[set[str]] = None,
+) -> dict[str, Any]:
     """
     Convert an object to a dictionary.
 
@@ -609,7 +609,7 @@ def object_to_dict(
     return result
 
 
-def merge_dict(d1: Dict[str, Any], d2: List[Dict[str, Any]]) -> Dict[str, Any]:
+def merge_dict(d1: dict[str, Any], d2: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Merge multiple dictionaries, keeping only values that are the same across all dictionaries.
 
@@ -644,7 +644,7 @@ def merge_dict(d1: Dict[str, Any], d2: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def dict_to_object(
-    dict_obj: Dict[str, Any], obj: Any, exclude: Optional[Set[str]] = None
+    dict_obj: dict[str, Any], obj: Any, exclude: Optional[set[str]] = None
 ) -> None:
     """
     Apply dictionary values to an object.

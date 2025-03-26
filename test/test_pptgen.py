@@ -1,8 +1,9 @@
-from pptagent.pptgen import PPTAgent, PPTAgentAsync
+from test.conftest import test_config
+
 from pptagent.document import Document, OutlineItem
+from pptagent.pptgen import PPTAgent, PPTAgentAsync
 from pptagent.presentation import Presentation
 from pptagent.utils import pjoin
-from test.conftest import test_config
 
 
 async def test_pptgen():

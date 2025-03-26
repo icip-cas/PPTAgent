@@ -1,22 +1,16 @@
 import traceback
-from packaging.version import Version
-from typing import List, Optional, Tuple, Type, Generator
+from collections.abc import Generator
+from typing import Optional
 
+from packaging.version import Version
 from pptx import Presentation as PPTXPre
 from pptx import __version__ as PPTXVersion
-from pptx.slide import Slide as PPTXSlide
 from pptx.shapes.base import BaseShape
 from pptx.shapes.group import GroupShape as PPTXGroupShape
+from pptx.slide import Slide as PPTXSlide
 
+from pptagent.shapes import Background, GroupShape, Picture, ShapeElement, StyleArg, T
 from pptagent.utils import Config, get_logger
-from pptagent.shapes import (
-    T,
-    GroupShape,
-    Picture,
-    ShapeElement,
-    Background,
-    StyleArg,
-)
 
 PPTXVersion, Mark = PPTXVersion.split("+")
 assert (
@@ -26,6 +20,8 @@ assert (
 # Type variable for ShapeElement subclasses
 
 logger = get_logger(__name__)
+
+
 class SlidePage:
     """
     A class to represent a slide page in a presentation.
@@ -33,8 +29,8 @@ class SlidePage:
 
     def __init__(
         self,
-        shapes: List[ShapeElement],
-        backgrounds: List[Background],
+        shapes: list[ShapeElement],
+        backgrounds: list[Background],
         slide_idx: int,
         real_idx: int,
         slide_notes: Optional[str],
@@ -162,7 +158,7 @@ class SlidePage:
         return slide
 
     def shape_filter(
-        self, shape_type: Type[T], shapes: Optional[List[ShapeElement]] = None
+        self, shape_type: type[T], shapes: Optional[list[ShapeElement]] = None
     ) -> Generator[T, None, None]:
         """
         Filter shapes in the slide by type.
@@ -286,8 +282,8 @@ class Presentation:
 
     def __init__(
         self,
-        slides: List[SlidePage],
-        error_history: List[Tuple[int, str]],
+        slides: list[SlidePage],
+        error_history: list[tuple[int, str]],
         slide_width: float,
         slide_height: float,
         file_path: str,
