@@ -1,27 +1,27 @@
 import re
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Type, TypeVar, Union
+from typing import Callable, Optional, TypeVar, Union
 
 from lxml import etree
 from pptx.chart.chart import Chart as PPTXChart
-from pptx.slide import Slide as PPTXSlide
-from pptx.parts.slide import SlidePart
-from pptx.shapes.connector import Connector as PPTXConnector
+from pptx.dml.fill import FillFormat
+from pptx.dml.line import LineFormat
+from pptx.enum.dml import MSO_FILL_TYPE
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml import parse_xml
+from pptx.parts.slide import SlidePart
 from pptx.shapes.autoshape import Shape as PPTXAutoShape
-from pptx.shapes.graphfrm import GraphicFrame as PPTXGraphicalFrame
 from pptx.shapes.base import BaseShape
+from pptx.shapes.connector import Connector as PPTXConnector
+from pptx.shapes.graphfrm import GraphicFrame as PPTXGraphicalFrame
 from pptx.shapes.group import GroupShape as PPTXGroupShape
 from pptx.shapes.picture import Picture as PPTXPicture
 from pptx.shapes.placeholder import PlaceholderPicture, SlidePlaceholder
-from pptx.text.text import _Paragraph
+from pptx.slide import Slide as PPTXSlide
 from pptx.table import Table as PPTXTable
-from pptx.enum.shapes import MSO_SHAPE_TYPE
-from pptx.enum.dml import MSO_FILL_TYPE
-from pptx.dml.fill import FillFormat
-from pptx.dml.line import LineFormat
-from utils import (
-    IMAGE_EXTENSIONS,
+from pptx.text.text import _Paragraph
+
+from pptagent.utils import (
     Config,
     dict_to_object,
     get_font_style,
@@ -31,7 +31,6 @@ from utils import (
     parsing_image,
     pjoin,
     runs_merge,
-    wmf_to_images,
 )
 
 INDENT = "\t"
@@ -125,7 +124,6 @@ class Fill:
         """
         Convert the fill to HTML.
         """
-        pass
 
 
 class Line:
@@ -191,7 +189,6 @@ class Background(Fill):
         Returns:
             str: The HTML representation of the background.
         """
-        pass
 
 
 @dataclass
@@ -372,8 +369,8 @@ class ShapeElement:
         self,
         slide_idx: int,
         shape_idx: int,
-        style: Dict,
-        data: List,
+        style: dict,
+        data: list,
         text_frame: TextFrame,
         slide_area: float,
         level: int,
@@ -396,7 +393,7 @@ class ShapeElement:
         self.data = data
         self.text_frame = text_frame
         self._closure_keys = ["clone", "replace", "delete", "style", "merge"]
-        self._closures: Dict[str, List[Closure]] = {
+        self._closures: dict[str, list[Closure]] = {
             key: [] for key in self._closure_keys
         }
         self.slide_area = slide_area
@@ -405,7 +402,7 @@ class ShapeElement:
 
     @classmethod
     def from_shape(
-        cls: Type[T],
+        cls: type[T],
         slide_idx: int,
         shape_idx: int,
         shape: BaseShape,
@@ -452,7 +449,7 @@ class ShapeElement:
             autoshape = shape.auto_shape_type
             assert autoshape is not None
             style["semantic_name"] = str(autoshape).split()[0].lower().strip()
-        except:
+        except Exception:
             # For other shapes (freeform, connector, table, chart...)
             style["semantic_name"] = str(shape.shape_type).split("(")[0].lower().strip()
 
@@ -526,7 +523,7 @@ class ShapeElement:
         )
 
     @property
-    def closures(self) -> List[Closure]:
+    def closures(self) -> list[Closure]:
         """
         Get the closures associated with the shape element.
 
@@ -537,7 +534,7 @@ class ShapeElement:
         closures.extend(sorted(self._closures["clone"]))
         closures.extend(self._closures["replace"] + self._closures["style"])
         closures.extend(sorted(self._closures["delete"], reverse=True))
-        closures.extend(self._closures['merge'])
+        closures.extend(self._closures["merge"])
         return closures
 
     @property
@@ -737,7 +734,7 @@ class TextBox(ShapeElement):
         slide_idx: int,
         shape_idx: int,
         shape: TextFrame,
-        style: Dict,
+        style: dict,
         text_frame: TextFrame,
         config: Config,
         slide_area: float,
@@ -782,7 +779,7 @@ class Picture(ShapeElement):
         slide_idx: int,
         shape_idx: int,
         shape: PPTXPicture,
-        style: Dict,
+        style: dict,
         text_frame: TextFrame,
         config: Config,
         slide_area: float,
@@ -836,7 +833,7 @@ class Picture(ShapeElement):
         # Add picture to slide
         if self.row and self.col:
             return self.build_table(slide)
-        
+
         shape = slide.shapes.add_picture(
             self.img_path,
             **self.style["shape_bounds"],
@@ -856,12 +853,11 @@ class Picture(ShapeElement):
     def build_table(self, slide: PPTXSlide) -> PPTXPicture:
         shape = slide.shapes.add_table(self.row, self.col, **self.style["shape_bounds"])
         return shape
-        
 
     @property
     def row(self) -> int:
         return self.data[3]
-    
+
     @row.setter
     def row(self, row_num: int):
         self.data[3] = row_num
@@ -869,7 +865,7 @@ class Picture(ShapeElement):
     @property
     def col(self) -> int:
         return self.data[4]
-    
+
     @col.setter
     def col(self, col_num: int):
         self.data[4] = col_num
@@ -1010,7 +1006,7 @@ class GroupShape(ShapeElement):
         slide_idx: int,
         shape_idx: int,
         shape: PPTXGroupShape,
-        style: Dict,
+        style: dict,
         text_frame: TextFrame,
         config: Config,
         slide_area: float,
@@ -1150,7 +1146,7 @@ class FreeShape(ShapeElement):
         slide_idx: int,
         shape_idx: int,
         shape: PPTXAutoShape | PPTXConnector | PPTXGraphicalFrame,
-        style: Dict,
+        style: dict,
         text_frame: TextFrame,
         config: Config,
         slide_area: float,
@@ -1193,7 +1189,7 @@ class SemanticPicture(ShapeElement):
         slide_idx: int,
         shape_idx: int,
         shape: Union[PPTXTable, PPTXChart],
-        style: Dict,
+        style: dict,
         text_frame: TextFrame,
         config: Config,
         slide_area: float,

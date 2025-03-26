@@ -4,6 +4,7 @@ repos:
       hooks:
       -   id: check-yaml
       -   id: trailing-whitespace
+      -   id: end-of-file-fixer
   - repo: https://github.com/psf/black
     rev: 24.4.0
     hooks:
@@ -12,4 +13,28 @@ repos:
     rev: 5.12.0
     hooks:
       - id: isort
-        args: ["--profile", "black"] 
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+        args: [--py39-plus]
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.18
+    hooks:
+      - id: validate-pyproject
+
+
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args: [--in-place, --remove-all-unused-imports]
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: [--max-line-length=188, "--ignore=E203,E501,E701,W503"]

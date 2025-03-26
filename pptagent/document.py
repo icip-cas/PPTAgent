@@ -1,26 +1,28 @@
-from dataclasses import dataclass, asdict
-import traceback
-import PIL
-from datetime import datetime
-from typing import Any, List, Optional, Dict
-from uuid import uuid4
 import asyncio
+import re
+import traceback
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from typing import Any, Optional
+from uuid import uuid4
 
-from mistune import html as markdown
+import PIL
 from bs4 import BeautifulSoup
 from jinja2 import Environment, StrictUndefined
+from mistune import html as markdown
 
-from pptagent.llms import LLM, AsyncLLM
 from pptagent.agent import Agent, AsyncAgent
+from pptagent.llms import LLM, AsyncLLM
 from pptagent.utils import (
-    markdown_table_to_image,
-    package_join,
-    pjoin,
-    pexists,
-    split_markdown_to_chunks,
-    pbasename,
     edit_distance,
     get_logger,
+    markdown_table_to_image,
+    package_join,
+    pbasename,
+    pexists,
+    pjoin,
+    split_markdown_to_chunks,
+    tenacity,
 )
 
 logger = get_logger(__name__)
@@ -34,6 +36,7 @@ IMAGE_CAPTION_PROMPT = env.from_string(
 MERGE_METADATA_PROMPT = env.from_string(
     open(package_join("prompts", "merge_metadata.txt")).read()
 )
+HEADING_ADJUST_PROMPT = env.from_string(open("./prompts/heading_adjust.txt").read())
 
 
 @dataclass
@@ -44,7 +47,7 @@ class Media:
     caption: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any]):
         assert (
             "markdown_content" in data and "markdown_caption" in data
         ), f"'markdown_content' and 'markdown_caption' keys are required in data dictionary but were not found. Input keys: {list(data.keys())}"
@@ -75,10 +78,10 @@ class Table(Media):
 class SubSection:
     title: str
     content: str
-    medias: Optional[List[Media]] = None
+    medias: Optional[list[Media]] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any]):
         assert (
             "title" in data and "content" in data
         ), f"'title' and 'content' keys are required in data dictionary but were not found. Input keys: {list(data.keys())}"
@@ -98,17 +101,16 @@ class SubSection:
 
     def iter_medias(self):
         if self.medias is not None:
-            for media in self.medias:
-                yield media
+            yield from self.medias
 
 
 @dataclass
 class Section:
     title: str
-    subsections: List[SubSection]
+    subsections: list[SubSection]
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any]):
         assert (
             "title" in data and "subsections" in data
         ), f"'title' and 'subsections' keys are required in data dictionary but were not found. Input keys: {list(data.keys())}"
@@ -118,6 +120,12 @@ class Section:
                 SubSection.from_dict(subsection) for subsection in data["subsections"]
             ],
         )
+
+    def __contains__(self, key: str):
+        for subsection in self.subsections:
+            if subsection.title == key:
+                return True
+        return False
 
     def __getitem__(self, key: str):
         for subsection in self.subsections:
@@ -132,8 +140,7 @@ class Section:
 
     def iter_medias(self):
         for subsection in self.subsections:
-            for media in subsection.iter_medias():
-                yield media
+            yield from subsection.iter_medias()
 
     def validate_medias(self, image_dir: str, require_caption: bool = True):
         for media in self.iter_medias():
@@ -155,20 +162,19 @@ class Section:
 @dataclass
 class Document:
     image_dir: str
-    sections: List[Section]
-    metadata: Dict[str, str]
+    sections: list[Section]
+    metadata: dict[str, str]
 
     def __post_init__(self):
         self.metadata["presentation_time"] = datetime.now().strftime("%Y-%m-%d")
 
     def iter_medias(self):
         for section in self.sections:
-            for media in section.iter_medias():
-                yield media
+            yield from section.iter_medias()
 
     @classmethod
     def from_dict(
-        cls, data: Dict[str, Any], image_dir: str, require_caption: bool = True
+        cls, data: dict[str, Any], image_dir: str, require_caption: bool = True
     ):
         assert (
             "sections" in data
@@ -176,9 +182,7 @@ class Document:
         assert (
             "metadata" in data
         ), f"'metadata' key is required in data dictionary but was not found. Input keys: {list(data.keys())}"
-        assert (
-            pexists(image_dir)
-        ), f"image directory is not found: {image_dir}"
+        assert pexists(image_dir), f"image directory is not found: {image_dir}"
         document = cls(
             image_dir=image_dir,
             sections=[Section.from_dict(section) for section in data["sections"]],
@@ -192,8 +196,8 @@ class Document:
     def _parse_chunk(
         cls,
         extractor: Agent,
-        metadata: Optional[Dict[str, Any]],
-        section: Optional[Dict[str, Any]],
+        metadata: Optional[dict[str, Any]],
+        section: Optional[dict[str, Any]],
         image_dir: str,
         num_medias: int,
         retry: int = 0,
@@ -236,8 +240,8 @@ class Document:
     async def _parse_chunk_async(
         cls,
         extractor: AsyncAgent,
-        metadata: Optional[Dict[str, Any]],
-        section: Optional[Dict[str, Any]],
+        metadata: Optional[dict[str, Any]],
+        section: Optional[dict[str, Any]],
         image_dir: str,
         num_medias: int,
         retry: int = 0,
@@ -323,6 +327,7 @@ class Document:
                 )
         return document
 
+    @tenacity
     @classmethod
     async def from_markdown_async(
         cls,
@@ -337,6 +342,15 @@ class Document:
         )
 
         parse_tasks = []
+        headings = re.findall(r"^#+\s+.*", markdown_content, re.MULTILINE)
+        adjusted_headings = language_model(
+            HEADING_ADJUST_PROMPT.render(headings=headings), return_json=True
+        )
+        assert len(headings) == len(
+            adjusted_headings
+        ), "number of headings does not match"
+        for heading, adjusted_heading in zip(headings, adjusted_headings):
+            markdown_content = markdown_content.replace(heading, adjusted_heading)
         for chunk in split_markdown_to_chunks(markdown_content):
             if chunk["header"] is not None:
                 chunk["content"] = chunk["header"] + "\n" + chunk["content"]
@@ -382,13 +396,16 @@ class Document:
 
         return document
 
+    def __contains__(self, key: str):
+        for section in self.sections:
+            if section.title == key:
+                return True
+        return False
+
     def __getitem__(self, key: str):
         for section in self.sections:
             if section.title == key:
                 return section
-        sim_sec = max(self.sections, key=lambda x: edit_distance(x.title, key))
-        if edit_distance(sim_sec.title, key) > 0.8:
-            return sim_sec
         raise KeyError(
             f"section not found: {key}, available sections: {[section.title for section in self.sections]}"
         )
@@ -396,12 +413,53 @@ class Document:
     def to_dict(self):
         return asdict(self)
 
-    def index(self, subsection_keys: dict[str, list[str]]) -> List[SubSection]:
+    def retrieve(
+        self,
+        indexs: dict[str, list[str]],
+        sim_bound: int = 0.8,
+        from_all: bool = True,
+    ) -> list[SubSection]:
+        assert isinstance(
+            indexs, dict
+        ), "subsection_keys for index must be a dict, follow a two-level structure"
         subsecs = []
-        for sec_key, subsec_keys in subsection_keys.items():
-            section = self[sec_key]
+        for sec_key, subsec_keys in indexs.items():
+            if sec_key in self:
+                section = self[sec_key]
+            else:
+                section = max(
+                    self.sections, key=lambda x: edit_distance(x.title, sec_key)
+                )
+                if edit_distance(section.title, sec_key) < sim_bound:
+                    logger.warning(
+                        "section not found: %s, available sections: {[section.title for section in self.sections]}",
+                        sec_key,
+                    )
+                    raise ValueError(
+                        "section not found: %s, available sections: {[section.title for section in self.sections]}"
+                    )
             for subsec_key in subsec_keys:
-                subsecs.append(section[subsec_key])
+                if subsec_key in section:
+                    retr = section[subsec_key]
+                else:
+                    retr = max(
+                        section.subsections,
+                        key=lambda x: edit_distance(x.title, subsec_key),
+                    )
+                    if edit_distance(retr.title, subsec_key) < sim_bound and from_all:
+                        retr = max(
+                            self.subsections,
+                            key=lambda x: edit_distance(x.title, subsec_key),
+                        )
+                    if edit_distance(retr.title, subsec_key) < sim_bound:
+                        raise ValueError(
+                            "subsection not found: %s in section %s, available subsections: {[subsection.title for subsection in section.subsections]}",
+                            subsec_key,
+                            section.title,
+                        )
+
+                subsecs.append(retr)
+
         return subsecs
 
     @property
@@ -416,15 +474,19 @@ class Document:
                 subsection.pop("content")
         return overview
 
+    @property
+    def subsections(self):
+        return [subsec for section in self.sections for subsec in section.subsections]
+
 
 @dataclass
 class OutlineItem:
     purpose: str
     description: str
-    indexs: Dict[str, List[str]]
+    indexs: dict[str, list[str]]
 
     def retrieve(self, slide_idx: int, document: Document):
-        subsections = document.index(self.indexs)
+        subsections = document.retrieve(self.indexs)
         header = (
             f"Slide-{slide_idx+1}: {self.purpose}\nDescription: {self.description}\n"
         )

@@ -11,7 +11,7 @@ template: |
   For each slide, provide:
     - Slide Purpose: A high-level summary of the slide's objective, used as the key for the dictionary item.
     - Slide Description: A concise description of the slide's content.
-    - Indexs: A dictionary where keys are section titles and values are lists of subsection titles that relate to the slide's content. Format: {section_title: [subsection_title1, subsection_title2, ...]}. Include subsections containing desired images in the appropriate section lists.
+    - Indexs: A two-level dictionary following the format: {section_title:  [subsection_title1, subsection_title2, ...]}}. Include subsections containing desired images in it also. The title should be exact match of the title of the section and subsection.
 
   Example Output:
   [
@@ -22,13 +22,13 @@ template: |
     },
     {
       "purpose": "Introduction to the XX",
-      "indexs": {"Section 1": ["Intro to xx", "Background"]},
+      "indexs": {"Section 1": ["Section 1.1", "Section 1.2"]},
       "description": "..."
     },
     ...,
     {
       "purpose": "Ending",
-      "indexs": {"Section 5": ["Ending"]},
+      "indexs": {"Section 5": ["Section 5.1", "Section 5.2"]},
       "description": "..."
     }
   ]
@@ -42,7 +42,7 @@ template: |
   Document Overview:
   {{ document_overview }}
 
-  Output:
+  Output: the `indexs` should be exact match of the title of the section and subsection.
 jinja_args:
   - num_slides
   - document_overview

@@ -1,5 +1,5 @@
-from collections import defaultdict
 import os
+from collections import defaultdict
 
 from jinja2 import Template
 
@@ -10,7 +10,7 @@ from pptagent.model_utils import (
     images_cosine_similarity,
 )
 from pptagent.presentation import Presentation
-from pptagent.utils import Config, package_join, pjoin, tenacity, get_logger
+from pptagent.utils import Config, get_logger, package_join, pjoin, tenacity
 
 logger = get_logger(__name__)
 
@@ -49,7 +49,6 @@ class SlideInducter:
         self.language_model = language_model
         self.vision_model = vision_model
         self.image_models = image_models
-        self.slide_induction = defaultdict(lambda: defaultdict(list))
         if not use_assert:
             return
         assert (
@@ -62,29 +61,30 @@ class SlideInducter:
         """
         Perform layout induction for the presentation.
         """
+        layout_induction = defaultdict(lambda: defaultdict(list))
         content_slides_index, functional_cluster = self.category_split()
         for layout_name, cluster in functional_cluster.items():
             for slide_idx in cluster:
                 content_type = self.prs.slides[slide_idx - 1].get_content_type()
                 layout_key = layout_name + ":" + content_type
-                if "slides" not in self.slide_induction[layout_key]:
-                    self.slide_induction[layout_key]["slides"] = []
-                self.slide_induction[layout_key]["slides"].append(slide_idx)
-        for layout_name, cluster in self.slide_induction.items():
+                if "slides" not in layout_induction[layout_key]:
+                    layout_induction[layout_key]["slides"] = []
+                layout_induction[layout_key]["slides"].append(slide_idx)
+        for layout_name, cluster in layout_induction.items():
             if "slides" in cluster and cluster["slides"]:
                 cluster["template_id"] = cluster["slides"][-1]
 
-        functional_keys = list(self.slide_induction.keys())
+        functional_keys = list(layout_induction.keys())
         function_slides_index = set()
-        for layout_name, cluster in self.slide_induction.items():
+        for layout_name, cluster in layout_induction.items():
             function_slides_index.update(cluster["slides"])
         used_slides_index = function_slides_index.union(content_slides_index)
         for i in range(len(self.prs.slides)):
             if i + 1 not in used_slides_index:
                 content_slides_index.add(i + 1)
-        self.layout_split(content_slides_index)
-        self.slide_induction["functional_keys"] = functional_keys
-        return self.slide_induction
+        self.layout_split(content_slides_index, layout_induction)
+        layout_induction["functional_keys"] = functional_keys
+        return layout_induction
 
     def category_split(self):
         """
@@ -102,7 +102,7 @@ class SlideInducter:
 
         return content_slides_index, functional_cluster
 
-    def layout_split(self, content_slides_index: set[int]):
+    def layout_split(self, content_slides_index: set[int], layout_induction: dict):
         """
         Cluster slides into different layouts.
         """
@@ -130,26 +130,26 @@ class SlideInducter:
                 cluster_name = (
                     self.vision_model(
                         template.render(
-                            existed_layoutnames=list(self.slide_induction.keys()),
+                            existed_layoutnames=list(layout_induction.keys()),
                         ),
                         pjoin(self.ppt_image_folder, f"slide_{template_id:04d}.jpg"),
                     )
                     + ":"
                     + content_type
                 )
-                self.slide_induction[cluster_name]["template_id"] = template_id
-                self.slide_induction[cluster_name]["slides"] = slide_indexs
+                layout_induction[cluster_name]["template_id"] = template_id
+                layout_induction[cluster_name]["slides"] = slide_indexs
 
     @tenacity
     def content_induct(self):
         """
         Perform content schema extraction for the presentation.
         """
-        self.slide_induction = self.layout_induct()
+        layout_induction = self.layout_induct()
         content_induct_prompt = Template(
             open(package_join("prompts", "content_induct.txt")).read()
         )
-        for layout_name, cluster in self.slide_induction.items():
+        for layout_name, cluster in layout_induction.items():
             if "template_id" in cluster and "content_schema" not in cluster:
                 schema = self.language_model(
                     content_induct_prompt.render(
@@ -166,8 +166,8 @@ class SlideInducter:
                         logger.warning("Empty content schema: %s", schema[k])
                         schema.pop(k)
                 assert len(schema) > 0, "No content schema generated"
-                self.slide_induction[layout_name]["content_schema"] = schema
-        return self.slide_induction
+                layout_induction[layout_name]["content_schema"] = schema
+        return layout_induction
 
 
 class SlideInducterAsync(SlideInducter):
@@ -219,7 +219,9 @@ class SlideInducterAsync(SlideInducter):
 
         return content_slides_index, functional_cluster
 
-    async def layout_split(self, content_slides_index: set[int]):
+    async def layout_split(
+        self, content_slides_index: set[int], layout_induction: dict
+    ):
         """
         Async version: Cluster slides into different layouts.
         """
@@ -247,54 +249,55 @@ class SlideInducterAsync(SlideInducter):
                 cluster_name = (
                     await self.vision_model(
                         template.render(
-                            existed_layoutnames=list(self.slide_induction.keys()),
+                            existed_layoutnames=list(layout_induction.keys()),
                         ),
                         pjoin(self.ppt_image_folder, f"slide_{template_id:04d}.jpg"),
                     )
                     + ":"
                     + content_type
                 )
-                self.slide_induction[cluster_name]["template_id"] = template_id
-                self.slide_induction[cluster_name]["slides"] = slide_indexs
+                layout_induction[cluster_name]["template_id"] = template_id
+                layout_induction[cluster_name]["slides"] = slide_indexs
 
+    @tenacity
     async def layout_induct(self):
         """
         Async version: Perform layout induction for the presentation.
         """
+        layout_induction = defaultdict(lambda: defaultdict(list))
         content_slides_index, functional_cluster = await self.category_split()
         for layout_name, cluster in functional_cluster.items():
             for slide_idx in cluster:
                 content_type = self.prs.slides[slide_idx - 1].get_content_type()
                 layout_key = layout_name + ":" + content_type
-                if "slides" not in self.slide_induction[layout_key]:
-                    self.slide_induction[layout_key]["slides"] = []
-                self.slide_induction[layout_key]["slides"].append(slide_idx)
-        for layout_name, cluster in self.slide_induction.items():
+                if "slides" not in layout_induction[layout_key]:
+                    layout_induction[layout_key]["slides"] = []
+                layout_induction[layout_key]["slides"].append(slide_idx)
+        for layout_name, cluster in layout_induction.items():
             if "slides" in cluster and cluster["slides"]:
                 cluster["template_id"] = cluster["slides"][-1]
 
-        functional_keys = list(self.slide_induction.keys())
+        functional_keys = list(layout_induction.keys())
         function_slides_index = set()
-        for layout_name, cluster in self.slide_induction.items():
+        for layout_name, cluster in layout_induction.items():
             function_slides_index.update(cluster["slides"])
         used_slides_index = function_slides_index.union(content_slides_index)
         for i in range(len(self.prs.slides)):
             if i + 1 not in used_slides_index:
                 content_slides_index.add(i + 1)
-        await self.layout_split(content_slides_index)
-        self.slide_induction["functional_keys"] = functional_keys
-        return self.slide_induction
+        await self.layout_split(content_slides_index, layout_induction)
+        layout_induction["functional_keys"] = functional_keys
+        return layout_induction
 
     @tenacity
-    async def content_induct(self):
+    async def content_induct(self, layout_induction: dict):
         """
         Async version: Perform content schema extraction for the presentation.
         """
-        self.slide_induction = await self.layout_induct()
         content_induct_prompt = Template(
             open(package_join("prompts", "content_induct.txt")).read()
         )
-        for layout_name, cluster in self.slide_induction.items():
+        for layout_name, cluster in layout_induction.items():
             if "template_id" in cluster and "content_schema" not in cluster:
                 schema = await self.language_model(
                     content_induct_prompt.render(
@@ -311,5 +314,5 @@ class SlideInducterAsync(SlideInducter):
                         logger.warning("Empty content schema: %s", schema[k])
                         schema.pop(k)
                 assert len(schema) > 0, "No content schema generated"
-                self.slide_induction[layout_name]["content_schema"] = schema
-        return self.slide_induction
+                layout_induction[layout_name]["content_schema"] = schema
+        return layout_induction

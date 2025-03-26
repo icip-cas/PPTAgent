@@ -6,28 +6,27 @@ from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Union, List, Tuple
+from typing import Optional, Union
 
 import PIL
 from bs4 import BeautifulSoup
 from mistune import html as markdown
-from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.oxml import parse_xml
 from pptx.shapes.base import BaseShape
-from pptx.util import Pt
 from pptx.text.text import _Run
-from pptx.table import Table
-from pptagent.shapes import Closure, Picture, ShapeElement
+from pptx.util import Pt
+
 from pptagent.presentation import SlidePage
-from pptagent.utils import runs_merge, get_logger
+from pptagent.shapes import Closure, Picture, ShapeElement
+from pptagent.utils import get_logger, runs_merge
 
 logger = get_logger(__name__)
+
 
 class SlideEditError(Exception):
     """
     Exception raised when an edit operation fails.
     """
-    pass
 
 
 @dataclass
@@ -69,7 +68,7 @@ class CodeExecutor:
         funcs: list[callable],
         show_doc: bool = True,
         show_return: bool = True,
-        ignore_keys: list[str] = None,
+        ignore_keys: Optional[list[str]] = None,
     ) -> str:
         """
         Get the documentation for a list of API functions.
@@ -82,7 +81,7 @@ class CodeExecutor:
             str: The formatted API documentation.
         """
         if ignore_keys is None:
-            ignore_keys = set(("slide", "self"))
+            ignore_keys = {"slide", "self"}
         api_doc = []
         for func in funcs:
             sig = inspect.signature(func)
@@ -149,7 +148,7 @@ class CodeExecutor:
                 if func.startswith("clone") or func.startswith("del"):
                     tag = func.split("_")[0]
                     if (
-                        self.command_history[-1][-1] == None
+                        self.command_history[-1][-1] is None
                         or self.command_history[-1][-1] == tag
                     ):
                         self.command_history[-1][-1] = tag
@@ -206,7 +205,9 @@ def element_index(slide: SlidePage, element_id: int) -> ShapeElement:
     for shape in slide:
         if shape.shape_idx == element_id:
             return shape
-    raise SlideEditError(f"Cannot find element {element_id}, is it deleted or not exist?")
+    raise SlideEditError(
+        f"Cannot find element {element_id}, is it deleted or not exist?"
+    )
 
 
 @dataclass
@@ -274,7 +275,7 @@ def replace_para(paragraph_id: int, new_text: str, shape: BaseShape):
     Replace the text of a paragraph in a shape.
     """
     para = shape.text_frame.paragraphs[paragraph_id]
-    html = markdown(new_text)  # 添加 'extra' 扩展以支持更多格式
+    html = markdown(new_text).strip()
     soup = BeautifulSoup(html, "html.parser")
     blocks = process_element(soup)
 
@@ -301,16 +302,19 @@ def del_para(paragraph_id: int, shape: BaseShape):
     para = shape.text_frame.paragraphs[paragraph_id]
     para._element.getparent().remove(para._element)
 
-def fill_data(table_data: List[List[int]], shape: BaseShape):
+
+def fill_data(table_data: list[list[int]], shape: BaseShape):
     rows = len(table_data)
     cols = len(table_data[0])
     for i in range(rows):
         for j in range(cols):
             shape.table.cell(i, j).text = table_data[i][j]
-            
-def merge_cell(merge_area: List[int], shape: BaseShape):
+
+
+def merge_cell(merge_area: list[int], shape: BaseShape):
     min_row, min_col, max_row, max_col = merge_area
     shape.table.cell(min_row, min_col).merge(shape.table.cell(max_row, max_col))
+
 
 # api functions
 def del_paragraph(slide: SlidePage, div_id: int, paragraph_id: int):
@@ -454,41 +458,44 @@ def clone_paragraph(slide: SlidePage, div_id: int, paragraph_id: int):
     raise SlideEditError(
         f"Cannot find the paragraph {paragraph_id} of the element {div_id}, may refer to a non-existed paragraph."
     )
-    
+
+
 def replace_image_with_table(slide, shape_idx, table_data):
     shape = element_index(slide, shape_idx)
     assert isinstance(shape, Picture), "The element is not a Picture."
-    
+
     if not table_data or not all(isinstance(row, list) for row in table_data):
         raise SlideEditError("Invalid table data")
     rows, cols = len(table_data), len(table_data[0])
     if rows == 0 or not all(len(row) == cols for row in table_data):
         raise SlideEditError("Table data is empty or rows have inconsistent lengths")
-    
-    shape._closures['replace'].append(
-        Closure(partial(fill_data, table_data))
-        )
+
+    shape._closures["replace"].append(Closure(partial(fill_data, table_data)))
     shape.col = cols
     shape.row = rows
-    return 
+    return
+
 
 def merge_cells(slide, shape_idx, merge_cells):
     shape = element_index(slide, shape_idx)
 
-    if not merge_cells or not all(isinstance(cell, tuple) and len(cell) == 2 for cell in merge_cells):
-        raise SlideEditError("Invalid merge_cells format, expected list of (row, col) tuples")
+    if not merge_cells or not all(
+        isinstance(cell, tuple) and len(cell) == 2 for cell in merge_cells
+    ):
+        raise SlideEditError(
+            "Invalid merge_cells format, expected list of (row, col) tuples"
+        )
 
     min_row = min(cell[0] for cell in merge_cells)
     max_row = max(cell[0] for cell in merge_cells)
     min_col = min(cell[1] for cell in merge_cells)
     max_col = max(cell[1] for cell in merge_cells)
     merge_area = [min_row, min_col, max_row, max_col]
-    
-    shape._closures['merge'].append(
-        Closure(partial(merge_cell, merge_area))
-    )
-    
-    return 
+
+    shape._closures["merge"].append(Closure(partial(merge_cell, merge_area)))
+
+    return
+
 
 class API_TYPES(Enum):
     Agent = [

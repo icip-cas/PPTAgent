@@ -1,9 +1,10 @@
-from pptagent.document import Document, Table, OutlineItem
 from test.conftest import test_config
+
+from pptagent.document import Document, OutlineItem, Table
 
 
 async def test_document_async():
-    with open(f"{test_config.document}/source.md", "r") as f:
+    with open(f"{test_config.document}/source.md") as f:
         markdown_content = f.read()
     image_dir = test_config.document
     doc = await Document.from_markdown_async(
@@ -24,7 +25,7 @@ def test_document_from_dict():
     )
     document.overview
     document.metainfo
-    document.index({"Abstract": ["Introduction to PPTAgent"]})
+    document.retrieve({"Abstract": ["Introduction to PPTAgent"]})
     medias = list(document.iter_medias())
     assert len(medias) == 3
     assert sum(isinstance(media, Table) for media in medias) == 0

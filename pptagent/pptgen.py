@@ -4,15 +4,15 @@ import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Optional
 
 from pptagent.agent import Agent, AsyncAgent
 from pptagent.apis import API_TYPES, CodeExecutor
+from pptagent.document import Document, OutlineItem
+from pptagent.layout import Layout
 from pptagent.llms import LLM, AsyncLLM
 from pptagent.presentation import Presentation, SlidePage, StyleArg
 from pptagent.utils import Config, edit_distance, get_logger
-from pptagent.layout import Layout
-from pptagent.document import Document, OutlineItem
 
 logger = get_logger(__name__)
 
@@ -88,7 +88,7 @@ class PPTGen(ABC):
         self,
         source_doc: Document,
         num_slides: Optional[int] = None,
-        outline: Optional[List[OutlineItem]] = None,
+        outline: Optional[list[OutlineItem]] = None,
     ):
         """
         Generate a PowerPoint presentation.
@@ -174,8 +174,8 @@ class PPTGen(ABC):
         return outline
 
     def _valid_outline(
-        self, outline: List[Dict], source_doc: Document, retry: int = 0
-    ) -> List[OutlineItem]:
+        self, outline: list[dict], source_doc: Document, retry: int = 0
+    ) -> list[OutlineItem]:
         """
         Validate the generated outline.
 
@@ -185,7 +185,7 @@ class PPTGen(ABC):
         try:
             outline_items = [OutlineItem(**outline_item) for outline_item in outline]
             for outline_item in outline_items:
-                source_doc.index(outline_item.indexs)
+                source_doc.retrieve(outline_item.indexs)
             return outline_items
         except Exception as e:
             logger.info(
@@ -438,7 +438,7 @@ class PPTAgentAsync(PPTGen):
         self,
         source_doc: Document,
         num_slides: Optional[int] = None,
-        outline: Optional[List[OutlineItem]] = None,
+        outline: Optional[list[OutlineItem]] = None,
     ):
         """
         Asynchronously generate a PowerPoint presentation.
@@ -533,15 +533,15 @@ class PPTAgentAsync(PPTGen):
         return outline
 
     async def _valid_outline(
-        self, outline: List[Dict], source_doc: Document, retry: int = 0
-    ) -> List[OutlineItem]:
+        self, outline: list[dict], source_doc: Document, retry: int = 0
+    ) -> list[OutlineItem]:
         """
         Asynchronously validate the generated outline.
         """
         try:
             outline_items = [OutlineItem(**outline_item) for outline_item in outline]
             for outline_item in outline_items:
-                source_doc.index(outline_item.indexs)
+                source_doc.retrieve(outline_item.indexs)
             return outline_items
         except Exception as e:
             logger.info(

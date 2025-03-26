@@ -4,8 +4,8 @@ template: |
   Given a single section of a Markdown document, generate a structured JSON output for that section.
   Step-by-Step Instructions:
   1. Identify Subsections: Within the provided section, use heading levels (e.g., H2, H3) and logical relationships to identify subsections.
-  2. Extract Titles and Content: generate concise and appropriate titles based on content. Ensure the content is complete and not truncated.
-  3. Process Content: 
+  2. Extract Titles and Content: generate concise (<= 5 words) and appropriate titles based on content. Ensure the content is complete and not truncated.
+  3. Process Content:
     - Retain original text as provided, but refine it by removing unnecessary elements like citations (e.g., [1], (Author, 2020)), trivial repetitive or unwanted elements such as headers, footers, and text within `~~` (deleted content) to ensure conciseness. Ensure the most important content is retained without truncation.
   4. Extract and structure exactly the number of media elements specified in the input with their captions:
     - Only image element (e.g., `![alt text](path/to/image)`) and table element (e.g., `| Col1 | Col2 |\n|------|------|\n| A    | B    |`) are media elements.

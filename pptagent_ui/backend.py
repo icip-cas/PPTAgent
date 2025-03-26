@@ -9,7 +9,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 import torch
 from fastapi import (
@@ -29,18 +29,12 @@ from marker.models import create_model_dict
 
 import pptagent.induct as induct
 import pptagent.pptgen as pptgen
+from pptagent.document import Document
 from pptagent.llms import AsyncLLM
 from pptagent.model_utils import get_image_model, parse_pdf
 from pptagent.multimodal import ImageLabler
 from pptagent.presentation import Presentation
-from pptagent.utils import (
-    Config,
-    package_join,
-    pjoin,
-    ppt_to_images_async,
-    get_logger,
-)
-from pptagent.document import Document
+from pptagent.utils import Config, get_logger, package_join, pjoin, ppt_to_images_async
 
 # constants
 DEBUG = True if len(sys.argv) == 1 else False
@@ -77,13 +71,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-progress_store: Dict[str, Dict] = {}
-active_connections: Dict[str, WebSocket] = {}
+progress_store: dict[str, dict] = {}
+active_connections: dict[str, WebSocket] = {}
 executor = ThreadPoolExecutor(max_workers=NUM_MODELS)
 
 
 class ProgressManager:
-    def __init__(self, task_id: str, stages: List[str], debug: bool = True):
+    def __init__(self, task_id: str, stages: list[str], debug: bool = True):
         self.task_id = task_id
         self.stages = stages
         self.debug = debug
@@ -177,7 +171,7 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str):
     active_connections[task_id] = websocket
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
     except WebSocketDisconnect:
         logger.info("websocket disconnected: %s", task_id)
         active_connections.pop(task_id, None)
@@ -193,7 +187,7 @@ async def download(task_id: str):
         return FileResponse(
             file_path,
             media_type="application/pptx",
-            headers={"Content-Disposition": f"attachment; filename=pptagent.pptx"},
+            headers={"Content-Disposition": "attachment; filename=pptagent.pptx"},
         )
     raise HTTPException(status_code=404, detail="Task not finished yet")
 
@@ -330,7 +324,8 @@ async def ppt_gen(task_id: str, rerun=False):
                 language_model,
                 vision_model,
             )
-            slide_induction = await slide_inducter.content_induct()
+            layout_induction = await slide_inducter.layout_induct()
+            slide_induction = await slide_inducter.content_induct(layout_induction)
             json.dump(
                 slide_induction,
                 open(pjoin(pptx_config.RUN_DIR, "slide_induction.json"), "w"),

@@ -3,7 +3,7 @@
 This documentation provides an overview of the project structure, setup instructions, usage guidelines, and steps for reproducing experiments.
 
 <p align="center">
-  <img src="resource/EN-PPTAgent.drawio.pdf" alt="PPTAgent Workflow">
+  <img src="resource/PPTAgent-workflow.jpg" alt="PPTAgent Workflow">
 </p>
 
 Table of Contents
@@ -79,7 +79,7 @@ pip install git+https://github.com/icip-cas/PPTAgent.git
 pip install git+https://github.com/Force1ess/python-pptx
 ```
 
-#### Usage 
+#### Usage
 
 ##### Generate Via WebUI
 
@@ -88,7 +88,7 @@ pip install git+https://github.com/Force1ess/python-pptx
    Initialize your models in `pptagent_ui/backend.py`:
    ```python
    llms.language_model = LLM(
-       model="Qwen2.5-72B-Instruct-GPTQ-Int4", 
+       model="Qwen2.5-72B-Instruct-GPTQ-Int4",
        api_base="http://124.16.138.143:7812/v1"
    )
    llms.vision = LLM(model="gpt-4o-2024-08-06")
