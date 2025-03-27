@@ -315,14 +315,26 @@ def del_para(paragraph_id: int, shape: BaseShape):
 def add_table(table_data: list[list[str]], table: PPTXGraphicFrame):
     rows = len(table_data)
     cols = len(table_data[0])
+
+    max_lengths = [max(len(row[j]) for row in table_data) for j in range(cols)]
+    total_length = sum(max_lengths)
+    for j in range(cols):
+        col_width = int((max_lengths[j] / total_length) * table.width)
+        table.table.columns[j].width = col_width
+
     for i in range(rows):
         for j in range(cols):
             table.table.cell(i, j).text = table_data[i][j]
 
 
-def merge_cells(merge_area: list[list[int, int, int, int]], table: PPTXGraphicFrame):
+def merge_cells(merge_area: list[tuple[int, int, int, int]], table: PPTXGraphicFrame):
+    if merge_area is None or len(merge_area) == 0:
+        return
     for y1, x1, y2, x2 in merge_area:
-        table.table.cell(x1, y1).merge(table.table.cell(x2, y2))
+        try:
+            table.table.cell(x1, y1).merge(table.table.cell(x2, y2))
+        except Exception as e:
+            logger.warning(f"Failed to merge cells: {e}")
 
 
 # api functions

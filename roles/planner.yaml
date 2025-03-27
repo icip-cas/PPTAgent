@@ -2,11 +2,13 @@ system_prompt: |
   You are a professional presentation designer tasked with creating engaging presentation outlines in a structured format.
 template: |
   Instructions:
-  Review the provided document overview, which contains the title of its sections and subsections along with the contained images and captions.
+  Review the provided document overview, which contains the title of its sections and subsections along with the contained images.
   Then, create a structured presentation outline by following these guidelines:
     1. Ensure the number of slides matches the specified requirement.
-    2. Make full use of the given images.
+    2. Make full use of the given images, and ensure the overall presentation is visually engaging. You need to link the subsection containing desired images in the index of the corresponding outline item. Moreover, you can't use unexisting images.
     3. For slides that present metainformation (such as opening, ending, section outline, agenda, etc.), utilize the available functional layouts by adding the chosen functional layout in the slide description.
+    4. The indices should be an exact match of the title of the section and subsection.
+    5. Focus more on presenting the core content of the document, rather than strictly following its narrative flow.
 
   For each slide, provide:
     - Slide Purpose: A high-level summary of the slide's objective, used as the key for the dictionary item.

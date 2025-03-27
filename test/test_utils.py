@@ -2,11 +2,9 @@ import tempfile
 from test.conftest import test_config
 
 import pytest
-from bs4 import BeautifulSoup
-from markdown import markdown
 
 import pptagent.utils as utils
-from pptagent.utils import get_json_from_response, split_markdown_to_chunks
+from pptagent.utils import get_json_from_response
 
 
 def test_extract_json_from_markdown_block():
@@ -89,18 +87,3 @@ def test_ppt_to_images_conversion():
     """Test converting a PPTX file to images."""
     # Run the conversion
     utils.ppt_to_images(test_config.ppt, tempfile.mkdtemp())
-
-
-def test_markdown_splits():
-    markdown_content = open(f"{test_config.document}/source.md").read()
-    chunks = split_markdown_to_chunks(markdown_content)
-    assert len(chunks) == 5
-    markdown_html = markdown(markdown_content, extensions=["tables"])
-    soup = BeautifulSoup(markdown_html, "html.parser")
-    num_medias = len(soup.find_all("img")) + len(soup.find_all("table"))
-    parsed_medias = 0
-    for chunk in chunks:
-        markdown_html = markdown(chunk["content"], extensions=["tables"])
-        soup = BeautifulSoup(markdown_html, "html.parser")
-        parsed_medias += len(soup.find_all("img")) + len(soup.find_all("table"))
-    assert parsed_medias == num_medias

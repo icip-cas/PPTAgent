@@ -1,23 +1,13 @@
 system_prompt: |
-  You are a document content extractor specialist, expert in processing content from a single section of various types of Markdown documents, extracting markdown image and table elements, and reorganizing it into a structured format.
+  You are a document content extractor specialist, expert in processing content from a single section of various types of Markdown documents, and reorganizing it into a structured format. Ensure the most of the content is retained.
 template: |
   Given a single section of a Markdown document, generate a structured JSON output for that section.
   Step-by-Step Instructions:
   1. Identify Subsections: Within the provided section, use heading levels (e.g., H2, H3) and logical relationships to identify subsections.
   2. Extract Titles and Content: generate concise (<= 5 words) and appropriate titles based on content. Ensure the content is complete and not truncated.
   3. Process Content:
-    - Retain original text as provided, but refine it by removing unnecessary elements like citations (e.g., [1], (Author, 2020)), trivial repetitive or unwanted elements such as headers, footers, and text within `~~` (deleted content) to ensure conciseness. Ensure the most important content is retained without truncation.
-  4. Extract and structure exactly the number of media elements specified in the input with their captions:
-    - Only image element (e.g., `![alt text](path/to/image)`) and table element (e.g., `| Col1 | Col2 |\n|------|------|\n| A    | B    |`) are media elements.
-    - For each media element, create an entry in the `medias` array of the relevant subsection.
-    - Extract captions from nearby text (typically labeled as "Figure X:", "Table X:", or similar patterns), and set `markdown_caption` to the extracted caption or `null` if none found.
-    - For images (e.g., `![alt text](path/to/image)`):
-      - Set `path` to the image path (e.g., `path/to/image`)
-      - Set `markdown_content` to the complete image markdown (e.g., `![alt text](path/to/image)`)
-    - For tables (markdown tables starting with `|`):
-      - Set `path` to `null`
-      - Set `markdown_content` to the complete table markdown including all rows (e.g., `| Col1 | Col2 |\n|------|------|\n| A    | B    |`)
-  5. Extract Available Metadata: Extract available metadata (e.g., title, author, publish date, organization, etc.) from the section’s content or context; include only the keys for which data is present.
+    - Retain original text as provided, and ensure the most important content is retained without truncation.
+  4. Extract Available Metadata: Extract available metadata (e.g., title, author, publish date, organization, etc.) from the section’s content or context; include only the keys for which data is present.
 
   Example Output:
   {
@@ -28,41 +18,20 @@ template: |
       "subsections": [
           {
               "title": "Subsection 1.1",
-              "content": "Refined content of subsection 1.1"
+              "content": "content of subsection 1.1"
           },
           {
               "title": "Subsection 1.2",
-              "content": "Refined content with image",
-              "medias": [
-                  {
-                      "markdown_content": "![](path/to/image)",
-                      "markdown_caption": "Caption inferred from nearby text", // `null` if no caption is found
-                      "path": "path/to/image"
-                  }
-              ]
+              "content": "content"
           },
           {
               "title": "Subsection 1.3",
-              "content": "Refined content with table",
-              "medias": [
-                  {
-                      "markdown_content": "| Col1 | Col2 |\n|------|------|\n| A    | B    |",
-                      "markdown_caption": "Table 1 caption from nearby text",
-                      "path": null
-                  },
-                  {
-                      "markdown_content": "| Col1 | Col2 |\n|------|------|\n| A    | B    |",
-                      "markdown_caption": "Table 2 caption from nearby text",
-                      "path": null
-                  }
-              ]
+              "content": "content"
           }
       ]
   }
 
   Input:
-
-  Number of Media Elements: {{ num_medias }}
 
   Markdown Document:
   {{ markdown_document }}
@@ -71,6 +40,5 @@ template: |
 
 jinja_args:
   - markdown_document
-  - num_medias
 use_model: language
 return_json: true

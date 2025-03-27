@@ -11,9 +11,9 @@ export PYTHONPATH=/PPTAgent/src:$PYTHONPATH
 
 # Launch Backend Server
 cd /PPTAgent
-python3 pptagent/ui/backend.py &
+python3 pptagent_ui/backend.py &
 
 # Launch Frontend Server
-cd pptagent/ui
+cd pptagent_ui
 npm install
 npm run serve

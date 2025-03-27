@@ -274,11 +274,9 @@ class PPTAgent(PPTGen):
             [layout.overview for layout in self.layouts.values()]
         )
         key_points = self.staffs["content_organizer"](content_source=content_source)
-        slide_content = (
-            json.dumps(key_points, indent=2, ensure_ascii=False)
-            + "\nImages:\n"
-            + images
-        )
+        slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
+        if len(images) > 0:
+            slide_content += "\nImages:\n" + "\n".join(images)
         layout_selection = self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
@@ -319,8 +317,7 @@ class PPTAgent(PPTGen):
             metadata=self.source_doc.metainfo,
             slide_content=slide_content,
         )
-        command_list = self._generate_commands(editor_output, layout)
-        template_id = layout.get_slide_id(editor_output)
+        command_list, template_id = self._generate_commands(editor_output, layout)
         edit_actions = self.staffs["coder"](
             api_docs=code_executor.get_apis_docs(API_TYPES.Agent.value),
             edit_target=self.presentation.slides[template_id - 1].to_html(),
@@ -367,6 +364,8 @@ class PPTAgent(PPTGen):
             layout.validate(
                 editor_output, self.length_factor, self.source_doc.image_dir
             )
+            old_data = layout.get_old_data(editor_output)
+            template_id = layout.get_slide_id(editor_output)
         except Exception as e:
             if retry < self.retry_times:
                 new_output = self.staffs["editor"].retry(
@@ -380,7 +379,6 @@ class PPTAgent(PPTGen):
                     f"Failed to generate commands, tried too many times at editing\ntraceback: {e}"
                 )
 
-        old_data = layout.get_old_data(editor_output)
         for el_name, old_content in old_data.items():
             if not isinstance(old_content, list):
                 old_content = [old_content]
@@ -401,7 +399,7 @@ class PPTAgent(PPTGen):
             )
 
         assert len(command_list) > 0, "No commands generated"
-        return command_list
+        return command_list, template_id
 
 
 class PPTAgentAsync(PPTGen):
@@ -669,6 +667,8 @@ class PPTAgentAsync(PPTGen):
             layout.validate(
                 editor_output, self.length_factor, self.source_doc.image_dir
             )
+            old_data = layout.get_old_data(editor_output)
+            template_id = layout.get_slide_id(editor_output)
         except Exception as e:
             if retry < self.retry_times:
                 new_output = await self.staffs["editor"].retry(
@@ -682,7 +682,6 @@ class PPTAgentAsync(PPTGen):
                     f"Failed to generate commands, tried too many times at editing\ntraceback: {e}"
                 )
 
-        old_data = layout.get_old_data(editor_output)
         for el_name, old_content in old_data.items():
             if not isinstance(old_content, list):
                 old_content = [old_content]
@@ -703,4 +702,4 @@ class PPTAgentAsync(PPTGen):
             )
 
         assert len(command_list) > 0, "No commands generated"
-        return command_list
+        return command_list, template_id

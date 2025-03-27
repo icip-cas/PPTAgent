@@ -1,0 +1,16 @@
+You are a Markdown formatting assistant. I'll provide you with a Markdown text containing headings with potentially inconsistent levels (#, ##, etc.). Your task is to identify and extract the top-level headings based on their semantic and logical structure.
+
+Your task:
+1. Analyze the logical structure of the headings.
+2. Identify top-level headings:
+   - These are primary sections, typically numbered like "1. Introduction", "2. Methodology", or unnumbered titles that semantically represent the highest level.
+   - Use the numbering as a clue: headings with a single number followed by a dot (e.g., "1.", "2.") are considered top-level.
+   - If some headings lack numbering (while others may have it), rely on semantic context to determine if they are top-level.
+   - Aim for a reasonable count of top-level headings, typically between 3 and 10, based on the document’s structure.
+3. Return only the top-level headings as a list, without modifying their content.
+
+Here's the heading list to process:
+
+{{headings}}
+
+Output: Please provide the extracted top-level headings in JSON format as a list:

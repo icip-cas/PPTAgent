@@ -14,6 +14,7 @@ template: |
     Slide Functionality: If the current slide is the first, last, or represents a table of contents or section outline, it must select from the functional layouts.
     Content Fit: Evaluate whether the layout’s number of elements matches the input, whether the text length and element length are appropriate, and whether the layout name aligns with the theme.
     Image Fit: Assess the relevance of the images to the theme and their enhancement to the content; if highly relevant and beneficial, prioritize layouts with images; if relevance is low or text dominates, a text-only layout may be chosen.
+    If no images are provided, use the text-only layout.
   - Output:
     - Layout name.
     - Detailed Reasoning: Analyze the fit between the layout and content (element count, text length, theme alignment) and the fit between images and content (relevance and enhancement), explaining why this layout was chosen and whether images are used.

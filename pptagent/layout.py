@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass
-from typing import Literal
+from typing import Literal, Optional
 
 from pptagent.utils import pbasename, pexists, pjoin
 
@@ -88,6 +88,12 @@ class Layout:
             vary_mapping=data.get("vary_mapping", None),
         )
 
+    def __contains__(self, key: str):
+        for el in self.elements:
+            if el.el_name == key:
+                return True
+        return False
+
     def __getitem__(self, key: str):
         for el in self.elements:
             if el.el_name == key:
@@ -98,15 +104,17 @@ class Layout:
     def content_schema(self):
         return {el.el_name: el.get_schema() for el in self.elements}
 
-    def get_old_data(self, editor_output: dict = None):
+    def get_old_data(self, editor_output: Optional[dict] = None):
         if editor_output is None:
             return {el.el_name: el.content for el in self.elements}
         old_data = {}
         for el in self.elements:
             if el.variable_length is not None:
-                old_data[el.el_name] = el.variable_data[
-                    len(editor_output[el.el_name]["data"])
-                ]
+                key = str(len(editor_output[el.el_name]["data"]))
+                assert (
+                    key in el.variable_data
+                ), f"The length of element {el.el_name} varies between {el.variable_length[0]} and {el.variable_length[1]}, but got data of length {key} which is not supported"
+                old_data[el.el_name] = el.variable_data[key]
             else:
                 old_data[el.el_name] = el.content
         return old_data
@@ -125,6 +133,9 @@ class Layout:
                             or ["/path/to/image", "..."] for image elements
                         },
                     }"""
+            assert (
+                el_name in self
+            ), f"Element {el_name} is not a valid element, supported elements are {[el.el_name for el in self.elements]}"
             if length_factor is not None:
                 charater_counts = [len(i) for i in el_data["data"]]
                 if (
@@ -136,7 +147,6 @@ class Layout:
                         f"Please reduce the content length to maintain slide readability and visual balance. "
                         f"Current text: '{el_data['data']}'"
                     )
-
             if self[el_name].el_type == "image":
                 for i in range(len(el_data["data"])):
                     if pexists(pjoin(image_dir, el_data["data"][i])):
@@ -147,8 +157,9 @@ class Layout:
                             el_data["data"][i] = pjoin(image_dir, basename)
                         else:
                             raise ValueError(
-                                f"Image {el_data['data'][i]} not found"
-                                f"Please check the image path and use only existing images"
+                                f"Image {el_data['data'][i]} not found\n"
+                                "Please check the image path and use only existing images\n"
+                                "Or, leave a blank list for this element"
                             )
 
     @property
