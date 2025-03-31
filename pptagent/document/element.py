@@ -75,6 +75,7 @@ class Media:
         self.parse(language_model)
 
     def get_caption(self, vision_model: LLM):
+        assert self.path is not None, "Path is required to get caption"
         if self.caption is None:
             self.caption = vision_model(
                 IMAGE_CAPTION_PROMPT.render(
@@ -85,6 +86,7 @@ class Media:
             logger.info(f"Caption: {self.caption}")
 
     async def get_caption_async(self, vision_model: AsyncLLM):
+        assert self.path is not None, "Path is required to get caption"
         if self.caption is None:
             self.caption = await vision_model(
                 IMAGE_CAPTION_PROMPT.render(
@@ -123,37 +125,44 @@ class Table(Media):
             cells.append(
                 [cell.text for cell in row.find_all("td") + row.find_all("th")]
             )
+        for i in range(len(cells)):
+            row = cells[i]
+            unstacked = row[0].split("\n")
+            if len(unstacked) == len(row) and all(
+                cell.strip() == "" for cell in row[1:]
+            ):
+                cells[i] = unstacked
         return cells
 
-    def parse(self, language_model: LLM):
+    def parse(self, table_model: LLM):
         self.cells = self.get_cells()
-        # result = language_model(
-        #     TABLE_PARSING_PROMPT.render(cells=self.cells, caption=self.caption),
-        #     return_json=True,
-        # )
-        # self.merge_area = result["merge_area"]
-        # table = [row for row in result["table_data"]]
-        # if (
-        #     all(len(row) == len(table[0]) for row in table)
-        #     and len(table) == len(self.cells)
-        #     and len(table[0]) == len(self.cells[0])
-        # ):
-        #     self.cells = table
+        result = table_model(
+            TABLE_PARSING_PROMPT.render(cells=self.cells, caption=self.caption),
+            return_json=True,
+        )
+        self.merge_area = result["merge_area"]
+        table = [row for row in result["table_data"]]
+        if (
+            all(len(row) == len(table[0]) for row in table)
+            and len(table) == len(self.cells)
+            and len(table[0]) == len(self.cells[0])
+        ):
+            self.cells = table
 
-    async def parse_async(self, language_model: AsyncLLM):
+    async def parse_async(self, table_model: AsyncLLM):
         self.cells = self.get_cells()
-        # result = await language_model(
-        #     TABLE_PARSING_PROMPT.render(cells=self.cells, caption=self.caption),
-        #     return_json=True,
-        # )
-        # self.merge_area = result["merge_area"]
-        # table = [row for row in result["table_data"]]
-        # if (
-        #     all(len(row) == len(table[0]) for row in table)
-        #     and len(table) == len(self.cells)
-        #     and len(table[0]) == len(self.cells[0])
-        # ):
-        #     self.cells = table
+        result = await table_model(
+            TABLE_PARSING_PROMPT.render(cells=self.cells, caption=self.caption),
+            return_json=True,
+        )
+        self.merge_area = result["merge_area"]
+        table = [row for row in result["table_data"]]
+        if (
+            all(len(row) == len(table[0]) for row in table)
+            and len(table) == len(self.cells)
+            and len(table[0]) == len(self.cells[0])
+        ):
+            self.cells = table
 
     def get_caption(self, language_model: LLM):
         if self.caption is None:

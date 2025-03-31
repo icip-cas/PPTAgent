@@ -11,6 +11,7 @@ from typing import Optional, Union
 import PIL
 from bs4 import BeautifulSoup
 from mistune import html as markdown
+from pptx.enum.text import PP_ALIGN
 from pptx.oxml import parse_xml
 from pptx.shapes.base import BaseShape
 from pptx.shapes.graphfrm import GraphicFrame as PPTXGraphicFrame
@@ -333,6 +334,10 @@ def merge_cells(merge_area: list[tuple[int, int, int, int]], table: PPTXGraphicF
     for y1, x1, y2, x2 in merge_area:
         try:
             table.table.cell(x1, y1).merge(table.table.cell(x2, y2))
+            for x, y in zip(range(x1, x2 + 1), range(y1, y2 + 1)):
+                tf = table.table.cell(x, y).text_frame
+                for p in tf.paragraphs:
+                    p.alignment = PP_ALIGN.CENTER
         except Exception as e:
             logger.warning(f"Failed to merge cells: {e}")
 

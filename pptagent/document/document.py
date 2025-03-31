@@ -134,6 +134,7 @@ class Document:
         extractor: Agent,
         language_model: LLM,
         vision_model: LLM,
+        table_model: LLM,
         metadata: Optional[dict[str, Any]],
         section: Optional[dict[str, Any]],
         image_dir: str,
@@ -145,15 +146,14 @@ class Document:
             section = extractor(markdown_document=section)
             metadata = section.pop("metadata", {})
         try:
-
             section["subsections"] = link_medias(medias, section["subsections"])
             section = Section.from_dict(section)
             for media in section.iter_medias():
+                media.parse(table_model)
                 if isinstance(media, Table):
                     media.get_caption(language_model)
                 else:
                     media.get_caption(vision_model)
-                media.parse(language_model)
             section.validate_medias(image_dir, False)
         except Exception as e:
             if retry < 3:
@@ -163,6 +163,7 @@ class Document:
                     extractor,
                     language_model,
                     vision_model,
+                    table_model,
                     metadata,
                     new_section,
                     image_dir,
@@ -184,6 +185,7 @@ class Document:
         extractor: AsyncAgent,
         language_model: AsyncLLM,
         vision_model: AsyncLLM,
+        table_model: Optional[AsyncLLM],
         metadata: Optional[dict[str, Any]],
         section: Optional[dict[str, Any]],
         image_dir: str,
@@ -198,11 +200,11 @@ class Document:
             section["subsections"] = link_medias(medias, section["subsections"])
             section = Section.from_dict(section)
             for media in section.iter_medias():
+                await media.parse_async(table_model)
                 if isinstance(media, Table):
                     await media.get_caption_async(language_model)
                 else:
                     await media.get_caption_async(vision_model)
-                await media.parse_async(language_model)
             section.validate_medias(image_dir, False)
         except Exception as e:
             if retry < 3:
@@ -214,6 +216,7 @@ class Document:
                     extractor,
                     language_model,
                     vision_model,
+                    table_model,
                     metadata,
                     new_section,
                     image_dir,
@@ -236,6 +239,7 @@ class Document:
         language_model: LLM,
         vision_model: LLM,
         image_dir: str,
+        table_model: Optional[LLM] = None,
     ):
         """
         Create a Document from markdown content.
@@ -267,6 +271,7 @@ class Document:
                 doc_extractor,
                 language_model,
                 vision_model,
+                table_model,
                 None,
                 chunk,
                 image_dir,
@@ -289,6 +294,7 @@ class Document:
         language_model: AsyncLLM,
         vision_model: AsyncLLM,
         image_dir: str,
+        table_model: Optional[AsyncLLM] = None,
     ):
         doc_extractor = AsyncAgent(
             "doc_extractor",
@@ -305,6 +311,7 @@ class Document:
                 doc_extractor,
                 language_model,
                 vision_model,
+                table_model,
                 None,
                 chunk,
                 image_dir,

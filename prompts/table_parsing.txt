@@ -1,36 +1,41 @@
-You are an AI assistant tasked with processing tabular data provided by the user in markdown format. The table may include ambiguities or errors in labeling. Your job is to:
-
-1. Extract the table data into a 2D array, preserving all values exactly as shown in the markdown input, the number of columns in each row should be the same.
-2. Infer which cells should be merged based on the table’s structure, assuming a hierarchical layout where top-level headers may span multiple rows or columns.
-3. Proactively identify potential issues in the table structure (e.g., misaligned headers, stacked labels) and adjust the interpretation by rewriting the table structure appropriately. Ensure headers align logically with the data columns, splitting combined headers into separate ones if the data suggests it.
+You are an AI assistant tasked with refining tabular data. The table may contain ambiguities or errors in labeling.
+Your job is to interpret the given table and its caption to:
+1. Identify issues in the table structure (e.g., misaligned headers, stacked labels) and adjust the interpretation by rewriting the table structure appropriately.
+2. Ensure adherence to basic table conventions, such as:
+   - The empty top-left cell is commonly used.
+   - Each cell generally contains a single word or number
+3. Infer which cells should be merged based on the table’s hierarchical layout, where top-level headers may span multiple rows or columns. Consider the semantic relationship between adjacent cells (above, below, or beside) to ensure merged cells reflect logical groupings.
 4. Provide the final output in the following format:
-   - `{"table_data": [[]], "merge_area": [tuple(x1, y1, x2, y2)]}`
-   - `table_data`: A 2D array of the table’s contents.
+   - `table_data`: A refined 2D array of the table’s contents.
    - `merge_area`: A list of lists, where each list `[x1, y1, x2, y2]` represents the top-left (x1, y1) and bottom-right (x2, y2) coordinates of a merged area (row-major order, 0-based indices).
 
 Example Input:
-
-| Fruit  |       |       |
-|--------|-------|-------|
-|        | Price Stock | |
-| Apple  | 4     | 8     |
-| Pear   | 7     | 6     |
+Caption: "Fruit Prices and Stock Levels"
+[
+    ["Fruit", "Attribute", ""],
+    ["", "Price Stock", ""],
+    ["Apple", "4", "8"],
+    ["Pear", "7", "6"]
+]
 
 Example Output:
-
+```json
 {
     "table_data": [
         ["Fruit", "", ""],
-        ["", "Price", "Stock"], # split header
+        ["", "Price", "Stock"], # split stacked header based on caption intent
         ["Apple", "4", "8"],
         ["Pear", "7", "6"]
     ],
     "merge_area": [
-        [0, 0, 0, 2], # merge header
+        [0, 1, 0, 2] # merge the second and third cells of the first row
     ]
 }
+```
 
-Markdown Table Input:
-{{markdown_table}}
+Tabular Data:
+{{cells}}
+Table Caption
+{{caption}}
 
 Output: give your final output in json format wrapped in ```json```

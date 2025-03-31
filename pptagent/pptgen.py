@@ -571,11 +571,9 @@ class PPTAgentAsync(PPTGen):
         key_points = await self.staffs["content_organizer"](
             content_source=content_source
         )
-        slide_content = (
-            json.dumps(key_points, indent=2, ensure_ascii=False)
-            + "\nImages:\n"
-            + images
-        )
+        slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
+        if len(images) > 0:
+            slide_content += "\nImages:\n" + "\n".join(images)
         layout_selection = await self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
