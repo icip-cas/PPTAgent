@@ -448,12 +448,12 @@ class OutlineItem:
             f"Slide-{slide_idx+1}: {self.purpose}\nDescription: {self.description}\n"
         )
         content = ""
-        images = []
         for subsection in subsections:
             content += f"Paragraph: {subsection.title}\nContent: {subsection.content}\n"
-            if subsection.medias is not None:
-                for media in subsection.medias:
-                    images.append(
-                        f"Image: {media.path}\nSize: {media.size}\nCaption: {media.caption}"
-                    )
+        images = []
+        for sec_key in self.indexs:
+            for media in document[sec_key].iter_medias():
+                images.append(
+                    f"Image: {media.path}\nSize: {media.size}\nCaption: {media.caption}"
+                )
         return header, content, images

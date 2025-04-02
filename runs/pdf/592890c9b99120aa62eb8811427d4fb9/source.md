@@ -30,10 +30,6 @@ Overview 概述 Buy 买
 
 **有您喜欢的事情,例如⾼强度游戏。**
 
-![](_page_0_Picture_11.jpeg)
-
-![](_page_0_Figure_12.jpeg)
-
 **Premium Grade 5 titanium is**
 
 **Premium Grade 5 titanium is**
@@ -69,8 +65,6 @@ Overview 概述 Buy 买
 **Make a Genmoji right in the keyboard to match any conversation. Want to create a disco ball pigeon? You got it. Just provide a description. Awareness of your personal context enables Siri to help you in ways that are unique to you. Need your passport number while booking a flight? Siri can help find what you're looking for, without compromising your privacy. Writing Tools can proofread your text and rewrite different versions until the tone and wording are just right, and summarize selected text with a tap. They're available nearly everywhere you write, including thirdparty apps.**
 
 **The Image Playground app lets you create unique images in seconds based on a description, a concept, or even a person from your Photos library. Experiment with image styles like animation, illustration, and sketch. Richer language understanding and an enhanced voice make communicating with Siri even more natural. For example, if you stumble over your words, Siri still knows what you're getting at. Just hit record in the Notes or Phone app to capture audio recordings and transcripts. Apple Intelligence generates summaries of your transcripts, so you can get the most important info at a glance.**
-
-![](_page_0_Picture_28.jpeg)
 
 **With Clean Up, you can remove distracting background objects from your photos with just a tap — so you can perfect a shot while staying true to the original image. Not sure how to do something on iPhone, like adjust the background blur on a portrait? With expansive product knowledge, Siri can give you step-by-step instructions in a snap. Priority messages in Mail elevate timesensitive messages to the top of your inbox — like an invitation that has a deadline today or a check-in reminder for your flight this afternoon.**
 
@@ -140,8 +134,6 @@ A herd of Icelandic horses, captured in stunning 4K 120 fps Dolby Vision
 
 **So you can capture a mesmerizing new level of detail in macro photos and sweeping, wide-angle shots.**
 
-![](_page_1_Picture_22.jpeg)
-
 Macro 13 mm 24 mm 28 mm 35 mm 48 mm 120 mm
 
 **0.5x Ultra Wide**
@@ -151,8 +143,6 @@ Macro 13 mm 24 mm 28 mm 35 mm 48 mm 120 mm
 **Choose your Photographic Style. Change it up. Change it back.**
 
 > **Our latest generation of Photographic Styles gives you greater creative flexibility than ever before, so you can make every photo even more you. And thanks to advances in our image pipeline, you can now reverse any style, anytime.**
-
-![](_page_1_Picture_29.jpeg)
 
 ## **Lock in your look.**
 
@@ -202,8 +192,6 @@ DEATH STRANDING DIRECTOR'S CUT
 
 ![](_page_2_Picture_18.jpeg)
 
-![](_page_2_Figure_19.jpeg)
-
 **Compare with**
 
 **iPhone 12 Pro**
@@ -219,8 +207,6 @@ DEATH STRANDING DIRECTOR'S CUT
 **16 more hours**
 
 # **iOS 18. Customize. Stylize. Mesmerize.**
-
-![](_page_2_Figure_27.jpeg)
 
 **Personalize your Home Screen. Tint your icons with any color. Rearrange and resize apps and widgets. You can even lock or hide apps to protect sensitive information — it's your call.**
 
@@ -258,8 +244,6 @@ DEATH STRANDING DIRECTOR'S CUT
 
 **When you're within range and make a 911 emergency call, iPhone 16 Pro gives you the option to start sharing a live feed with 911 responders for quick and effective assistance.** l
 
-![](_page_2_Picture_43.jpeg)
-
 **Crash Detection uses hardware sensors and advanced motion algorithms to detect a severe car crash, then call 911 and notify your emergency contacts when you can't — even when you don't have service. m<**
 
 # **Designed to make a difference.**
@@ -290,8 +274,6 @@ DEATH STRANDING DIRECTOR'S CUT
 
 **devices with end-to-end**
 
-![](_page_2_Picture_63.jpeg)
-
 # **You can also control**
 
 **which contacts to share with an app, rather than giving it access to all your contacts. And you can choose to share more contacts over time.** **devices with end-to-end encryption.**
@@ -299,8 +281,6 @@ DEATH STRANDING DIRECTOR'S CUT
 **Learn about Apple and privacy**
 
 ## **Accessibility**
-
-![](_page_3_Picture_3.jpeg)
 
 **Eye Tracking makes it possible to navigate your iPhone and use your favorite apps just by moving your eyes, thanks to the power of machine learning and the front-facing camera.**
 
@@ -330,8 +310,6 @@ With iPhone Mirroring, you can view your iPhone screen on your Mac and control i
 
 ## **Keep exploring iPhone.** Explore all iPhone
 
-![](_page_3_Picture_22.jpeg)
-
 #### New **iPhone 16 Pro**
 
 **From $999 or $41.62/mo. for 24 mo.** d
@@ -341,8 +319,6 @@ Currently viewing
 Buy
 
 ![](_page_3_Picture_27.jpeg)
-
-![](_page_3_Picture_28.jpeg)
 
 A18 Pro chip with 6-core GPU
 
@@ -437,4 +413,3 @@ Some features require specific hardware and software. For more information, see 
 | Apple Cash |  |  | Shop for Veterans and Military |  |
 
 More ways to shop: Find an Apple Store or other retailer near you. Or call 1-800-MY-APPLE.
-

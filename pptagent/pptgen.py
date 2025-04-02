@@ -292,7 +292,11 @@ class PPTAgent(PPTGen):
         )
         if "image" in layout and len(images) == 0:
             logger.info(
-                f"An image layout is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
+                f"An image layout: {layout} is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
+            )
+        elif "image" not in layout and len(images) > 0:
+            logger.info(
+                f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}"
             )
         return self.edit_slide(
             self.layouts[layout], slide_content, slide_description=header
@@ -605,7 +609,7 @@ class PPTAgentAsync(PPTGen):
             )
         elif "image" not in layout and len(images) > 0:
             logger.info(
-                f"An image layout is not selected, but images are provided, please check the parsed document and outline item:\n {outline_item}"
+                f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}"
             )
         return await self.edit_slide(
             self.layouts[layout], slide_content, slide_description=header

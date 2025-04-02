@@ -1,1 +1,537 @@
-{"metadata": {"title": "Building Effective Agents", "author": "Erik Schluntz and Barry Zhang", "publish date": "2024\u5e7412\u670820\u65e5", "organization": "Anthropic"}, "sections": [{"title": "What are agents?", "subsections": [{"title": "Definition and Variations", "content": "An 'agent' can be defined in several ways. Some customers define agents as fully autonomous systems that operate independently over extended periods, using various tools to accomplish complex tasks. Others use the term to describe more prescriptive implementations that follow predefined workflows. At Anthropic, we categorize all these variations as agentic systems, but draw an important architectural distinction between workflows and agents: Workflows are systems where LLMs and tools are orchestrated through predefined code paths. Agents, on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks."}]}, {"title": "When (and when not) to use agents", "subsections": [{"title": "General Guidance", "content": "When building applications with LLMs, we recommend finding the simplest solution possible, and only increasing complexity when needed. This might mean not building agentic systems at all. Agentic systems often trade latency and cost for better task performance, and you should consider when this tradeoff makes sense. When more complexity is warranted, workflows offer predictability and consistency for well-defined tasks, whereas agents are the better option when flexibility and model-driven decision-making are needed at scale."}]}, {"title": "When and how to use frameworks", "subsections": [{"title": "Common Frameworks", "content": "There are many frameworks that make agentic systems easier to implement, including LangGraph from LangChain, Amazon Bedrock's AI Agent framework, Rivet, and Vellum. These frameworks simplify standard low-level tasks like calling LLMs, defining and parsing tools, and chaining calls together. However, they often create extra layers of abstraction that can obscure the underlying prompts and responses, making them harder to debug. We suggest that developers start by using LLM APIs directly: many patterns can be implemented in a few lines of code. If you do use a framework, ensure you understand the underlying code."}]}, {"title": "Building blocks, workflows, and agents", "subsections": [{"title": "Building Block: The Augmented LLM", "content": "The basic building block of agentic systems is an LLM enhanced with augmentations such as retrieval, tools, and memory. Our current models can actively use these capabilities\u2014generating their own search queries, selecting appropriate tools, and determining what information to retain. We recommend focusing on two key aspects of the implementation: tailoring these capabilities to your specific use case and ensuring they provide an easy, well-documented interface for your LLM."}, {"title": "Workflow: Prompt Chaining", "content": "Prompt chaining decomposes a task into a sequence of steps, where each LLM call processes the output of the previous one. You can add programmatic checks on any intermediate steps to ensure that the process is still on track. This workflow is ideal for situations where the task can be easily and cleanly decomposed into fixed subtasks. The main goal is to trade off latency for higher accuracy, by making each LLM call an easier task."}, {"title": "Workflow: Routing", "content": "Routing classifies an input and directs it to a specialized follow-up task. This workflow allows for separation of concerns, and building more specialized prompts. Without this workflow, optimizing for one kind of input can hurt performance on other inputs. Routing works well for complex tasks where there are distinct categories that are better handled separately, and where classification can be handled accurately, either by an LLM or a more traditional classification model/algorithm."}, {"title": "Workflow: Parallelization", "content": "LLMs can sometimes work simultaneously on a task and have their outputs aggregated programmatically. This workflow, parallelization, manifests in two key variations: Sectioning, which breaks a task into independent subtasks run in parallel, and Voting, which runs the same task multiple times to get diverse outputs. Parallelization is effective when the divided subtasks can be parallelized for speed, or when multiple perspectives or attempts are needed for higher confidence results."}, {"title": "Workflow: Orchestrator-workers", "content": "In the orchestrator-workers workflow, a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results. This workflow is particularly useful for complex tasks where you can't predict the subtasks needed, such as in coding tasks where the number of files that need to be changed and the nature of the change in each file depend on the task. The key difference from parallelization is its flexibility\u2014subtasks aren't predefined, but determined by the orchestrator based on the specific input."}, {"title": "Workflow: Evaluator-optimizer", "content": "In the evaluator-optimizer workflow, one LLM call generates a response while another provides evaluation and feedback in a loop. This workflow is particularly effective when we have clear evaluation criteria, and when iterative refinement provides measurable value. The two signs of good fit are, first, that LLM responses can be demonstrably improved when a human articulates their feedback; and second, that the LLM can provide such feedback. This is analogous to the iterative writing process a human writer might go through when producing a polished document."}]}, {"title": "Agents", "subsections": [{"title": "Autonomous Agents", "content": "Agents are emerging in production as LLMs mature in key capabilities\u2014understanding complex inputs, engaging in reasoning and planning, using tools reliably, and recovering from errors. Agents begin their work with a command from, or interactive discussion with, the human user. Once the task is clear, agents plan and operate independently, potentially returning to the human for further information or judgment. During execution, it's crucial for the agents to gain 'ground truth' from the environment at each step to assess its progress. Agents can then pause for human feedback at checkpoints or when encountering blockers. The task often terminates upon completion, but it's also common to include stopping conditions to maintain control."}, {"title": "When to Use Agents", "content": "Agents can be used for open-ended problems where it's difficult or impossible to predict the required number of steps, and where you can't hardcode a fixed path. The LLM will potentially operate for many turns, and you must have some level of trust in its decision-making. Agents' autonomy makes them ideal for scaling tasks in trusted environments. However, the autonomous nature of agents means higher costs and the potential for compounding errors. We recommend extensive testing in sandboxed environments, along with the appropriate guardrails."}]}, {"title": "Combining and Customizing These Patterns", "subsections": [{"title": "Key to Success", "content": "These building blocks aren't prescriptive. They're common patterns that developers can shape and combine to fit different use cases. The key to success, as with any LLM features, is measuring performance and iterating on implementations. You should consider adding complexity only when it demonstrably improves outcomes."}]}, {"title": "Summary", "subsections": [{"title": "Key Principles", "content": "Success in the LLM space isn't about building the most sophisticated system. It's about building the right system for your needs. Start with simple prompts, optimize them with comprehensive evaluation, and add multi-step agentic systems only when simpler solutions fall short. When implementing agents, we try to follow three core principles: 1. Maintain simplicity in your agent's design. 2. Prioritize transparency by explicitly showing the agent's planning steps. 3. Carefully craft your agent-computer interface (ACI) through thorough tool documentation and testing."}]}, {"title": "Appendix 1: Agents in Practice", "subsections": [{"title": "A. Customer Support", "content": "Customer support combines familiar chatbot interfaces with enhanced capabilities through tool integration. This is a natural fit for more open-ended agents because support interactions naturally follow a conversation flow while requiring access to external information and actions. Tools can be integrated to pull customer data, order history, and knowledge base articles. Actions such as issuing refunds or updating tickets can be handled programmatically. Success can be clearly measured through user-defined resolutions. Several companies have demonstrated the viability of this approach through usage-based pricing models that charge only for successful resolutions, showing confidence in their agents' effectiveness."}, {"title": "B. Coding Agents", "content": "The software development space has shown remarkable potential for LLM features, with capabilities evolving from code completion to autonomous problem-solving. Agents are particularly effective because code solutions are verifiable through automated tests, agents can iterate on solutions using test results as feedback, the problem space is well-defined and structured, and output quality can be measured objectively. In our own implementation, agents can now solve real GitHub issues in the SWEbench Verified benchmark based on the pull request description alone. However, while automated testing helps verify functionality, human review remains crucial for ensuring solutions align with broader system requirements."}]}, {"title": "Appendix 2: Prompt Engineering Your Tools", "subsections": [{"title": "Best Practices", "content": "No matter which agentic system you're building, tools will likely be an important part of your agent. Tools enable Claude to interact with external services and APIs by specifying their exact structure and definition in our API. Tool definitions and specifications should be given just as much prompt engineering attention as your overall prompts. When deciding on tool formats, give the model enough tokens to 'think' before it writes itself into a corner. Keep the format close to what the model has seen naturally occurring in text on the internet. Make sure there's no formatting 'overhead' such as having to keep an accurate count of thousands of lines of code, or string-escaping any code it writes. Put yourself in the model's shoes. Is it obvious how to use this tool, based on the description and parameters, or would you need to think carefully about it? If so, then it's probably also true for the model. Test how the model uses your tools: Run many example inputs in our workbench to see what mistakes the model makes, and iterate. While building our agent for SWE-bench, we actually spent more time optimizing our tools than the overall prompt. For example, we found that the model would make mistakes with tools using relative filepaths after the agent had moved out of the root directory. To fix this, we changed the tool to always require absolute filepaths\u2014and we found that the model used this method flawlessly."}]}]}
+{
+    "image_dir": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2",
+    "sections": [
+        {
+            "title": "Product 产品",
+            "subsections": []
+        },
+        {
+            "title": "Building effective agents",
+            "subsections": [
+                {
+                    "title": "What are agents?",
+                    "content": "代理可以通过多种方式定义。一些客户将代理定义为完全自主的系统,可以长时间独立运行,使用各种工具完成复杂的任务。其他使用该术语描述遵循预定义工作流程的更具规范性的实现。在 Anthropic,我们将所有这些变体归类为代理系统,但在工作流和代理之间划出了重要的架构区别:\n- 工作流是通过预定义的代码路径编排 LLMs 和工具的系统。\n- 代理是 LLMs 动态指导自己的流程和工具使用的系统,保持对其完成任务方式的控制。",
+                    "medias": [
+                        {
+                            "markdown_content": "![](_page_0_Figure_45.jpeg)",
+                            "near_chunks": [
+                                "The basic building block of agentic systems is an LLM enhanced with augmentations such as retrieval, tools, and memory. Our current models can actively use these capabilities—generating their own search queries, selecting appropriate tools, and determining what information to retain. 代理系统的基本构建模块是通过检索、⼯具和记忆等增强功能增强的LLM 。我们当前的 模型可以积极使⽤这些功能——⽣成⾃⼰的搜索查询、选择适当的⼯具以及确定要保留 哪些信息。\n\n",
+                                "The augmented LLM 增强型LLM\n\n- We recommend focusing on two key aspects of the implementation: tailoring these capabilities to your specific use case and ensuring they provide an easy, welldocumented interface for your LLM. While there are many ways to implement these augmentations, one approach is through our recently released Model\nContext Protocol, which allows developers to integrate with a growing ecosystem of third-party tools with a simple client implementation. 我们建议重点关注实施的两个关键⽅⾯:根据您的特定⽤例定制这些功能,并确保它们\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/_page_0_Figure_45.jpeg",
+                            "caption": "Diagram: Flowchart illustrating LLM process from input to output, involving retrieval, tools, and memory functions. Arrows indicate interactions between components.\n\n Nearby chunks are irrelevant to the image content."
+                        },
+                        {
+                            "markdown_content": "![](_page_0_Figure_55.jpeg)",
+                            "near_chunks": [
+                                "提⽰链接将任务分解为⼀系列步骤,其中每个LLM调⽤都会处理前⼀个步骤的输出。您 可以在任何中间步骤上添加编程检查(请参见下图中的\"门\"),以确保流程仍按计划进 ⾏。\n\nPrompt chaining decomposes a task into a sequence of steps, where each LLM call processes the output of the previous one. You can add programmatic checks (see \"gate\" in the diagram below) on any intermediate steps to ensure that the process is still on track.\n\n",
+                                "The prompt chaining workflow 提示链接⼯作流程\n\nWhen to use this workflow: This workflow is ideal for situations where the task can be easily and cleanly decomposed into fixed subtasks. The main goal is to trade off latency for higher accuracy, by making each LLM call an easier task.\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/_page_0_Figure_55.jpeg",
+                            "caption": "Diagram: Flowchart illustrating a process with three LLM calls, a gate for validation, and an exit path for failure. Arrows indicate the flow from input to output.\n\n"
+                        },
+                        {
+                            "markdown_content": "|  |  | LLM Call 1 |  |\n| --- | --- | --- | --- |\n| ln | LLM Call Router | LLM Call 2 | Out |\n|  |  | LLM Call 3 | 门 |",
+                            "near_chunks": [
+                                "路由对输⼊进⾏分类,并将其引导⾄专门的后续任务。此⼯作流程允许分离关注点并构 建更专业的提⽰。如果没有此⼯作流程,针对⼀种输⼊的优化可能会损害其他输⼊的性 能。\n\nRouting classifies an input and directs it to a specialized followup task. This workflow allows for separation of concerns, and building more specialized prompts. Without this workflow, optimizing for one kind of input can hurt performance on other inputs.\n\n",
+                                "The routing workflow 路由⼯作流程\n\nWhen to use this workflow: Routing works well for complex tasks where there are distinct categories that are better handled separately, and where classification can be handled accurately, either by an LLM or a more traditional classification model/algorithm.\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/table_e1b6.png",
+                            "caption": "Table: Routing Workflow for LLM Calls, showing the classification and direction of inputs to specialized tasks.",
+                            "cells": [
+                                [
+                                    "",
+                                    "",
+                                    "LLM Call 1",
+                                    ""
+                                ],
+                                [
+                                    "ln",
+                                    "LLM Call Router",
+                                    "LLM Call 2",
+                                    "Out"
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "LLM Call 3",
+                                    "门"
+                                ]
+                            ],
+                            "merge_area": null
+                        },
+                        {
+                            "markdown_content": "|  | 1 | LLM Call 1 | 7 |  |  |\n| --- | --- | --- | --- | --- | --- |\n| In | > | LLM Call 2 | > | Aggregator | > Out |\n|  |  | LLM Call 3 | Σ |  |  |",
+                            "near_chunks": [
+                                "- Sectioning: Breaking a task into independent subtasks run in parallel.\n- 分段:将任务分解为并⾏运⾏的独⽴⼦任务。\n- Voting: Running the same task multiple times to get diverse outputs. 投票:多次运⾏同⼀任务以获得不同的输出。\n\nLLMs有时可以同时完成⼀项任务,并以编程⽅式汇总其输出。此⼯作流程(并⾏化) 体现在两个关键变体中:\n\nLLMs can sometimes work simultaneously on a task and have their outputs aggregated programmatically. This workflow, parallelization, manifests in two key variations:\n\n",
+                                "#### The parallelization workflow\n\n并⾏化⼯作流程\n\nWhen to use this workflow: Parallelization is effective when the divided subtasks can be parallelized for speed, or when multiple perspectives or attempts are needed for higher confidence results. For complex tasks with multiple considerations, LLMs generally perform better when each consideration is\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/table_c538.png",
+                            "caption": "Table: Workflow of Parallelized LLM Calls, showing the aggregation of multiple LLM outputs to produce a final result.",
+                            "cells": [
+                                [
+                                    "",
+                                    "1",
+                                    "LLM Call 1",
+                                    "7",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "In",
+                                    ">",
+                                    "LLM Call 2",
+                                    ">",
+                                    "Aggregator",
+                                    "> Out"
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "LLM Call 3",
+                                    "Σ",
+                                    "",
+                                    ""
+                                ]
+                            ],
+                            "merge_area": null
+                        },
+                        {
+                            "markdown_content": "|  |  |  | ----> | LLM Call 1 |  |  |  |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| In | > | Orchestrator | ········· | LLM Call 2 | ········· | Synthesizer | > Out |\n|  |  |  |  | LLM Call 3 | កា |  |  |",
+                            "near_chunks": [
+                                "在orchestrator-workers⼯作流程中,中央LLM动态分解任务,将它们委托给worker LLMs ,并综合其结果。\n\nIn the orchestrator-workers workflow, a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results.\n\n#### Workflow: Orchestrator-workers\n\n- Reviewing a piece of code for vulnerabilities, where several different prompts review and flag the code if they find a problem.\n\t- Evaluating whether a given piece of content is inappropriate, with\n\t- multiple prompts evaluating different aspects or requiring different vote thresholds to balance false positives and negatives.\n\n",
+                                "you can't predict the subtasks needed (in coding, for example, the number of files that need to be changed and the nature of the change in each file likely depend on the task). Whereas it's topographically similar, the key difference from parallelization is its flexibility—subtasks aren't pre-defined, but determined by the orchestrator based on the specific input.\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/table_c438.png",
+                            "caption": "Table: Workflow showing the orchestrator delegating tasks to worker LLMs and synthesizing their results.",
+                            "cells": [
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "---->",
+                                    "LLM Call 1",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "In",
+                                    ">",
+                                    "Orchestrator",
+                                    "·········",
+                                    "LLM Call 2",
+                                    "·········",
+                                    "Synthesizer",
+                                    "> Out"
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "LLM Call 3",
+                                    "កា",
+                                    "",
+                                    ""
+                                ]
+                            ],
+                            "merge_area": null
+                        },
+                        {
+                            "markdown_content": "![](_page_0_Figure_111.jpeg)",
+                            "near_chunks": [
+                                "在评估器-优化器⼯作流程中,⼀个LLM调⽤⽣成响应,⽽另⼀个调⽤则在循环中提供评 估和反馈。\n\nIn the evaluator-optimizer workflow, one LLM call generates a response while another provides evaluation and feedback in a loop.\n\n⼯作流程:评估器-优化器\n\nWorkflow: Evaluator-optimizer\n\n- Orchestrator-Workers 有⽤的⽰例:\n\t- Coding products that make complex changes to multiple files each time. Search tasks that involve gathering and analyzing information from multiple sources for possible relevant information.\n\n",
+                                "The evaluator-optimizer workflow\n\n评估器-优化器⼯作流程\n\nWhen to use this workflow: This workflow is particularly effective when we have clear evaluation criteria, and when iterative refinement provides measurable value. The two signs of good fit are, first, that LLM responses can be demonstrably improved when a human articulates their feedback; and second, that the LLM can provide such feedback. This is analogous to the iterative writing process a human writer might go through when producing a polished document.\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/_page_0_Figure_111.jpeg",
+                            "caption": "Diagram: Flowchart illustrating an evaluator-optimizer workflow with input leading to generator and evaluator steps, resulting in accepted output or feedback loop for rejected solutions."
+                        },
+                        {
+                            "markdown_content": "![](_page_0_Figure_125.jpeg)",
+                            "near_chunks": [
+                                "环环境反馈的⼯具。因此,清晰且深思熟虑地设计⼯具集及其⽂档⾄关重要。我们在附 录 2(\"提⽰设计您的⼯具\")中详细介绍了⼯具开发的最佳实践。\n\nAgents can handle sophisticated tasks, but their implementation is often straightforward. They are typically just LLMs using tools based on environmental feedback in a loop. It is therefore crucial to design toolsets and their documentation clearly and thoughtfully. We expand on best practices for tool development in Appendix 2 (\"Prompt Engineering your Tools\"). 代理可以处理复杂的任务,但它们的实现通常很简单。他们通常只是LLMs使⽤基于循\n\n",
+                                "Autonomous agent ⾃主代理\n\nWhen to use agents: Agents can be used for open-ended problems where it's difficult or impossible to predict the required number of steps, and where you can't hardcode a fixed path. The LLM will potentially operate for many turns, and you\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/_page_0_Figure_125.jpeg",
+                            "caption": "Background: A plain white background with no discernible features or objects. \n\nThe nearby chunks provide context about autonomous agents and tool design but are unrelated to the image content."
+                        },
+                        {
+                            "markdown_content": "| 我们的\"计算机使⽤\"参考实现,克劳德使⽤计算机来完成任务。 |\n| --- |",
+                            "near_chunks": [
+                                "- A coding Agent to resolve SWE-bench tasks, which involve edits to many files based on a task description;\n\t- ⽤于解决SWE-bench 任务的编码代理,其中涉及根据任务描述对许多⽂件进⾏编 辑;\n- Our \"computer use\" reference implementation, where Claude uses a computer to accomplish tasks.\n\n以下⽰例来⾃我们⾃⼰的实现:\n\n",
+                                "High-level flow of a coding agent 编码代理的⾼级流程\n\n### Combining and customizing these patterns 组合和定制这些模式\n\nThese building blocks aren't prescriptive. They're common patterns that developers can shape and combine to fit different use cases. The key to success, as with any LLM features, is measuring performance and iterating on implementations. To repeat: you should consider adding complexity *only* when it demonstrably improves outcomes.\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/table_059f.png",
+                            "caption": "Table: Our \"Computer Use\" Reference Implementation, where Claude uses a computer to accomplish tasks.",
+                            "cells": [
+                                [
+                                    "我们的\"计算机使⽤\"参考实现,克劳德使⽤计算机来完成任务。"
+                                ]
+                            ],
+                            "merge_area": null
+                        },
+                        {
+                            "markdown_content": "| Human | Interface |  | LLM |  | Environment |\n| --- | --- | --- | --- | --- | --- |\n| Query | > |  |  |  |  |\n| Until tasks clear |  |  |  |  |  |\n|  | Clarify |  |  |  |  |\n|  | Refine |  |  |  |  |\n|  |  | Send context |  |  |  |\n|  |  |  | > | Search files |  |\n|  |  |  |  |  | > |\n|  |  |  |  | Return paths |  |\n|  |  |  |  | Until tests pass |  |\n|  |  |  |  | Write code |  |\n|  |  |  |  | Status |  |\n|  |  |  |  | Test |  |\n|  |  |  |  | Results |  |\n|  |  | Complete |  |  |  |\n| Display |  |  |  |  |  |",
+                            "near_chunks": [
+                                "- A coding Agent to resolve SWE-bench tasks, which involve edits to many files based on a task description;\n\t- ⽤于解决SWE-bench 任务的编码代理,其中涉及根据任务描述对许多⽂件进⾏编 辑;\n- Our \"computer use\" reference implementation, where Claude uses a computer to accomplish tasks.\n\n以下⽰例来⾃我们⾃⼰的实现:\n\n",
+                                "High-level flow of a coding agent 编码代理的⾼级流程\n\n### Combining and customizing these patterns 组合和定制这些模式\n\nThese building blocks aren't prescriptive. They're common patterns that developers can shape and combine to fit different use cases. The key to success, as with any LLM features, is measuring performance and iterating on implementations. To repeat: you should consider adding complexity *only* when it demonstrably improves outcomes.\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/table_c2df.png",
+                            "caption": "Table: Interaction flow between human query, interface actions, LLM processes, and environment responses in a coding agent system.",
+                            "cells": [
+                                [
+                                    "Human",
+                                    "Interface",
+                                    "",
+                                    "LLM",
+                                    "",
+                                    "Environment"
+                                ],
+                                [
+                                    "Query",
+                                    ">",
+                                    "",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "Until tasks clear",
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "Clarify",
+                                    "",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "Refine",
+                                    "",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "Send context",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    ">",
+                                    "Search files",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    ">"
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "Return paths",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "Until tests pass",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "Write code",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "Status",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "Test",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "Results",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "Complete",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "Display",
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    ""
+                                ]
+                            ],
+                            "merge_area": null
+                        }
+                    ]
+                },
+                {
+                    "title": "When (and when not) to use agents",
+                    "content": "当使用 LLMs 构建应用程序时,我们建议寻找尽可能最简单的解决方案,并且仅在需要时增加复杂性。这可能意味着根本不构建代理系统。代理系统通常会以延迟和成本来换取更好的任务性能,您应该考虑这种权衡何时有意义。当需要更高复杂性时,工作流为明确定义的任务提供可预测性和一致性,而当需要灵活性和模型驱动的决策时,代理是更好的选择。对于许多应用程序,通过检索和上下文示例来优化单个 LLM 调用通常就足够了。",
+                    "medias": []
+                },
+                {
+                    "title": "When and how to use frameworks",
+                    "content": "有许多框架可以使代理系统更容易实现,包括:\n- 来自 LangChain 的 LangGraph;\n- Amazon Bedrock 的 AI 代理框架;\n- Rivet,一个拖放式 GUI LLM 工作流构建器;和\n- Vellum,另一个用于构建和测试复杂工作流的 GUI 工具。\n这些框架通过简化标准低级任务(例如调用 LLMs、定义和解析工具以及将调用链接在一起)使入门变得容易。然而,它们经常创建额外的抽象层,这些抽象层可能会掩盖底层的提示和响应,从而使其更难以调试。当更简单的设置就足够时,它们还可能会增加复杂性。我们建议开发人员从直接使用 LLM API 开始:只需几行代码即可实现许多模式。如果您确实使用框架,请确保您了解底层代码。对底层内容的错误假设是客户错误的常见来源。",
+                    "medias": []
+                },
+                {
+                    "title": "Building blocks, workflows, and agents",
+                    "content": "在本节中,我们将探讨我们在生产中看到的代理系统的常见模式。我们将从我们的基础构建块——增强的 LLM ——开始,并逐步增加复杂性,从简单的组合工作流程到自主代理。",
+                    "medias": []
+                },
+                {
+                    "title": "Building block: The augmented LLM",
+                    "content": "代理系统的基本构建模块是通过检索、工具和记忆等增强功能增强的 LLM。我们当前的模型可以积极使用这些功能——生成自己的搜索查询、选择适当的工具以及确定要保留哪些信息。我们建议重点关注实施的两个关键方面:根据您的特定用例定制这些功能,并确保它们为您的 LLM 提供简单且记录良好的接口。虽然实现这些增强的方法有很多,但一种方法是通过我们最近发布的模型上下文协议,它允许开发人员通过简单的客户端实现与不断增长的第三方工具生态系统集成。对于本文的其余部分,我们将假设每个 LLM 调用都可以访问这些增强功能。",
+                    "medias": []
+                },
+                {
+                    "title": "Workflow: Prompt chaining",
+                    "content": "提示链接将任务分解为一系列步骤,其中每个 LLM 调用都会处理前一个步骤的输出。您可以在任何中间步骤上添加编程检查(请参见下图中的\"门\"),以确保流程仍按计划进行。此工作流程非常适合任务可以轻松、干净地分解为固定子任务的情况。主要目标是通过使每个 LLM 调用变得更容易,来权衡延迟以获得更高的准确性。",
+                    "medias": []
+                },
+                {
+                    "title": "Workflow: Routing",
+                    "content": "路由对输入进行分类,并将其引导至专门的后续任务。此工作流程允许分离关注点并构建更专业的提示。如果没有此工作流程,针对一种输入的优化可能会损害其他输入的性能。此工作流程非常适合复杂的任务,其中存在更好单独处理的不同类别,并且可以通过 LLM 或更传统的分类模型/算法准确处理分类。",
+                    "medias": []
+                },
+                {
+                    "title": "Workflow: Parallelization",
+                    "content": "LLMs 有时可以同时完成一项任务,并以编程方式汇总其输出。此工作流程(并行化)体现在两个关键变体中:\n- 分段:将任务分解为并行运行的独立子任务。\n- 投票:多次运行同一任务以获得不同的输出。此工作流程非常适用于可以并行化以提高速度的任务,或者需要多种视角或尝试以获得更高置信度结果的复杂任务。对于具有多个考虑因素的复杂任务,LLMs 通常在每个考虑因素由单独的 LLM 调用处理时表现更好,使每个特定方面都能获得集中关注。",
+                    "medias": []
+                },
+                {
+                    "title": "Workflow: Orchestrator-workers",
+                    "content": "在 orchestrator-workers 工作流程中,中央 LLM 动态分解任务,将它们委托给 worker LLMs,并综合其结果。此工作流程非常适合您无法预测所需子任务的复杂任务(例如,在编码中,需要更改的文件数量以及每个文件中可能发生的更改的性质)取决于任务。虽然它在拓扑上相似,但与并行化的主要区别在于它的灵活性——子任务不是预先定义的,而是由协调器根据特定输入确定。",
+                    "medias": []
+                },
+                {
+                    "title": "Workflow: Evaluator-optimizer",
+                    "content": "在评估器-优化器工作流程中,一个 LLM 调用生成响应,而另一个调用则在循环中提供评估和反馈。此工作流程特别有效,当我们有明确的评估标准并且迭代细化提供可衡量的价值时。良好契合的两个标志是,首先,当人们清楚地表达他们的反馈时,LLM 反应可以得到明显改善;其次,LLM 可以提供此类反馈。这类似于人类作家在制作精美文档时可能经历的迭代写作过程。",
+                    "medias": []
+                },
+                {
+                    "title": "Agents",
+                    "content": "随着 LLMs 在关键能力方面的成熟——理解复杂的输入、参与推理和规划、可靠地使用工具以及从错误中恢复,代理正在生产中出现。代理通过人类用户的命令或与人类用户的交互式讨论开始工作。一旦任务明确,智能体就会独立计划和操作,并可能返回人类以获取进一步的信息或判断。在执行过程中,代理在每个步骤(例如工具调用结果或代码执行)中从环境中获取\"基本事实\"以评估其进度至关重要。然后,特工可以在检查站或遇到拦截者时暂停以获取人工反馈。任务通常在完成后终止,但通常还包含停止条件(例如最大迭代次数)以保持控制。代理可以处理复杂的任务,但它们的实现通常很简单。他们通常只是 LLMs 使用基于循环环境反馈的工具。因此,清晰且深思熟虑地设计工具集及其文档至关重要。",
+                    "medias": []
+                },
+                {
+                    "title": "When to use agents",
+                    "content": "代理可用于解决难以或不可能预测所需步骤数以及无法硬编码固定路径的开放式问题。LLM 可能会运作很多轮,您必须对其决策有一定的信任。代理的自主性使它们成为在可信环境中扩展任务的理想选择。代理的自主性意味着更高的成本,并且可能会出现复合错误。我们建议在沙盒环境中进行广泛的测试,并配备适当的护栏。",
+                    "medias": []
+                },
+                {
+                    "title": "Examples where agents are useful",
+                    "content": "以下示例来自我们自己的实现:\n- 用于解决 SWE-bench 任务的编码代理,其中涉及根据任务描述对许多文件进行编辑;\n- 我们的“计算机使用”参考实现,克劳德使用计算机来完成任务。",
+                    "medias": []
+                },
+                {
+                    "title": "Combining and customizing these patterns",
+                    "content": "这些构建块不是规定性的。它们是开发人员可以塑造和组合以适应不同用例的常见模式。与任何 LLM 功能一样,成功的关键是衡量性能和迭代实施。重复一遍:只有当复杂性明显改善结果时,您才应该考虑增加复杂性。",
+                    "medias": []
+                },
+                {
+                    "title": "Summary",
+                    "content": "LLM 领域的成功并不在于构建最复杂的系统。这是为了构建适合您需求的系统。从简单的提示开始,通过综合评估对其进行优化,仅在简单的解决方案无法满足要求时才添加多步骤代理系统。在实施代理时,我们尝试遵循三个核心原则:\n1. 保持代理设计的简单性。\n2. 通过明确显示代理的规划步骤来优先考虑透明度。\n3. 通过彻底的工具文档和测试精⼼设计您的代理计算机接口 (ACI)。框架可以帮助您快速入门,但在转向生产时请毫不犹豫地减少抽象层并使用基本组件进行构建。通过遵循这些原则,您可以创建不仅功能强大而且可靠、可维护且受到用户信任的代理。",
+                    "medias": []
+                },
+                {
+                    "title": "Acknowledgements",
+                    "content": "由埃里克·施伦茨和巴里·张撰写。这项工作借鉴了我们在 Anthropic 建立代理的经验以及我们的客户分享的宝贵见解,对此我们深表感谢。",
+                    "medias": []
+                },
+                {
+                    "title": "Appendix 1: Agents in practice",
+                    "content": "我们与客户的合作揭示了人工智能代理的两个特别有前途的应用,它们证明了上述模式的实际价值。这两个应用说明了代理如何为需要对话和行动的任务增加最大价值,具有明确的成功标准,启用反馈循环,并集成有意义的人工监督。",
+                    "medias": []
+                },
+                {
+                    "title": "A. Customer support",
+                    "content": "客户支持通过工具集成将熟悉的聊天机器人界面与增强的功能结合起来。这对于更多开放式的代理来说是自然的选择,因为:\n- 支持交互自然地遵循对话流程,同时需要访问外部信息和操作;\n- 工具可以集成来提取客户数据、订单历史记录和知识库文章;\n- 退款或更新机票等操作可以通过编程方式处理;和\n- 成功可以通过用户定义的解决方案来明确衡量。一些公司已经通过基于使用的定价模型证明了这种方法的可行性,该模型仅对成功的解决方案收费,这表明了对其代理效率的信心。",
+                    "medias": []
+                },
+                {
+                    "title": "B. Coding agents",
+                    "content": "软件开发领域已显示出 LLM 功能的巨大潜力,其功能从代码完成发展到自主解决问题。代理特别有效,因为:\n- 代码解决方案可以通过自动化测试进行验证;\n- 代理可以使用测试结果作为反馈来迭代解决方案;\n- 问题空间定义明确且结构合理;和\n- 输出质量可以客观地衡量。在我们自己的实现中,代理现在可以仅根据拉取请求描述来解决 SWE-bench Verified 基准中的实际 GitHub 问题。然而,虽然自动化测试有助于验证功能,但人工审查对于确保解决方案符合更广泛的系统要求仍然至关重要。",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "Appendix 2: Prompt Engineering Your Tools",
+            "subsections": [
+                {
+                    "title": "Introduction",
+                    "content": "No matter which agentic system you're building, tools will likely be an important part of your agent. Tools enable Claude to interact with external services and APIs by specifying their exact structure and definition in our API. When Claude responds, it will include a tool use block in the API response if it plans to invoke a tool. Tool definitions and specifications should be given just as much prompt engineering attention as your overall prompts. In this brief appendix, we describe how to prompt engineer your tools.\n\n无论您正在构建哪种代理系统,工具都可能是代理的重要组成部分。工具使 Claude 能够通过在我们的 API 中指定外部服务和 API 的确切结构和定义来与外部服务和 API 进行交互。当 Claude 响应时,如果它计划调用工具,它将在 API 响应中包含一个工具使用块。工具定义和规范应该像整体提示一样得到及时的工程关注。在这个简短的附录中,我们描述了如何提示设计您的工具。",
+                    "medias": [
+                        {
+                            "markdown_content": "| Claude | Press Inquiries | Terms of Service – | © 2024 Anthropic |\n| --- | --- | --- | --- |\n|  |  | Consumer | PBC |\n| API | Support |  |  |\n|  |  | Terms of Service – |  |\n| Team | Status | Commercial |  |\n| Pricing | Availability | Privacy Policy |  |\n| Research | Twitter | Usage Policy |  |\n| Company | LinkedIn | Responsible |  |\n| Customers | YouTube | Disclosure Policy |  |\n| News |  | Compliance |  |\n|  |  | Privacy Choices |  |\n| Careers |  |  |  |",
+                            "near_chunks": [
+                                "在为SWE-bench构建代理时,我们实际上花费了⽐整体提⽰更多的时间来优化我们的⼯ 具。例如,我们发现在代理移出根⽬录后,模型会使⽤相对⽂件路径的⼯具出错。为了 解决这个问题,我们将⼯具更改为始终需要绝对⽂件路径,并且我们发现该模型完美地 使⽤了这种⽅法。\n\nWhile building our agent for SWE-bench, we actually spent more time optimizing our tools than the overall prompt. For example, we found that the model would make mistakes with tools using relative filepaths after the agent had moved out of the root directory. To fix this, we changed the tool to always require absolute filepaths—and we found that the model used this method flawlessly.\n\n",
+                                ""
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2/table_8453.png",
+                            "caption": "Table: Anthropic's Website Navigation Links and Policies",
+                            "cells": [
+                                [
+                                    "Claude",
+                                    "Press Inquiries",
+                                    "Terms of Service –",
+                                    "© 2024 Anthropic"
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "Consumer",
+                                    "PBC"
+                                ],
+                                [
+                                    "API",
+                                    "Support",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "Terms of Service –",
+                                    ""
+                                ],
+                                [
+                                    "Team",
+                                    "Status",
+                                    "Commercial",
+                                    ""
+                                ],
+                                [
+                                    "Pricing",
+                                    "Availability",
+                                    "Privacy Policy",
+                                    ""
+                                ],
+                                [
+                                    "Research",
+                                    "Twitter",
+                                    "Usage Policy",
+                                    ""
+                                ],
+                                [
+                                    "Company",
+                                    "LinkedIn",
+                                    "Responsible",
+                                    ""
+                                ],
+                                [
+                                    "Customers",
+                                    "YouTube",
+                                    "Disclosure Policy",
+                                    ""
+                                ],
+                                [
+                                    "News",
+                                    "",
+                                    "Compliance",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "",
+                                    "Privacy Choices",
+                                    ""
+                                ],
+                                [
+                                    "Careers",
+                                    "",
+                                    "",
+                                    ""
+                                ]
+                            ],
+                            "merge_area": null
+                        }
+                    ]
+                },
+                {
+                    "title": "Specifying Actions",
+                    "content": "There are often several ways to specify the same action. For instance, you can specify a file edit by writing a diff, or by rewriting the entire file. For structured output, you can return code inside markdown or inside JSON. In software engineering, differences like these are cosmetic and can be converted losslessly from one to the other. However, some formats are much more difficult for an LLM to write than others. Writing a diff requires knowing how many lines are changing in the chunk header before the new code is written. Writing code inside JSON (compared to markdown) requires extra escaping of newlines and quotes.\n\n通常有多种方法来指定相同的操作。例如,您可以通过写入差异或重写整个文件来指定文件编辑。对于结构化输出,您可以在 markdown 或 JSON 中返回代码。在软件工程中,此类差异是表面性的,可以无损地从一种差异转换为另一种差异。然而,对于 LLM 来说,某些格式比其他格式更难编写。编写差异需要知道在编写新代码之前块头中有多少行发生了变化。在 JSON 中编写代码(与 Markdown 相比)需要额外转义换行符和引号。",
+                    "medias": []
+                },
+                {
+                    "title": "Deciding on Tool Formats",
+                    "content": "Our suggestions for deciding on tool formats are the following:\n\n我们对决定工具格式的建议如下:\n\n- Give the model enough tokens to 'think' before it writes itself into a corner.\n- Keep the format close to what the model has seen naturally occurring in text on the internet.\n- Make sure there's no formatting 'overhead' such as having to keep an accurate count of thousands of lines of code, or string-escaping any code it writes.\n\n- 在模型陷入困境之前,给模型足够的令牌来'思考'。\n- 保持格式接近模型在互联网上自然出现的文本格式。\n- 确保没有格式化'开销',例如必须准确计数数千行代码,或者对其编写的任何代码进行字符串转义。",
+                    "medias": []
+                },
+                {
+                    "title": "Human-Computer Interfaces (HCI) and Agent-Computer Interfaces (ACI)",
+                    "content": "One rule of thumb is to think about how much effort goes into human-computer interfaces (HCI), and plan to invest just as much effort in creating good agent-computer interfaces (ACI). Here are some thoughts on how to do so:\n\n一条经验法则是考虑在人机界面 (HCI) 上投入多少精力,并计划投入同样多的精力来创建良好的代理计算机界面 (ACI)。以下是关于如何执行此操作的一些想法:\n\n- Put yourself in the model's shoes. Is it obvious how to use this tool, based on the description and parameters, or would you need to think carefully about it? If so, then it's probably also true for the model. A good tool definition often includes example usage, edge cases, input format requirements, and clear boundaries from other tools.\n- How can you change parameter names or descriptions to make things more obvious? Think of this as writing a great docstring for a junior developer on your team. This is especially important when using many similar tools.\n- Test how the model uses your tools: Run many example inputs in our workbench to see what mistakes the model makes, and iterate.\n- Poka-yoke your tools. Change the arguments so that it is harder to make mistakes.\n\n- 设身处地为模特着想。根据描述和参数,如何使用这个工具是否显而易见,或者您是否需要仔细考虑?如果是这样,那么模型可能也是如此。好的工具定义通常包括示例用法、边缘情况、输入格式要求以及与其他工具的明确界限。\n- 如何更改参数名称或描述以使事情更加明显?将此视为为团队中的初级开发人员编写出色的文档字符串。当使用许多类似的工具时,这一点尤其重要。\n- 测试模型如何使用您的工具:在我们的工作台中运行许多示例输入,以查看模型犯了哪些错误,然后进行迭代。\n- 防错你的工具。改变论点,这样就更难犯错误。",
+                    "medias": []
+                },
+                {
+                    "title": "Optimizing Tools",
+                    "content": "While building our agent for SWE-bench, we actually spent more time optimizing our tools than the overall prompt. For example, we found that the model would make mistakes with tools using relative filepaths after the agent had moved out of the root directory. To fix this, we changed the tool to always require absolute filepaths—and we found that the model used this method flawlessly.\n\n在为 SWE-bench 构建代理时,我们实际上花费了比整体提示更多的时间来优化我们的工具。例如,我们发现在代理移出根目录后,模型会使用相对文件路径的工具出错。为了解决这个问题,我们将工具更改为始终需要绝对文件路径,并且我们发现该模型完美地使用了这种方法。",
+                    "medias": []
+                },
+                {
+                    "title": "Footer",
+                    "content": "| Claude | Press Inquiries | Terms of Service – | © 2024 Anthropic |\n| --- | --- | --- | --- |\n|  |  | Consumer | PBC |\n| API | Support |  |  |\n|  |  | Terms of Service – |  |\n| Team | Status | Commercial |  |\n| Pricing | Availability | Privacy Policy |  |\n| Research | Twitter | Usage Policy |  |\n| Company | LinkedIn | Responsible |  |\n| Customers | YouTube | Disclosure Policy |  |\n| News |  | Compliance |  |\n|  |  | Privacy Choices |  |\n| Careers |  |  |  |",
+                    "medias": []
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "date": "2024年12月20日",
+        "author": "Erik Schluntz, Barry Zhang",
+        "organization": "Anthropic",
+        "source": "Appendix 2: Prompt engineering your tools",
+        "language": "Bilingual (English and Chinese)",
+        "presentation-date": "2025-04-02"
+    }
+}

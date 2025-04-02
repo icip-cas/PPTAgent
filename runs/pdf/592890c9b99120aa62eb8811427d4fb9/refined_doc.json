@@ -1,87 +1,645 @@
 {
-  "metadata": {
-    "title": "iPhone 16 Pro",
-    "author": "Apple",
-    "publish_date": "2024",
-    "organization": "Apple Inc."
-  },
-  "sections": [
-    {
-      "title": "Overview",
-      "subsections": [
+    "image_dir": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9",
+    "sections": [
         {
-          "title": "Trade-In and Pricing",
-          "content": "Receive $180–$650 in credit towards an iPhone 16 or iPhone 16 Pro when trading in an iPhone 12 or newer. Prices start at $999 or $41.62 per month over 24 months."
+            "title": "iPhone 16 Pro",
+            "subsections": [
+                {
+                    "title": "Overview",
+                    "content": "当您以旧换新 iPhone 12 或更⾼版本时,可获得iPhone 16 或 iPhone 16 Pro 180-650 美元的抵⽤⾦。",
+                    "medias": [
+                        {
+                            "markdown_content": "![](_page_0_Picture_6.jpeg)",
+                            "near_chunks": [
+                                "## **Take a closer look.**\n\n**The first iPhone built** 第⼀部 **iPhone** 诞⽣ **for Apple Intelligence.** 对于苹 **果情报。 Personal, private, 个⼈的、私⼈** 的、 **powerful. 强⼤的。 <** )\n\n## **Get the highlights.** Watch the film\n\n**From $999 or $41.62/mo. for 24 mo. 999** 美元或 **41.62** 美元/⽉起。 **24** 个⽉。 d Apple Intelligence available now Apple Intelligence 现已推出 9 9\n\n",
+                                ""
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_0_Picture_6.jpeg",
+                            "caption": "Picture: Four iPhones displayed side by side in black, silver, gold, and bronze colors, showcasing their camera systems and Apple logos. The last phone shows a home screen with various apps."
+                        }
+                    ]
+                },
+                {
+                    "title": "Pricing",
+                    "content": "From $999 or $41.62/mo. for 24 mo. 999 美元或 41.62 美元/⽉起。 24 个⽉。",
+                    "medias": []
+                },
+                {
+                    "title": "Highlights",
+                    "content": "Get the highlights. Watch the film",
+                    "medias": []
+                },
+                {
+                    "title": "Description",
+                    "content": "The first iPhone built for Apple Intelligence. 第⼀部 iPhone 诞⽣ 对于苹果情报。 Personal, private, powerful. 个⼈的、私⼈的、强⼤的。",
+                    "medias": []
+                },
+                {
+                    "title": "Closer Look",
+                    "content": "Take a closer look. ![](_page_0_Picture_6.jpeg)",
+                    "medias": []
+                }
+            ]
         },
         {
-          "title": "Design and Durability",
-          "content": "The iPhone 16 Pro boasts a Grade 5 titanium design with a microblasted texture, ensuring strength and lightness. Available in four stunning finishes, including the new Desert Titanium. It is splash, water, and dust resistant, featuring the latest-generation Ceramic Shield for enhanced durability."
+            "title": "iPhone 16 Pro Features",
+            "subsections": [
+                {
+                    "title": "Design",
+                    "content": "**iPhone 16 Pro features a Grade 5 titanium design with a new, refined microblasted texture. Titanium has one of the highest strength-to-weight ratios of any metal, making these models incredibly strong and impressively light. iPhone 16 Pro comes in four stunning finishes — including new Desert Titanium. iPhone 16 Pro** 采⽤ 5 **级钛⾦属设计,具有全新精致的微喷砂纹理。钛是所有 ⾦属中强度重量⽐最⾼的⾦属之⼀,使 这些模型变得异常坚固且极其轻盈。 iPhone 16 Pro 拥有四种令⼈惊叹的饰 ⾯,包括全新的 Desert Titanium**。",
+                    "medias": []
+                },
+                {
+                    "title": "Internal Improvements",
+                    "content": "**Internal design improvements including a 100 percent recycled aluminum thermal substructure and back glass optimizations that further dissipate heat — enable up to 20 percent better sustained performance than iPhone 15 Pro. So you can do all the things you love — like high-intensity gaming — for longer. 内部设计改进**——包括 **100% 再⽣铝制散热结构和进⼀步散热的背⾯玻璃优化** ——**使持续性能⽐ iPhone 15 Pro 提⾼ 了 20%。因此,您可以更⻓时间地做所 有您喜欢的事情,例如⾼强度游戏。**",
+                    "medias": []
+                },
+                {
+                    "title": "Durability",
+                    "content": "**Premium Grade 5 titanium is** **exceptionally durable** 优质 5 **级钛⾦属⾮常耐⽤**。",
+                    "medias": []
+                },
+                {
+                    "title": "Display Technology",
+                    "content": "**New display technology allows us to route display data under active pixels with no distortion, resulting in thinner borders for larger 6.3-inch and 6.9-inch Super Retina XDR displays that feel great in your hand.** 显示屏 新的显示技术使我们能够在活动像素下 **路由显示数据⽽不会失真,从⽽使更⼤ 的 6.3 英⼨和 6.9 英⼨ Super Retina XDR 显示器的边框更薄,⼿感极佳。**",
+                    "medias": []
+                },
+                {
+                    "title": "Water and Dust Resistance",
+                    "content": "**iPhone 16 Pro is splash, water, and dust resistant. It also has our latest-generation Ceramic Shield material that's two times tougher than any smartphone glass. Talk about durable. iPhone 16 Pro 防溅、防⽔、防尘。** 它 **还具有我们最新⼀代的陶瓷屏蔽材料,其硬度是任何智能⼿机玻璃的两倍。**",
+                    "medias": []
+                },
+                {
+                    "title": "Apple Intelligence",
+                    "content": "**iPhone 16 Pro is built for Apple Intelligence, the personal intelligence system that helps you write, express yourself, and get things done effortlessly. With groundbreaking privacy protections, it gives you peace of mind that no one else can access your data — not even Apple.** **Boost your productivity Express yourself visually A new era for Siri** **Explore new tools that help you write, focus, and communicate.** **Make a Genmoji right in the keyboard to match any conversation. Want to create a disco ball pigeon? You got it. Just provide a description. Awareness of your personal context enables Siri to help you in ways that are unique to you. Need your passport number while booking a flight? Siri can help find what you're looking for, without compromising your privacy. Writing Tools can proofread your text and rewrite different versions until the tone and wording are just right, and summarize selected text with a tap. They're available nearly everywhere you write, including third-party apps.** **The Image Playground app lets you create unique images in seconds based on a description, a concept, or even a person from your Photos library. Experiment with image styles like animation, illustration, and sketch. Richer language understanding and an enhanced voice make communicating with Siri even more natural. For example, if you stumble over your words, Siri still knows what you're getting at. Just hit record in the Notes or Phone app to capture audio recordings and transcripts. Apple Intelligence generates summaries of your transcripts, so you can get the most important info at a glance.** **With Clean Up, you can remove distracting background objects from your photos with just a tap — so you can perfect a shot while staying true to the original image. Not sure how to do something on iPhone, like adjust the background blur on a portrait? With expansive product knowledge, Siri can give you step-by-step instructions in a snap. Priority messages in Mail elevate time-sensitive messages to the top of your inbox — like an invitation that has a deadline today or a check-in reminder for your flight this afternoon.**",
+                    "medias": []
+                },
+                {
+                    "title": "Privacy",
+                    "content": "**Great powers come with great privacy. Apple Intelligence is designed to protect your privacy at every step. It's integrated into the core of iPhone through on-device processing. So it's aware of your personal information without collecting your personal information. And with groundbreaking Private Cloud Compute, Apple Intelligence can draw on larger Apple-designed server-based models, running on Apple silicon, to handle more complex requests for you while protecting your privacy. Learn more about Apple Intelligence**",
+                    "medias": []
+                }
+            ]
         },
         {
-          "title": "Display and Camera",
-          "content": "New display technology offers thinner borders and larger 6.3-inch and 6.9-inch Super Retina XDR displays. The 48MP Ultra Wide camera captures high-resolution photos and videos with advanced features like autofocus and ProRAW support. The 5x Telephoto camera provides sharper close-ups from a distance."
+            "title": "Take total Camera Control",
+            "subsections": [
+                {
+                    "title": "Play",
+                    "content": "Now you can take the perfect photo or video in record time. Camera Control gives you an easier way to quickly access camera tools. Simply slide your finger to adjust camera functions like exposure or depth of field, and toggle through each lens or use digital zoom to frame your shot — just how you like it. Camera Control features a two-stage shutter that lets you automatically lock focus and exposure with a light press so you can reframe your shot without losing focus on your subject.",
+                    "medias": []
+                },
+                {
+                    "title": "How to use",
+                    "content": "Click to launch the Camera app. Click again to instantly take a photo. Click and hold to start recording video. A light press opens controls like zoom.",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "4K 120 fps Dolby Vision. Cinemasterful.",
+            "subsections": [
+                {
+                    "title": "Introduction",
+                    "content": "A herd of Icelandic horses, captured in stunning 4K 120 fps Dolby Vision",
+                    "medias": []
+                },
+                {
+                    "title": "Video Capture",
+                    "content": "iPhone 16 Pro takes video capture to a whole new level with 4K 120 fps Dolby Vision — our highest resolution and frame rate combo yet. Enabled by the new 48MP Fusion camera with second-generation quad-pixel sensor and our powerful A18 Pro chip, iPhone 16 Pro lets you record 4K 120 fps Dolby Vision in video mode or slo-mo.",
+                    "medias": []
+                },
+                {
+                    "title": "Playback Speed",
+                    "content": "And now you can adjust the playback speed after capture in the redesigned Photos app, giving you greater editing capabilities. To add a dreamy quality to your shot, try out the new half-speed option. Or for a cinematic effect, slow it right down to 24 fps playback.",
+                    "medias": []
+                },
+                {
+                    "title": "Audio Performance",
+                    "content": "iPhone 16 Pro also provides a big leap in audio performance with four studio-quality mics for higher-quality recording. They provide a lower noise floor so you get more true-to-life sounds. New Spatial Audio capture makes your videos sound more immersive when listening with AirPods. And thanks to wind noise reduction, the audio quality is even clearer.",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "Audio Mix. Make your voice heard.",
+            "subsections": [
+                {
+                    "title": "Overview",
+                    "content": "Powered by advanced intelligence and Spatial Audio capture, Audio Mix lets you adjust the way voices sound in your videos using three different voice options. Want to decrease background sound? Or just focus on the voices that are in frame? Simply select the mix and adjust intensity to get the sound you want after video capture.",
+                    "medias": [
+                        {
+                            "markdown_content": "![](_page_1_Picture_8.jpeg)",
+                            "near_chunks": [
+                                "**Powered by advanced intelligence and Spatial Audio capture, Audio Mix lets you adjust the way voices sound in your videos using three different voice options. Want to decrease background sound? Or just focus on the voices that are in frame? Simply select the mix and adjust intensity to get the sound you want after video capture.**\n\n",
+                                "#### **In-frame**\n\n**Only captures the voices of the people on camera, even if people off-camera are talking during the recording.**\n\n### **Studio**\n\n**Makes voices sound like you're recording in a professional studio equipped with sound-dampening walls. Great for vloggers or**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_1_Picture_8.jpeg",
+                            "caption": "Picture: Two individuals conversing at a table, with an interface overlay showing audio mix settings. The screen displays options like In-Frame, Studio, and Cinematic for adjusting audio focus.\n\nOutput: Picture: Two individuals conversing at a table, with an interface overlay showing audio mix settings. The screen displays options like In-Frame, Studio, and Cinematic for adjusting audio focus."
+                        },
+                        {
+                            "markdown_content": "![](_page_1_Picture_18.jpeg)",
+                            "near_chunks": [
+                                "**Go behind the scenes of The Weeknd's groundbreaking music video to learn how the powerful camera features on iPhone 16 Pro deliver more creative freedom and flexibility than ever before. The \"Dancing in the Flames\" cinematographer Erik Henriksson films the video in dreamlike slow motion using 4K 120 fps Dolby Vision on iPhone 16 Pro. Thanks to Camera Control, he could make technical decisions by simply sliding a finger to adjust camera functions like exposure or focal length — all without missing a beat.**\n\n",
+                                ""
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_1_Picture_18.jpeg",
+                            "caption": "Picture: A person is filming another individual wearing sunglasses and a black jacket, using a smartphone mounted on a stabilizer. The background is blue with tree silhouettes. Focus on the filming process.\n\n Nearby chunks are irrelevant."
+                        }
+                    ]
+                },
+                {
+                    "title": "In-frame",
+                    "content": "Only captures the voices of the people on camera, even if people off-camera are talking during the recording.",
+                    "medias": []
+                },
+                {
+                    "title": "Studio",
+                    "content": "Makes voices sound like you're recording in a professional studio equipped with sound-dampening walls. Great for vloggers or podcasters because the recording will sound like the mic is close to the subject's mouth, even if it's a few feet away.",
+                    "medias": []
+                },
+                {
+                    "title": "Cinematic",
+                    "content": "Captures all of the voices around you and consolidates them toward the front of the screen — just like sound is formatted for the movies.",
+                    "medias": []
+                },
+                {
+                    "title": "Shot on iPhone 16 Pro",
+                    "content": "Go behind the scenes of The Weeknd's groundbreaking music video to learn how the powerful camera features on iPhone 16 Pro deliver more creative freedom and flexibility than ever before. The 'Dancing in the Flames' cinematographer Erik Henriksson films the video in dreamlike slow motion using 4K 120 fps Dolby Vision on iPhone 16 Pro. Thanks to Camera Control, he could make technical decisions by simply sliding a finger to adjust camera functions like exposure or focal length — all without missing a beat.",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "New 48MP Ultra Wide camera",
+            "subsections": [
+                {
+                    "title": "Ultra Wide Camera",
+                    "content": "iPhone 16 Pro adds a second 48MP camera to the Pro camera system. The new 48MP Ultra Wide camera has a more advanced quad-pixel sensor for super-high-resolution 48MP ProRAW and HEIF photos with autofocus. So you can capture a mesmerizing new level of detail in macro photos and sweeping, wide-angle shots.",
+                    "medias": [
+                        {
+                            "markdown_content": "![](_page_1_Picture_32.jpeg)",
+                            "near_chunks": [
+                                "**We've created new styles that let you dial in your exact desired look with more advanced skin-tone rendering and set it across your photos.**\n\n## **Lock in your look.**\n\n> **Our latest generation of Photographic Styles gives you greater creative flexibility than ever before, so you can make every photo even more you. And thanks to advances in our image pipeline, you can now reverse any style, anytime.**\n\n",
+                                ""
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_1_Picture_32.jpeg",
+                            "caption": "Picture: Screen displaying photo style options with four images of a person in a pink raincoat against various backdrops. Text explains the standard style setting. Prioritize image content over nearby text chunks.\n\n"
+                        },
+                        {
+                            "markdown_content": "![](_page_2_Picture_0.jpeg)",
+                            "near_chunks": [
+                                "**We've created new styles that let you dial in your exact desired look with more advanced skin-tone rendering and set it across your photos.**\n\n## **Lock in your look.**\n\n> **Our latest generation of Photographic Styles gives you greater creative flexibility than ever before, so you can make every photo even more you. And thanks to advances in our image pipeline, you can now reverse any style, anytime.**\n\n",
+                                ""
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_2_Picture_0.jpeg",
+                            "caption": "Banner: A18 Pro chip text on a dark background. Highlights the chip's role as the brains behind technology. Nearby chunks about photographic styles are unrelated and not included."
+                        }
+                    ]
+                },
+                {
+                    "title": "Zoom Capabilities",
+                    "content": "More zoom? Boom. Now you can shoot in 120 mm with the 5x Telephoto camera on both Pro models and get sharper close-ups from farther away. With multiple framing options, it's like having seven pro lenses in your pocket, everywhere you go.",
+                    "medias": []
+                },
+                {
+                    "title": "Photographic Styles",
+                    "content": "Our latest generation of Photographic Styles gives you greater creative flexibility than ever before, so you can make every photo even more you. And thanks to advances in our image pipeline, you can now reverse any style, anytime.",
+                    "medias": []
+                },
+                {
+                    "title": "Lock in Your Look",
+                    "content": "We've created new styles that let you dial in your exact desired look with more advanced skin-tone rendering and set it across your photos.",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "Apple Intelligence",
+            "subsections": [
+                {
+                    "title": "A18 Pro",
+                    "content": "A phenomenally powerful chip, A18 Pro enables Apple Intelligence with a faster Neural Engine, an improved CPU and GPU, and a big jump in memory bandwidth. It also drives advanced video and photo features like Camera Control, and it delivers our best-ever graphics performance for AAA gaming. New 16-core Neural Engine is faster and more efficient, supercharging Apple Intelligence. New 6-core CPU, the fastest in a smartphone, runs complex workloads with less power. New 6-core GPU gives you enhanced graphics performance. 17% increase in total system memory bandwidth, the highest ever in iPhone, for outstanding performance.",
+                    "medias": [
+                        {
+                            "markdown_content": "| Compare with | iPhone 12 Pro |  |\n| --- | --- | --- |\n| Up to |  | Up to |\n| 60% faster 60% faster |  | 2x faster 2x faster |\n| 6-core CPU |  | 6-core GPU |",
+                            "near_chunks": [
+                                "**17% increase in total system memory bandwidth, the highest ever in iPhone, for outstanding performance**\n\n**New 6-core GPU gives you enhanced graphics performance**\n\n**New 6-core CPU, the fastest in a smartphone, runs complex workloads with less power**\n\n",
+                                "DEATH STRANDING DIRECTOR'S CUT\n\n## **In a whole new light.**\n\n**With up to two times faster hardware-accelerated ray tracing, A18 Pro makes games look and feel beautifully lifelike — with more fluid graphics and realistic lighting.**\n\n**And with Game Mode in iOS 18, you'll get better sustained frame rates for continuous play and improved responsiveness if you're using wireless controllers and AirPods.**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/table_9cb8.png",
+                            "caption": "Table: Comparison of iPhone 12 Pro's 6-core CPU and 6-core GPU performance improvements.",
+                            "cells": [
+                                [
+                                    "Compare with",
+                                    "iPhone 12 Pro",
+                                    ""
+                                ],
+                                [
+                                    "Up to",
+                                    "",
+                                    "Up to"
+                                ],
+                                [
+                                    "60% faster 60% faster",
+                                    "",
+                                    "2x faster 2x faster"
+                                ],
+                                [
+                                    "6-core CPU",
+                                    "",
+                                    "6-core GPU"
+                                ]
+                            ],
+                            "merge_area": null
+                        },
+                        {
+                            "markdown_content": "![](_page_2_Picture_9.jpeg)",
+                            "near_chunks": [
+                                "DEATH STRANDING DIRECTOR'S CUT\n\n**17% increase in total system memory bandwidth, the highest ever in iPhone, for outstanding performance**\n\n**New 6-core GPU gives you enhanced graphics performance**\n\n**New 6-core CPU, the fastest in a smartphone, runs complex workloads with less power**\n\n",
+                                "## **In a whole new light.**\n\n**With up to two times faster hardware-accelerated ray tracing, A18 Pro makes games look and feel beautifully lifelike — with more fluid graphics and realistic lighting.**\n\n**And with Game Mode in iOS 18, you'll get better sustained frame rates for continuous play and improved responsiveness if you're using wireless controllers and AirPods.**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_2_Picture_9.jpeg",
+                            "caption": "Picture: Smartphone displaying a game with a character in a lush landscape, paired with a gaming controller. Focus on gaming performance and visuals.\n\nOutput: Picture: Smartphone with game display and gaming controller, emphasizing performance and visuals."
+                        },
+                        {
+                            "markdown_content": "![](_page_2_Picture_18.jpeg)",
+                            "near_chunks": [
+                                "**Up to 33 hours video playback on iPhone 16 Pro Maxg**\n\n**Snap on a new MagSafe charger for even faster wireless charging — up to 25W with a 30W power adapter or higher, enabling up to 50% charge in around 30 minutes.** i j\n\n**iPhone 16 Pro gives you longer battery life — and iPhone 16 Pro Max delivers the best battery life ever on an iPhone. How? An optimized internal design fits larger batteries, which work together with the A18 Pro chip to deliver incredibly powerefficient performance. Even with so many new capabilities.**\n\n",
+                                "**Compare with**\n\n**iPhone 12 Pro**\n\n**10 more hours Up to 10 more hours** **Up to**\n\n**video playback on iPhone 16 Pro**\n\n**video playback on iPhone 16 Pro Max**\n\n**16 more hours**\n\n**16 more hours**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_2_Picture_18.jpeg",
+                            "caption": "Banner: Displays \"Up to 27 hours video playback on iPhone 16 Pro\" in white text against a black background. Highlights the extended battery life feature of the device."
+                        }
+                    ]
+                },
+                {
+                    "title": "Comparison",
+                    "content": "| Compare with | iPhone 12 Pro |  |\n| --- | --- | --- |\n| Up to |  | Up to |\n| 60% faster 60% faster |  | 2x faster 2x faster |\n| 6-core CPU |  | 6-core GPU |",
+                    "medias": []
+                },
+                {
+                    "title": "DEATH STRANDING DIRECTOR'S CUT",
+                    "content": "![DEATH STRANDING DIRECTOR'S CUT](_page_2_Picture_9.jpeg)\n\nWith up to two times faster hardware-accelerated ray tracing, A18 Pro makes games look and feel beautifully lifelike — with more fluid graphics and realistic lighting. And with Game Mode in iOS 18, you'll get better sustained frame rates for continuous play and improved responsiveness if you're using wireless controllers and AirPods.",
+                    "medias": []
+                },
+                {
+                    "title": "Ray Tracing",
+                    "content": "Up to 2x faster hardware-accelerated ray tracing than A17 Pro",
+                    "medias": []
+                },
+                {
+                    "title": "Battery Life",
+                    "content": "iPhone 16 Pro gives you longer battery life — and iPhone 16 Pro Max delivers the best battery life ever on an iPhone. How? An optimized internal design fits larger batteries, which work together with the A18 Pro chip to deliver incredibly power-efficient performance. Even with so many new capabilities. Snap on a new MagSafe charger for even faster wireless charging — up to 25W with a 30W power adapter or higher, enabling up to 50% charge in around 30 minutes. Up to 33 hours video playback on iPhone 16 Pro Max. Compare with iPhone 12 Pro: Up to 10 more hours video playback on iPhone 16 Pro, up to 16 more hours video playback on iPhone 16 Pro Max.",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "iOS 18 Features",
+            "subsections": [
+                {
+                    "title": "Personalize Home Screen",
+                    "content": "Tint your icons with any color. Rearrange and resize apps and widgets. You can even lock or hide apps to protect sensitive information — it's your call.",
+                    "medias": []
+                },
+                {
+                    "title": "Custom Controls",
+                    "content": "Swap out your Lock Screen controls for ones you love to use more often. Or you can assign a control to the Action button.",
+                    "medias": []
+                },
+                {
+                    "title": "Photos App",
+                    "content": "In the redesigned Photos app, your Collections are automatically organized by topic, like People & Pets.",
+                    "medias": []
+                },
+                {
+                    "title": "Learn More",
+                    "content": "Learn more about iOS 18",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "No signal? There's a satellite for that.",
+            "subsections": [
+                {
+                    "title": "Messages via satellite",
+                    "content": "You can send and receive messages and Tapbacks when you're off the grid, right from the Messages app. Your iPhone will help you connect to a satellite, so you can text over iMessage or SMS.",
+                    "medias": []
+                },
+                {
+                    "title": "Roadside Assistance via satellite",
+                    "content": "Satellite can get you help for things like a flat tire or a dead car battery. iPhone will connect you with a roadside assistance provider, who can dispatch help to your exact location — even if you're off the grid. Roadside Assistance via satellite is included for free for two years with iPhone 16 Pro.",
+                    "medias": []
+                },
+                {
+                    "title": "Emergency SOS via satellite",
+                    "content": "iPhone has vital safety features that can help save lives. If you try calling 911 for urgent help but don't have cell service or Wi-Fi, you can use iPhone to text emergency services over satellite. When you're within range and make a 911 emergency call, iPhone 16 Pro gives you the option to start sharing a live feed with 911 responders for quick and effective assistance.",
+                    "medias": []
+                },
+                {
+                    "title": "Crash Detection",
+                    "content": "Crash Detection uses hardware sensors and advanced motion algorithms to detect a severe car crash, then call 911 and notify your emergency contacts when you can't — even when you don't have service.",
+                    "medias": []
+                }
+            ]
+        },
+        {
+            "title": "Environment",
+            "subsections": [
+                {
+                    "title": "Renewable Energy",
+                    "content": "All Apple data centers including those that power Apple Intelligence — run on 100% renewable electricity.",
+                    "medias": [
+                        {
+                            "markdown_content": "![](_page_3_Picture_15.jpeg)",
+                            "near_chunks": [
+                                "**iPhone and AirPods**\n\n**iPhone and Apple Watch**\n\nWith iPhone Mirroring, you can view your iPhone screen on your Mac and control it without picking up your phone. Continuity features also let you answer calls or messages right from your Mac. You can even copy images, video, or text from your iPhone and paste it all into a different app on your Mac. And with iCloud, you can access your files from either device.\n\n",
+                                "## **Why Apple is the best place to buy iPhone.** Shop iPhone\n\n## **Keep exploring iPhone.** Explore all iPhone\n\n#### New **iPhone 16 Pro**\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\nCurrently viewing\n\nBuy\n\nA18 Pro chip with 6-core GPU\n\nNew **iPhone 16**\n\n**From $799 or $33.29/mo. for 24 mo.** d\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_15.jpeg",
+                            "caption": "Picture: Displays iPhone mirroring on a Mac, showing identical screens with apps and widgets. Focuses on continuity features between devices. Prioritize image content over nearby text chunks.\n\n"
+                        },
+                        {
+                            "markdown_content": "![](_page_3_Picture_18.jpeg)",
+                            "near_chunks": [
+                                "## **Why Apple is the best place to buy iPhone.** Shop iPhone\n\n**iPhone and AirPods**\n\n**iPhone and Apple Watch**\n\nWith iPhone Mirroring, you can view your iPhone screen on your Mac and control it without picking up your phone. Continuity features also let you answer calls or messages right from your Mac. You can even copy images, video, or text from your iPhone and paste it all into a different app on your Mac. And with iCloud, you can access your files from either device.\n\n",
+                                "## **Keep exploring iPhone.** Explore all iPhone\n\n#### New **iPhone 16 Pro**\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\nCurrently viewing\n\nBuy\n\nA18 Pro chip with 6-core GPU\n\nNew **iPhone 16**\n\n**From $799 or $33.29/mo. for 24 mo.** d\n\nApple Intelligence 9\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_18.jpeg",
+                            "caption": "Picture: A black background with white text reading \"{'cafr\" vertically aligned on the left side. The text appears incomplete and fragmented."
+                        },
+                        {
+                            "markdown_content": "![](_page_3_Picture_19.jpeg)",
+                            "near_chunks": [
+                                "## **Why Apple is the best place to buy iPhone.** Shop iPhone\n\n**iPhone and AirPods**\n\n**iPhone and Apple Watch**\n\nWith iPhone Mirroring, you can view your iPhone screen on your Mac and control it without picking up your phone. Continuity features also let you answer calls or messages right from your Mac. You can even copy images, video, or text from your iPhone and paste it all into a different app on your Mac. And with iCloud, you can access your files from either device.\n\n",
+                                "## **Keep exploring iPhone.** Explore all iPhone\n\n#### New **iPhone 16 Pro**\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\nCurrently viewing\n\nBuy\n\nA18 Pro chip with 6-core GPU\n\nNew **iPhone 16**\n\n**From $799 or $33.29/mo. for 24 mo.** d\n\nApple Intelligence 9\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_19.jpeg",
+                            "caption": "Banner: Offers trade-in credits, interest-free payment options, and carrier deals for purchasing new iPhones. Highlights savings and financing benefits.\n\n"
+                        },
+                        {
+                            "markdown_content": "![](_page_3_Picture_27.jpeg)",
+                            "near_chunks": [
+                                "Buy\n\nCurrently viewing\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\n#### New **iPhone 16 Pro**\n\n## **Keep exploring iPhone.** Explore all iPhone\n\n## **Why Apple is the best place to buy iPhone.** Shop iPhone\n\n**iPhone and AirPods**\n\n**iPhone and Apple Watch**\n\n",
+                                "A18 Pro chip with 6-core GPU\n\nNew **iPhone 16**\n\n**From $799 or $33.29/mo. for 24 mo.** d\n\nApple Intelligence 9\n\nA18 chip with 5-core GPU\n\n## **iPhone**\n\n#### Explore iPhone **Explore All iPhone iPhone 16 Pro iPhone 16 iPhone 15 iPhone 14 iPhone SE Compare iPhone Switch from Android** Shop iPhone **Shop iPhone iPhone Accessories Apple Trade In Carrier Deals at Apple Financing** More from iPhone **iPhone Support AppleCare+ for iPhone iOS 18 Apple Intelligence Apps by Apple iPhone Privacy iCloud+ Wallet, Pay, Card Siri**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_27.jpeg",
+                            "caption": "Logo: A colorful, abstract design resembling a flower or atom on a black background, with \"Apple Intelligence²\" text below. Prioritize this visual over unrelated nearby text about iPhone models and pricing."
+                        },
+                        {
+                            "markdown_content": "![](_page_3_Picture_30.jpeg)",
+                            "near_chunks": [
+                                "A18 Pro chip with 6-core GPU\n\nBuy\n\nCurrently viewing\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\n#### New **iPhone 16 Pro**\n\n## **Keep exploring iPhone.** Explore all iPhone\n\n## **Why Apple is the best place to buy iPhone.** Shop iPhone\n\n**iPhone and AirPods**\n\n",
+                                "New **iPhone 16**\n\n**From $799 or $33.29/mo. for 24 mo.** d\n\nApple Intelligence 9\n\nA18 chip with 5-core GPU\n\n## **iPhone**\n\n#### Explore iPhone **Explore All iPhone iPhone 16 Pro iPhone 16 iPhone 15 iPhone 14 iPhone SE Compare iPhone Switch from Android** Shop iPhone **Shop iPhone iPhone Accessories Apple Trade In Carrier Deals at Apple Financing** More from iPhone **iPhone Support AppleCare+ for iPhone iOS 18 Apple Intelligence Apps by Apple iPhone Privacy iCloud+ Wallet, Pay, Card Siri**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_30.jpeg",
+                            "caption": "Picture: A blue smartphone with dual rear cameras displayed against a dark background. The screen shows abstract blue patterns. Prioritize this visual over any textual information provided.\n\n"
+                        },
+                        {
+                            "markdown_content": "![](_page_3_Picture_34.jpeg)",
+                            "near_chunks": [
+                                "**From $799 or $33.29/mo. for 24 mo.** d\n\nNew **iPhone 16**\n\nA18 Pro chip with 6-core GPU\n\nBuy\n\nCurrently viewing\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\n#### New **iPhone 16 Pro**\n\n## **Keep exploring iPhone.** Explore all iPhone\n\n## **Why Apple is the best place to buy iPhone.** Shop iPhone\n\n",
+                                "Apple Intelligence 9\n\nA18 chip with 5-core GPU\n\n## **iPhone**\n\n#### Explore iPhone **Explore All iPhone iPhone 16 Pro iPhone 16 iPhone 15 iPhone 14 iPhone SE Compare iPhone Switch from Android** Shop iPhone **Shop iPhone iPhone Accessories Apple Trade In Carrier Deals at Apple Financing** More from iPhone **iPhone Support AppleCare+ for iPhone iOS 18 Apple Intelligence Apps by Apple iPhone Privacy iCloud+ Wallet, Pay, Card Siri**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_34.jpeg",
+                            "caption": "Button: Blue oval button with \"Learn more\" text, accompanied by a blue \"Buy >\" link below on a black background. Prioritize this visual content over nearby text chunks about iPhone pricing and features.\n\n"
+                        },
+                        {
+                            "markdown_content": "![](_page_3_Picture_35.jpeg)",
+                            "near_chunks": [
+                                "**From $799 or $33.29/mo. for 24 mo.** d\n\nNew **iPhone 16**\n\nA18 Pro chip with 6-core GPU\n\nBuy\n\nCurrently viewing\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\n#### New **iPhone 16 Pro**\n\n## **Keep exploring iPhone.** Explore all iPhone\n\n## **Why Apple is the best place to buy iPhone.** Shop iPhone\n\n",
+                                "Apple Intelligence 9\n\nA18 chip with 5-core GPU\n\n## **iPhone**\n\n#### Explore iPhone **Explore All iPhone iPhone 16 Pro iPhone 16 iPhone 15 iPhone 14 iPhone SE Compare iPhone Switch from Android** Shop iPhone **Shop iPhone iPhone Accessories Apple Trade In Carrier Deals at Apple Financing** More from iPhone **iPhone Support AppleCare+ for iPhone iOS 18 Apple Intelligence Apps by Apple iPhone Privacy iCloud+ Wallet, Pay, Card Siri**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_35.jpeg",
+                            "caption": "Logo: A colorful, rainbow-hued atom symbol on a black background. The design features interconnected loops forming a circular shape, representing atomic structure. No additional text or elements present.\n\n"
+                        },
+                        {
+                            "markdown_content": "![](_page_3_Picture_37.jpeg)",
+                            "near_chunks": [
+                                "Apple Intelligence 9\n\n**From $799 or $33.29/mo. for 24 mo.** d\n\nNew **iPhone 16**\n\nA18 Pro chip with 6-core GPU\n\nBuy\n\nCurrently viewing\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\n#### New **iPhone 16 Pro**\n\n## **Keep exploring iPhone.** Explore all iPhone\n\n",
+                                "A18 chip with 5-core GPU\n\n## **iPhone**\n\n#### Explore iPhone **Explore All iPhone iPhone 16 Pro iPhone 16 iPhone 15 iPhone 14 iPhone SE Compare iPhone Switch from Android** Shop iPhone **Shop iPhone iPhone Accessories Apple Trade In Carrier Deals at Apple Financing** More from iPhone **iPhone Support AppleCare+ for iPhone iOS 18 Apple Intelligence Apps by Apple iPhone Privacy iCloud+ Wallet, Pay, Card Siri**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/_page_3_Picture_37.jpeg",
+                            "caption": "Icon: White square icon with rounded corners featuring \"A18\" text centered on a black background. Prioritize this visual over the vague and incomplete nearby chunks about iPhone models and specifications."
+                        },
+                        {
+                            "markdown_content": "| Camera Control | Camera Control |\n| --- | --- |\n| Pro camera system | Advanced dual-camera system |\n| Our most advanced 48MP Fusion camera | Advanced 48MP Fusion camera |\n| 5x Telephoto camera | 2x Telephoto |\n| 48MP Ultra Wide camera | 12MP Ultra Wide camera |\n| Up to 33 hours video playback ^f | Up to 27 hours video playback ^f |",
+                            "near_chunks": [
+                                "A18 chip with 5-core GPU\n\nApple Intelligence 9\n\n**From $799 or $33.29/mo. for 24 mo.** d\n\nNew **iPhone 16**\n\nA18 Pro chip with 6-core GPU\n\nBuy\n\nCurrently viewing\n\n**From $999 or $41.62/mo. for 24 mo.** d\n\n#### New **iPhone 16 Pro**\n\n## **Keep exploring iPhone.** Explore all iPhone\n\n",
+                                "## **iPhone**\n\n#### Explore iPhone **Explore All iPhone iPhone 16 Pro iPhone 16 iPhone 15 iPhone 14 iPhone SE Compare iPhone Switch from Android** Shop iPhone **Shop iPhone iPhone Accessories Apple Trade In Carrier Deals at Apple Financing** More from iPhone **iPhone Support AppleCare+ for iPhone iOS 18 Apple Intelligence Apps by Apple iPhone Privacy iCloud+ Wallet, Pay, Card Siri**\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/table_8db0.png",
+                            "caption": "Table: Comparison of Camera Specifications and Video Playback Between iPhone 16 and iPhone 16 Pro",
+                            "cells": [
+                                [
+                                    "Camera Control",
+                                    "Camera Control"
+                                ],
+                                [
+                                    "Pro camera system",
+                                    "Advanced dual-camera system"
+                                ],
+                                [
+                                    "Our most advanced 48MP Fusion camera",
+                                    "Advanced 48MP Fusion camera"
+                                ],
+                                [
+                                    "5x Telephoto camera",
+                                    "2x Telephoto"
+                                ],
+                                [
+                                    "48MP Ultra Wide camera",
+                                    "12MP Ultra Wide camera"
+                                ],
+                                [
+                                    "Up to 33 hours video playback ^f",
+                                    "Up to 27 hours video playback ^f"
+                                ]
+                            ],
+                            "merge_area": null
+                        },
+                        {
+                            "markdown_content": "| Shop and Learn | Account | Apple Store | For Business | Apple Values |\n| --- | --- | --- | --- | --- |\n| Store | Manage Your Apple Account | Find a Store | Apple and Business | Accessibility |\n| Mac | Apple Store Account | Genius Bar | Shop for Business | Education |\n| iPad | iCloud.com | Today at Apple | For Education | Environment |\n| iPhone |  | Group Reservations |  | Inclusion and Diversity |\n| Watch | Entertainment | Apple Camp | Apple and Education | Privacy |\n|  | Apple One |  | Shop for K-12 |  |\n| Vision |  | Apple Store App |  | Racial Equity and Justice |\n| AirPods | Apple TV+ | Certified Refurbished | Shop for College | Supply Chain |\n|  | Apple Music |  |  |  |\n| TV & Home | Apple Arcade | Apple Trade In | For Healthcare | About Apple |\n| AirTag |  | Financing | Apple in Healthcare |  |\n| Accessories | Apple Fitness+ | Carrier Deals at Apple |  | Newsroom |\n|  | Apple News+ |  | Mac in Healthcare | Apple Leadership |\n| Gift Cards |  | Order Status | Health on Apple Watch |  |\n|  | Apple Podcasts | Shopping Help |  | Career Opportunities |\n| Apple Wallet | Apple Books |  | Health Records on iPhone and iPad | Investors |\n| Wallet | App Store |  |  | Ethics & Compliance |\n| Apple Card |  |  | For Government | Events |\n| Apple Pay |  |  | Shop for Government | Contact Apple |\n| Apple Cash |  |  | Shop for Veterans and Military |  |",
+                            "near_chunks": [
+                                "#### iPhone iPhone 16 Pro\n\nSome features require specific hardware and software. For more information, see Feature Availability.\n\n- jz. Battery life claim refers to larger models. All battery claims depend on network configuration and many other factors; actual results will vary. Battery has limited recharge cycles and may eventually need to be replaced. Battery life and charge cycles vary by use and settings. See apple.com/batteries and apple.com/iphone/battery.html for more information.\nDEATH STRANDING DIRECTOR'S CUT © 2024 Sony Interactive Entertainment Inc. / KOJIMA PRODUCTIONS Co., Ltd. / HIDEO KOJIMA. Published by 505 Games. Features are subject to change. Some features, applications, and services may not be available in all regions or all languages.\n\n",
+                                "More ways to shop: Find an Apple Store or other retailer near you. Or call 1-800-MY-APPLE.\n\n"
+                            ],
+                            "path": "/Users/forcelss/Code/pptagent/runs/pdf/592890c9b99120aa62eb8811427d4fb9/table_dc05.png",
+                            "caption": "Table: Overview of Apple's online services, product categories, and support options, categorized by sections such as Shop and Learn, Account, Apple Store, For Business, and Apple Values.",
+                            "cells": [
+                                [
+                                    "Shop and Learn",
+                                    "Account",
+                                    "Apple Store",
+                                    "For Business",
+                                    "Apple Values"
+                                ],
+                                [
+                                    "Store",
+                                    "Manage Your Apple Account",
+                                    "Find a Store",
+                                    "Apple and Business",
+                                    "Accessibility"
+                                ],
+                                [
+                                    "Mac",
+                                    "Apple Store Account",
+                                    "Genius Bar",
+                                    "Shop for Business",
+                                    "Education"
+                                ],
+                                [
+                                    "iPad",
+                                    "iCloud.com",
+                                    "Today at Apple",
+                                    "For Education",
+                                    "Environment"
+                                ],
+                                [
+                                    "iPhone",
+                                    "",
+                                    "Group Reservations",
+                                    "",
+                                    "Inclusion and Diversity"
+                                ],
+                                [
+                                    "Watch",
+                                    "Entertainment",
+                                    "Apple Camp",
+                                    "Apple and Education",
+                                    "Privacy"
+                                ],
+                                [
+                                    "",
+                                    "Apple One",
+                                    "",
+                                    "Shop for K-12",
+                                    ""
+                                ],
+                                [
+                                    "Vision",
+                                    "",
+                                    "Apple Store App",
+                                    "",
+                                    "Racial Equity and Justice"
+                                ],
+                                [
+                                    "AirPods",
+                                    "Apple TV+",
+                                    "Certified Refurbished",
+                                    "Shop for College",
+                                    "Supply Chain"
+                                ],
+                                [
+                                    "",
+                                    "Apple Music",
+                                    "",
+                                    "",
+                                    ""
+                                ],
+                                [
+                                    "TV & Home",
+                                    "Apple Arcade",
+                                    "Apple Trade In",
+                                    "For Healthcare",
+                                    "About Apple"
+                                ],
+                                [
+                                    "AirTag",
+                                    "",
+                                    "Financing",
+                                    "Apple in Healthcare",
+                                    ""
+                                ],
+                                [
+                                    "Accessories",
+                                    "Apple Fitness+",
+                                    "Carrier Deals at Apple",
+                                    "",
+                                    "Newsroom"
+                                ],
+                                [
+                                    "",
+                                    "Apple News+",
+                                    "",
+                                    "Mac in Healthcare",
+                                    "Apple Leadership"
+                                ],
+                                [
+                                    "Gift Cards",
+                                    "",
+                                    "Order Status",
+                                    "Health on Apple Watch",
+                                    ""
+                                ],
+                                [
+                                    "",
+                                    "Apple Podcasts",
+                                    "Shopping Help",
+                                    "",
+                                    "Career Opportunities"
+                                ],
+                                [
+                                    "Apple Wallet",
+                                    "Apple Books",
+                                    "",
+                                    "Health Records on iPhone and iPad",
+                                    "Investors"
+                                ],
+                                [
+                                    "Wallet",
+                                    "App Store",
+                                    "",
+                                    "",
+                                    "Ethics & Compliance"
+                                ],
+                                [
+                                    "Apple Card",
+                                    "",
+                                    "",
+                                    "For Government",
+                                    "Events"
+                                ],
+                                [
+                                    "Apple Pay",
+                                    "",
+                                    "",
+                                    "Shop for Government",
+                                    "Contact Apple"
+                                ],
+                                [
+                                    "Apple Cash",
+                                    "",
+                                    "",
+                                    "Shop for Veterans and Military",
+                                    ""
+                                ]
+                            ],
+                            "merge_area": null
+                        }
+                    ]
+                },
+                {
+                    "title": "Recycled Materials",
+                    "content": "iPhone 16 Pro uses more recycled metals than ever: over 95% recycled lithium in the battery. 100% recycled gold in the plating of the USB-C connector and camera wires. 100% recycled copper foil in the MagSafe inductive charger.",
+                    "medias": []
+                },
+                {
+                    "title": "Packaging",
+                    "content": "The packaging for iPhone 16 Pro is 100% fiber based for the first time. And it's thinner, which reduces the carbon impact for shipping.",
+                    "medias": []
+                },
+                {
+                    "title": "Learn More",
+                    "content": "Learn about Apple and the environment",
+                    "medias": []
+                }
+            ]
         }
-      ]
-    },
-    {
-      "title": "Apple Intelligence",
-      "subsections": [
-        {
-          "title": "Personal and Private",
-          "content": "Apple Intelligence is a personal intelligence system that assists in writing, self-expression, and task completion with privacy protections. It is designed to safeguard your privacy at every step, utilizing on-device processing and Private Cloud Compute."
-        },
-        {
-          "title": "Productivity Tools",
-          "content": "Discover tools that aid in writing, focusing, and communicating. Create Genmoji in the keyboard, use Siri for step-by-step instructions, and receive priority messages in Mail. Writing Tools can proofread, rewrite, and summarize text. The Image Playground app allows for the creation of unique images based on descriptions or concepts."
-        },
-        {
-          "title": "Advanced Features",
-          "content": "Camera Control provides easy access to camera tools, enabling adjustments to exposure or depth of field. The A18 Pro chip enhances video and photo features, delivering top graphics performance for AAA gaming and 4K 120 fps Dolby Vision video recording."
-        }
-      ]
-    },
-    {
-      "title": "Performance and Battery",
-      "subsections": [
-        {
-          "title": "A18 Pro Chip",
-          "content": "The A18 Pro chip features a faster Neural Engine, improved CPU and GPU, and increased memory bandwidth. It offers advanced video and photo capabilities and the best graphics performance for gaming, with hardware-accelerated ray tracing and Game Mode in iOS 18."
-        },
-        {
-          "title": "Battery Life",
-          "content": "The iPhone 16 Pro provides extended battery life, with the Pro Max model offering up to 33 hours of video playback. Fast wireless charging is supported with up to 25W using a 30W power adapter, allowing up to 50% charge in approximately 30 minutes."
-        }
-      ]
-    },
-    {
-      "title": "Additional Features",
-      "subsections": [
-        {
-          "title": "Satellite Connectivity",
-          "content": "The iPhone 16 Pro can connect to a satellite when cell service or Wi-Fi is unavailable, enabling message sending and receiving and roadside assistance. Emergency SOS via satellite allows texting emergency services when necessary."
-        },
-        {
-          "title": "Privacy and Security",
-          "content": "Apple Intelligence and the new Passwords app secure your data and accounts with end-to-end encryption. You can manage which contacts to share with apps and the extent of information shared over time."
-        },
-        {
-          "title": "Accessibility",
-          "content": "Features like Eye Tracking, Music Haptics, and Vocal Shortcuts assist users with disabilities in navigating and using their devices more effectively. Eye Tracking allows control of the iPhone with eye movements, and Music Haptics synchronizes the Taptic Engine with song rhythms."
-        }
-      ]
-    },
-    {
-      "title": "Environmental and Ethical Considerations",
-      "subsections": [
-        {
-          "title": "Sustainability",
-          "content": "All Apple data centers operate on 100% renewable electricity. The iPhone 16 Pro incorporates more recycled metals, including over 95% recycled lithium in the battery, 100% recycled gold in the USB-C connector, and 100% recycled copper in the MagSafe charger. The packaging is 100% fiber-based and thinner, reducing carbon impact for shipping."
-        },
-        {
-          "title": "Ethical Practices",
-          "content": "Apple is dedicated to ethical practices, including the use of recycled materials and sustainable packaging. The company also prioritizes privacy and security, ensuring user data is protected and inaccessible to anyone, including Apple."
-        }
-      ]
+    ],
+    "metadata": {
+        "presentation-date": "2025-04-02"
     }
-  ]
 }

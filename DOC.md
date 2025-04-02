@@ -87,16 +87,27 @@ pip install git+https://github.com/Force1ess/python-pptx
 
    Initialize your models in `pptagent_ui/backend.py`:
    ```python
-   llms.language_model = LLM(
-       model="Qwen2.5-72B-Instruct-GPTQ-Int4",
-       api_base="http://124.16.138.143:7812/v1"
+   language_model = AsyncLLM(
+       model="Qwen2.5-72B-Instruct",
+       api_base="http://localhost:7812/v1"
    )
-   llms.vision = LLM(model="gpt-4o-2024-08-06")
+   vision_model = AsyncLLM(model="gpt-4o-2024-08-06")
+   text_embedder = AsyncLLM(model="text-embedding-3-small")
+   ```
+   Or use the environment variables:
+
+   ```bash
+   export LANGUAGE_MODEL="Qwen2.5-72B-Instruct-GPTQ-Int4"
+   export LANGUAGE_MODEL_API_BASE="http://localhost:7812/v1"
+   export VISION_MODEL="gpt-4o-2024-08-06"
+   export VISION_MODEL_API_BASE="http://localhost:7812/v1"
+   export TEXT_MODEL="text-embedding-3-small"
+   export TEXT_MODEL_API_BASE="http://localhost:7812/v1"
    ```
 
 2. **Launch Frontend**
 
-   > Note: The backend API endpoint is configured as `axios.defaults.baseURL` in `src/main.js`
+   > Note: The backend API endpoint is configured at `axios.defaults.baseURL` in `pptagent_ui/src/main.js`
 
    ```bash
    cd pptagent_ui

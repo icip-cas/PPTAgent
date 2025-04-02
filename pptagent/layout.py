@@ -57,21 +57,6 @@ class Layout:
     elements: list[Element]
     vary_mapping: dict[int, int] | None  # mapping for variable elements
 
-    def get_slide_id(self, data: dict):
-        for el in self.elements:
-            if el.variable_length is not None:
-                num_vary = len(data[el.el_name]["data"])
-                if num_vary < el.variable_length[0]:
-                    raise ValueError(
-                        f"The length of {el.el_name}: {num_vary} is less than the minimum length: {el.variable_length[0]}"
-                    )
-                if num_vary > el.variable_length[1]:
-                    raise ValueError(
-                        f"The length of {el.el_name}: {num_vary} is greater than the maximum length: {el.variable_length[1]}"
-                    )
-                return self.vary_mapping[str(num_vary)]
-        return self.slide_id
-
     @classmethod
     def from_dict(cls, title: str, data: dict):
         elements = [
@@ -88,21 +73,20 @@ class Layout:
             vary_mapping=data.get("vary_mapping", None),
         )
 
-    def __contains__(self, key: str):
+    def get_slide_id(self, data: dict):
         for el in self.elements:
-            if el.el_name == key:
-                return True
-        return False
-
-    def __getitem__(self, key: str):
-        for el in self.elements:
-            if el.el_name == key:
-                return el
-        raise ValueError(f"Element {key} not found")
-
-    @property
-    def content_schema(self):
-        return {el.el_name: el.get_schema() for el in self.elements}
+            if el.variable_length is not None:
+                num_vary = len(data[el.el_name]["data"])
+                if num_vary < el.variable_length[0]:
+                    raise ValueError(
+                        f"The length of {el.el_name}: {num_vary} is less than the minimum length: {el.variable_length[0]}"
+                    )
+                if num_vary > el.variable_length[1]:
+                    raise ValueError(
+                        f"The length of {el.el_name}: {num_vary} is greater than the maximum length: {el.variable_length[1]}"
+                    )
+                return self.vary_mapping[str(num_vary)]
+        return self.slide_id
 
     def get_old_data(self, editor_output: Optional[dict] = None):
         if editor_output is None:
@@ -163,6 +147,10 @@ class Layout:
                             )
 
     @property
+    def content_schema(self):
+        return {el.el_name: el.get_schema() for el in self.elements}
+
+    @property
     def overview(self):
         overview = f"Layout: {self.title}\n"
         for el in self.elements:
@@ -176,3 +164,21 @@ class Layout:
                 overview += f"suggested characters: {el.suggested_characters}\n"
             overview += "\n"
         return overview
+
+    def __contains__(self, key: str):
+        for el in self.elements:
+            if el.el_name == key:
+                return True
+        return False
+
+    def __getitem__(self, key: str):
+        for el in self.elements:
+            if el.el_name == key:
+                return el
+        raise ValueError(f"Element {key} not found")
+
+    def __iter__(self):
+        return iter(self.elements)
+
+    def __len__(self):
+        return len(self.elements)

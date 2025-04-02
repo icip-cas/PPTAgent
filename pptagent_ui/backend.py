@@ -372,13 +372,15 @@ async def test_connection(*models: AsyncLLM):
 if __name__ == "__main__":
     import uvicorn
 
-    api_base = os.environ.get("API_BASE", None)
-    language = os.environ.get("LANGUAGE", "gpt-4o")
-    vision = os.environ.get("VISION", "gpt-4o")
-    text = os.environ.get("TEXT", "text-embedding-3-small")
-    language_model = AsyncLLM(language, api_base)
-    vision_model = AsyncLLM(vision, api_base)
-    text_embedder = AsyncLLM(text, api_base)
+    language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4o")
+    language_model_api_base = os.environ.get("LANGUAGE_MODEL_API_BASE", None)
+    vision_model_name = os.environ.get("VISION_MODEL", "gpt-4o")
+    vision_model_api_base = os.environ.get("VISION_MODEL_API_BASE", None)
+    text_model_name = os.environ.get("TEXT_MODEL", "text-embedding-3-small")
+    text_model_api_base = os.environ.get("TEXT_MODEL_API_BASE", None)
+    language_model = AsyncLLM(language_model_name, language_model_api_base)
+    vision_model = AsyncLLM(vision_model_name, vision_model_api_base)
+    text_embedder = AsyncLLM(text_model_name, text_model_api_base)
 
     asyncio.run(test_connection(language_model, vision_model, text_embedder))
     ip = "0.0.0.0"
