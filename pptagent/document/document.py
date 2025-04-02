@@ -27,7 +27,9 @@ MARKDOWN_IMAGE_REGEX = re.compile(r"!\[.*\]\(.*\)")
 MARKDOWN_TABLE_REGEX = re.compile(r"\|.*\|")
 
 
-def split_markdown_by_headings(markdown_content: str, headings: list[str]) -> list[str]:
+def split_markdown_by_headings(
+    markdown_content: str, headings: list[str], adjusted_headings: list[str]
+) -> list[str]:
     """
     Split markdown content using headings as separators without regex.
 
@@ -38,19 +40,21 @@ def split_markdown_by_headings(markdown_content: str, headings: list[str]) -> li
     Returns:
         list[str]: List of content sections
     """
-    lines = markdown_content.split("\n")
+    adjusted_headings = [
+        max(headings, key=lambda x: edit_distance(x, ah)) for ah in adjusted_headings
+    ]
     sections = []
     current_section = []
 
-    for line in lines:
-        if any(line.strip().startswith(heading) for heading in headings):
-            if current_section:
-                sections.append("\n".join([line] + current_section).strip())
-            current_section = []
+    for line in markdown_content.splitlines():
+        if any(line.strip().startswith(h) for h in adjusted_headings):
+            if len(current_section) != 0:
+                sections.append("\n".join(current_section).strip())
+            current_section = [line]
         else:
             current_section.append(line)
 
-    if current_section:
+    if len(current_section) != 0:
         sections.append("\n".join(current_section).strip())
 
     return sections
@@ -138,18 +142,19 @@ class Document:
         metadata: Optional[dict[str, Any]],
         section: Optional[dict[str, Any]],
         image_dir: str,
+        turn_id: int = None,
         retry: int = 0,
         medias: Optional[list[dict]] = None,
     ):
         if retry == 0:
             medias = to_paragraphs(section)
-            section = extractor(markdown_document=section)
+            turn_id, section = extractor(markdown_document=section)
             metadata = section.pop("metadata", {})
         try:
             section["subsections"] = link_medias(medias, section["subsections"])
             section = Section.from_dict(section)
             for media in section.iter_medias():
-                media.parse(table_model)
+                media.parse(table_model, image_dir)
                 if isinstance(media, Table):
                     media.get_caption(language_model)
                 else:
@@ -158,7 +163,9 @@ class Document:
         except Exception as e:
             if retry < 3:
                 logger.info("Retry section with error: %s", str(e))
-                new_section = extractor.retry(str(e), traceback.format_exc(), retry + 1)
+                new_section = extractor.retry(
+                    str(e), traceback.format_exc(), turn_id, retry + 1
+                )
                 return cls._parse_chunk(
                     extractor,
                     language_model,
@@ -167,6 +174,7 @@ class Document:
                     metadata,
                     new_section,
                     image_dir,
+                    turn_id,
                     retry + 1,
                     medias,
                 )
@@ -189,18 +197,19 @@ class Document:
         metadata: Optional[dict[str, Any]],
         section: Optional[dict[str, Any]],
         image_dir: str,
+        turn_id: int = None,
         retry: int = 0,
         medias: Optional[list[dict]] = None,
     ):
         if retry == 0:
             medias = to_paragraphs(section)
-            section = await extractor(markdown_document=section)
+            turn_id, section = await extractor(markdown_document=section)
             metadata = section.pop("metadata", {})
         try:
             section["subsections"] = link_medias(medias, section["subsections"])
             section = Section.from_dict(section)
             for media in section.iter_medias():
-                await media.parse_async(table_model)
+                await media.parse_async(table_model, image_dir)
                 if isinstance(media, Table):
                     await media.get_caption_async(language_model)
                 else:
@@ -210,7 +219,7 @@ class Document:
             if retry < 3:
                 logger.info("Retry section with error: %s", str(e))
                 new_section = await extractor.retry(
-                    str(e), traceback.format_exc(), retry + 1
+                    str(e), traceback.format_exc(), turn_id, retry + 1
                 )
                 return await cls._parse_chunk_async(
                     extractor,
@@ -220,6 +229,7 @@ class Document:
                     metadata,
                     new_section,
                     image_dir,
+                    turn_id,
                     retry + 1,
                     medias,
                 )
@@ -266,7 +276,9 @@ class Document:
             HEADING_EXTRACT_PROMPT.render(headings=headings), return_json=True
         )
 
-        for chunk in split_markdown_by_headings(markdown_content, adjusted_headings):
+        for chunk in split_markdown_by_headings(
+            markdown_content, headings, adjusted_headings
+        ):
             metadata, section = cls._parse_chunk(
                 doc_extractor,
                 language_model,
@@ -306,7 +318,9 @@ class Document:
         adjusted_headings = await language_model(
             HEADING_EXTRACT_PROMPT.render(headings=headings), return_json=True
         )
-        for chunk in split_markdown_by_headings(markdown_content, adjusted_headings):
+        for chunk in split_markdown_by_headings(
+            markdown_content, headings, adjusted_headings
+        ):
             coro = cls._parse_chunk_async(
                 doc_extractor,
                 language_model,
@@ -416,6 +430,17 @@ class OutlineItem:
     purpose: str
     description: str
     indexs: dict[str, list[str]]
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]):
+        assert (
+            "purpose" in data and "description" in data
+        ), "purpose and description of outline item are required"
+        return cls(
+            purpose=data["purpose"],
+            description=data["description"],
+            indexs=data.get("indexs", {}),
+        )
 
     def retrieve(self, slide_idx: int, document: Document):
         subsections = document.retrieve(self.indexs)

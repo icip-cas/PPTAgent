@@ -165,16 +165,16 @@ class PPTGen(ABC):
             dict: The generated outline.
         """
         assert self._initialized, "PPTGen not initialized, call `set_reference` first"
-        outline = self.staffs["planner"](
+        turn_id, outline = self.staffs["planner"](
             num_slides=num_slides,
             document_overview=source_doc.overview,
             functional_layouts=self.functional_keys,
         )
-        outline = self._valid_outline(outline, source_doc)
+        outline = self._valid_outline(outline, source_doc, turn_id)
         return outline
 
     def _valid_outline(
-        self, outline: list[dict], source_doc: Document, retry: int = 0
+        self, outline: list[dict], source_doc: Document, turn_id: int, retry: int = 0
     ) -> list[OutlineItem]:
         """
         Validate the generated outline.
@@ -183,7 +183,9 @@ class PPTGen(ABC):
             ValueError: If the outline is invalid.
         """
         try:
-            outline_items = [OutlineItem(**outline_item) for outline_item in outline]
+            outline_items = [
+                OutlineItem.from_dict(outline_item) for outline_item in outline
+            ]
             for outline_item in outline_items:
                 source_doc.retrieve(outline_item.indexs)
             return outline_items
@@ -196,9 +198,9 @@ class PPTGen(ABC):
             )
             if retry < self.retry_times:
                 new_outline = self.staffs["planner"].retry(
-                    str(e), traceback.format_exc(), retry + 1
+                    str(e), traceback.format_exc(), turn_id, retry + 1
                 )
-                return self._valid_outline(new_outline, source_doc, retry + 1)
+                return self._valid_outline(new_outline, source_doc, turn_id, retry + 1)
             else:
                 raise ValueError("Failed to generate outline, tried too many times")
 
@@ -226,7 +228,7 @@ class PPTGen(ABC):
 
         for role_name, role in self.staffs.items():
             history["agents"][role_name] = role.history
-            role.history = []
+            role._history = []
 
         return history
 
@@ -273,11 +275,11 @@ class PPTAgent(PPTGen):
         available_layouts = "\n".join(
             [layout.overview for layout in self.layouts.values()]
         )
-        key_points = self.staffs["content_organizer"](content_source=content_source)
+        _, key_points = self.staffs["content_organizer"](content_source=content_source)
         slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
         if len(images) > 0:
             slide_content += "\nImages:\n" + "\n".join(images)
-        layout_selection = self.staffs["layout_selector"](
+        _, layout_selection = self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
             slide_content=slide_content,
@@ -288,6 +290,10 @@ class PPTAgent(PPTGen):
             self.layouts.keys(),
             key=lambda x: edit_distance(x, layout_selection["layout"]),
         )
+        if "image" in layout and len(images) == 0:
+            logger.info(
+                f"An image layout is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
+            )
         return self.edit_slide(
             self.layouts[layout], slide_content, slide_description=header
         )
@@ -310,15 +316,17 @@ class PPTAgent(PPTGen):
             tuple[SlidePage, CodeExecutor]: The generated slide and code executor.
         """
         code_executor = CodeExecutor(self.retry_times)
-        editor_output = self.staffs["editor"](
+        editor_turn_id, editor_output = self.staffs["editor"](
             outline=self.simple_outline,
             slide_description=slide_description,
             schema=layout.content_schema,
             metadata=self.source_doc.metainfo,
             slide_content=slide_content,
         )
-        command_list, template_id = self._generate_commands(editor_output, layout)
-        edit_actions = self.staffs["coder"](
+        command_list, template_id = self._generate_commands(
+            editor_output, layout, editor_turn_id
+        )
+        coder_turn_id, edit_actions = self.staffs["coder"](
             api_docs=code_executor.get_apis_docs(API_TYPES.Agent.value),
             edit_target=self.presentation.slides[template_id - 1].to_html(),
             command_list="\n".join([str(i) for i in command_list]),
@@ -340,7 +348,9 @@ class PPTAgent(PPTGen):
                 raise Exception(
                     f"Failed to generate slide, tried too many times at editing\ntraceback: {feedback[1]}"
                 )
-            edit_actions = self.staffs["coder"].retry(*feedback, error_idx + 1)
+            edit_actions = self.staffs["coder"].retry(
+                feedback[0], feedback[1], coder_turn_id, error_idx + 1
+            )
         self.empty_prs.build_slide(edit_slide)
         return edit_slide, code_executor
 
@@ -520,24 +530,26 @@ class PPTAgentAsync(PPTGen):
             self._initialized
         ), "AsyncPPTAgent not initialized, call `set_reference` first"
 
-        outline = await self.staffs["planner"](
+        turn_id, outline = await self.staffs["planner"](
             num_slides=num_slides,
             document_overview=source_doc.overview,
             functional_layouts=self.functional_keys,
         )
-        outline = await self._valid_outline(outline, source_doc)
+        outline = await self._valid_outline(outline, source_doc, turn_id)
 
         # Return the outline directly instead of saving to file
         return outline
 
     async def _valid_outline(
-        self, outline: list[dict], source_doc: Document, retry: int = 0
+        self, outline: list[dict], source_doc: Document, turn_id: int, retry: int = 0
     ) -> list[OutlineItem]:
         """
         Asynchronously validate the generated outline.
         """
         try:
-            outline_items = [OutlineItem(**outline_item) for outline_item in outline]
+            outline_items = [
+                OutlineItem.from_dict(outline_item) for outline_item in outline
+            ]
             for outline_item in outline_items:
                 source_doc.retrieve(outline_item.indexs)
             return outline_items
@@ -550,9 +562,11 @@ class PPTAgentAsync(PPTGen):
             )
             if retry < self.retry_times:
                 new_outline = await self.staffs["planner"].retry(
-                    str(e), traceback.format_exc(), retry + 1
+                    str(e), traceback.format_exc(), turn_id, retry + 1
                 )
-                return await self._valid_outline(new_outline, source_doc, retry + 1)
+                return await self._valid_outline(
+                    new_outline, source_doc, turn_id, retry + 1
+                )
             else:
                 raise ValueError("Failed to generate outline, tried too many times")
 
@@ -568,13 +582,13 @@ class PPTAgentAsync(PPTGen):
         available_layouts = "\n".join(
             [layout.overview for layout in self.layouts.values()]
         )
-        key_points = await self.staffs["content_organizer"](
+        _, key_points = await self.staffs["content_organizer"](
             content_source=content_source
         )
         slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
         if len(images) > 0:
             slide_content += "\nImages:\n" + "\n".join(images)
-        layout_selection = await self.staffs["layout_selector"](
+        _, layout_selection = await self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
             slide_content=slide_content,
@@ -585,6 +599,14 @@ class PPTAgentAsync(PPTGen):
             self.layouts.keys(),
             key=lambda x: edit_distance(x, layout_selection["layout"]),
         )
+        if "image" in layout and len(images) == 0:
+            logger.info(
+                f"An image layout is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
+            )
+        elif "image" not in layout and len(images) > 0:
+            logger.info(
+                f"An image layout is not selected, but images are provided, please check the parsed document and outline item:\n {outline_item}"
+            )
         return await self.edit_slide(
             self.layouts[layout], slide_content, slide_description=header
         )
@@ -607,16 +629,17 @@ class PPTAgentAsync(PPTGen):
             tuple[SlidePage, CodeExecutor]: The generated slide and code executor.
         """
         code_executor = CodeExecutor(self.retry_times)
-        editor_output = await self.staffs["editor"](
+        editor_turn_id, editor_output = await self.staffs["editor"](
             outline=self.simple_outline,
             slide_description=slide_description,
             metadata=self.source_doc.metainfo,
             slide_content=slide_content,
             schema=layout.content_schema,
         )
-        command_list = await self._generate_commands(editor_output, layout)
-        template_id = layout.get_slide_id(editor_output)
-        edit_actions = await self.staffs["coder"](
+        command_list, template_id = await self._generate_commands(
+            editor_output, layout, editor_turn_id
+        )
+        coder_turn_id, edit_actions = await self.staffs["coder"](
             api_docs=code_executor.get_apis_docs(API_TYPES.Agent.value),
             edit_target=self.presentation.slides[template_id - 1].to_html(),
             command_list="\n".join([str(i) for i in command_list]),
@@ -639,12 +662,14 @@ class PPTAgentAsync(PPTGen):
                 raise Exception(
                     f"Failed to generate slide, tried too many times at editing\ntraceback: {feedback[1]}"
                 )
-            edit_actions = await self.staffs["coder"].retry(*feedback, error_idx + 1)
+            edit_actions = await self.staffs["coder"].retry(
+                feedback[0], feedback[1], coder_turn_id, error_idx + 1
+            )
         self.empty_prs.build_slide(edit_slide)
         return edit_slide, code_executor
 
     async def _generate_commands(
-        self, editor_output: dict, layout: Layout, retry: int = 0
+        self, editor_output: dict, layout: Layout, turn_id: int, retry: int = 0
     ):
         """
         Asynchronously generate commands for editing the slide content.
@@ -652,6 +677,7 @@ class PPTAgentAsync(PPTGen):
         Args:
             editor_output (dict): The editor output.
             layout (Layout): The layout object containing content schema.
+            turn_id (int): The turn ID for retrying.
             retry (int, optional): The number of retries. Defaults to 0.
 
         Returns:
@@ -672,9 +698,12 @@ class PPTAgentAsync(PPTGen):
                 new_output = await self.staffs["editor"].retry(
                     e,
                     traceback.format_exc(),
+                    turn_id,
                     retry + 1,
                 )
-                return await self._generate_commands(new_output, layout, retry + 1)
+                return await self._generate_commands(
+                    new_output, layout, turn_id, retry + 1
+                )
             else:
                 raise Exception(
                     f"Failed to generate commands, tried too many times at editing\ntraceback: {e}"

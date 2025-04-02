@@ -3,7 +3,6 @@ from functools import partial
 from math import ceil
 from typing import Optional
 
-import jsonlines
 import tiktoken
 import yaml
 from jinja2 import Environment, StrictUndefined, Template
@@ -11,7 +10,7 @@ from PIL import Image
 from torch import Tensor, cosine_similarity
 
 from pptagent.llms import LLM, AsyncLLM
-from pptagent.utils import get_json_from_response, package_join, pexists, pjoin
+from pptagent.utils import get_json_from_response, package_join
 
 ENCODING = tiktoken.encoding_for_model("gpt-4o")
 
@@ -26,6 +25,7 @@ class Turn:
     prompt: str
     response: str
     message: list
+    retry: int = -1
     images: list[str] = None
     input_tokens: int = 0
     output_tokens: int = 0
@@ -100,7 +100,7 @@ class Agent:
         )
         self.input_tokens = 0
         self.output_tokens = 0
-        self.history: list[Turn] = []
+        self._history: list[Turn] = []
         run_args = self.config.get("run_args", {})
         self.llm.__call__ = partial(self.llm.__call__, **run_args)
         self.system_tokens = len(ENCODING.encode(self.system_message))
@@ -109,17 +109,18 @@ class Agent:
         """
         Calculate the cost of a list of turns.
         """
-        for turn in turns:
+        for turn in turns[:-1]:
             self.input_tokens += turn.input_tokens
-            self.output_tokens += turn.output_tokens
+            self.input_tokens += turn.output_tokens
+        self.input_tokens += turns[-1].input_tokens
+        self.output_tokens += turns[-1].output_tokens
         self.input_tokens += self.system_tokens
-        self.output_tokens += 3
 
     def get_history(self, similar: int, recent: int, prompt: str):
         """
         Get the conversation history.
         """
-        history = self.history[-recent:] if recent > 0 else []
+        history = self._history[-recent:] if recent > 0 else []
         if similar > 0:
             assert isinstance(self.text_model, LLM), "text_model must be a LLM"
             embedding = self.text_model.get_embedding(prompt)
@@ -132,44 +133,39 @@ class Agent:
         history.sort(key=lambda x: x.id)
         return history
 
-    def save_history(self, output_dir: str):
-        """
-        Save the conversation history to a file.
-        """
-        history_file = pjoin(output_dir, f"{self.name}.jsonl")
-        if pexists(history_file) and len(self.history) == 0:
-            return
-        with jsonlines.open(history_file, "w") as writer:
-            writer.write(
-                {
-                    "input_tokens": self.input_tokens,
-                    "output_tokens": self.output_tokens,
-                }
-            )
-            for turn in self.history:
-                writer.write(turn.to_dict())
-
-    def retry(self, feedback: str, traceback: str, error_idx: int):
+    def retry(self, feedback: str, traceback: str, turn_id: int, error_idx: int):
         """
         Retry a failed turn with feedback and traceback.
         """
         assert error_idx > 0, "error_idx must be greater than 0"
         prompt = self.retry_template.render(feedback=feedback, traceback=traceback)
-        history = []
-        for turn in self.history[-error_idx:]:
-            history.extend(turn.message)
+        history = [t for t in self._history if t.id == turn_id]
+        history_msg = []
+        for turn in history:
+            history_msg.extend(turn.message)
         response, message = self.llm(
             prompt,
-            history=history,
+            history=history_msg,
             return_message=True,
         )
         turn = Turn(
-            id=len(self.history),
+            id=turn_id,
             prompt=prompt,
             response=response,
             message=message,
+            retry=error_idx,
         )
-        return self.__post_process__(response, self.history[-error_idx:], turn)
+        return self.__post_process__(response, history, turn)
+
+    @property
+    def next_turn_id(self):
+        if len(self._history) == 0:
+            return 0
+        return max(t.id for t in self._history) + 1
+
+    @property
+    def history(self):
+        return sorted(self._history, key=lambda x: (x.id, x.retry))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, model={self.model})"
@@ -212,21 +208,21 @@ class Agent:
             return_message=True,
         )
         turn = Turn(
-            id=len(self.history),
+            id=self.next_turn_id,
             prompt=prompt,
             response=response,
             message=message,
             images=images,
         )
-        return self.__post_process__(response, history, turn, similar)
+        return turn.id, self.__post_process__(response, history, turn, similar)
 
     def __post_process__(
         self, response: str, history: list[Turn], turn: Turn, similar: int = 0
-    ):
+    ) -> str | dict:
         """
         Post-process the response from the agent.
         """
-        self.history.append(turn)
+        self._history.append(turn)
         if similar > 0:
             turn.embedding = self.text_model.get_embedding(turn.prompt)
         if self.record_cost:
@@ -254,27 +250,29 @@ class AsyncAgent(Agent):
         super().__init__(name, llm_mapping, text_model, record_cost, config, env)
         assert isinstance(self.llm, AsyncLLM), "You should use AsyncLLM for AsyncAgent"
 
-    async def retry(self, feedback: str, traceback: str, error_idx: int):
+    async def retry(self, feedback: str, traceback: str, turn_id: int, error_idx: int):
         """
         Retry a failed turn with feedback and traceback.
         """
         assert error_idx > 0, "error_idx must be greater than 0"
         prompt = self.retry_template.render(feedback=feedback, traceback=traceback)
-        history = []
-        for turn in self.history[-error_idx:]:
-            history.extend(turn.message)
+        history = [t for t in self._history if t.id == turn_id]
+        history_msg = []
+        for turn in history:
+            history_msg.extend(turn.message)
         response, message = await self.llm(
             prompt,
-            history=history,
+            history=history_msg,
             return_message=True,
         )
         turn = Turn(
-            id=len(self.history),
+            id=turn_id,
             prompt=prompt,
             response=response,
             message=message,
+            retry=error_idx,
         )
-        return await self.__post_process__(response, self.history[-error_idx:], turn)
+        return await self.__post_process__(response, history, turn)
 
     async def __call__(
         self,
@@ -314,19 +312,19 @@ class AsyncAgent(Agent):
             return_message=True,
         )
         turn = Turn(
-            id=len(self.history),
+            id=self.next_turn_id,
             prompt=prompt,
             response=response,
             message=message,
             images=images,
         )
-        return await self.__post_process__(response, history, turn, similar)
+        return turn.id, await self.__post_process__(response, history, turn, similar)
 
     async def get_history(self, similar: int, recent: int, prompt: str):
         """
         Get the conversation history.
         """
-        history = self.history[-recent:] if recent > 0 else []
+        history = self._history[-recent:] if recent > 0 else []
         if similar > 0:
             embedding = await self.text_model.get_embedding(prompt)
             history.sort(key=lambda x: cosine_similarity(embedding, x.embedding))
@@ -344,7 +342,7 @@ class AsyncAgent(Agent):
         """
         Post-process the response from the agent.
         """
-        self.history.append(turn)
+        self._history.append(turn)
         if similar > 0:
             turn.embedding = await self.text_model.get_embedding(turn.prompt)
         if self.record_cost:
@@ -353,19 +351,6 @@ class AsyncAgent(Agent):
         if self.return_json:
             response = get_json_from_response(response)
         return response
-
-    def rebuild(self):
-        """
-        Rebuild the agent.
-        """
-        return AsyncAgent(
-            self.name,
-            self.llm_mapping,
-            self.text_model,
-            self.record_cost,
-            self.config,
-            self.env,
-        )
 
 
 def calc_image_tokens(images: list[str]):

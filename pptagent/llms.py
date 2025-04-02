@@ -58,9 +58,13 @@ class LLM:
         if history is None:
             history = []
         system, message = self.format_message(content, images, system_message)
-        completion = self.client.chat.completions.create(
-            model=self.model, messages=system + history + message, **client_kwargs
-        )
+        try:
+            completion = self.client.chat.completions.create(
+                model=self.model, messages=system + history + message, **client_kwargs
+            )
+        except Exception as e:
+            logger.warning("Error in LLM call: %s", e)
+            raise e
         response = completion.choices[0].message.content
         message.append({"role": "assistant", "content": response})
         return self.__post_process__(response, message, return_json, return_message)
@@ -259,16 +263,21 @@ class AsyncLLM(LLM):
         if history is None:
             history = []
         system, message = self.format_message(content, images, system_message)
-        await self.client.add(
-            "chat.completions.create",
-            model=self.model,
-            messages=system + history + message,
-            **client_kwargs,
-        )
-        completion = await self.client.run()
-        assert (
-            len(completion["result"]) == 1
-        ), f"The length of completion result should be 1, but got {len(completion['result'])}.\nRace condition may have occurred if multiple values are returned.\nOr, there was an error in the LLM call, use the synchronous version to check."
+        try:
+            await self.client.add(
+                "chat.completions.create",
+                model=self.model,
+                messages=system + history + message,
+                **client_kwargs,
+            )
+            completion = await self.client.run()
+            if "result" not in completion or len(completion["result"]) != 1:
+                raise ValueError(
+                    f"The length of completion result should be 1, but got {completion}.\nRace condition may have occurred if multiple values are returned.\nOr, there was an error in the LLM call, use the synchronous version to check."
+                )
+        except Exception as e:
+            logger.warning("Error in AsyncLLM call: %s", e)
+            raise e
         response = completion["result"][0]["choices"][0]["message"]["content"]
         message.append({"role": "assistant", "content": response})
         return self.__post_process__(response, message, return_json, return_message)

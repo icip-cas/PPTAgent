@@ -265,9 +265,7 @@ def get_json_from_response(response: str) -> dict[str, Any]:
 
 
 # Create a tenacity decorator with custom settings
-tenacity = retry(
-    wait=wait_fixed(3), stop=stop_after_attempt(5), after=tenacity_log, reraise=True
-)
+tenacity = retry(wait=wait_fixed(3), stop=stop_after_attempt(5))
 
 
 TABLE_CSS = """
