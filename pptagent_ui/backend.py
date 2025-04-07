@@ -157,7 +157,7 @@ async def send_progress(websocket: Optional[WebSocket], status: str, progress: i
     await websocket.send_json({"progress": progress, "status": status})
 
 
-@app.websocket("/ws/{task_id}")
+@app.websocket("/wsapi/{task_id}")
 async def websocket_endpoint(websocket: WebSocket, task_id: str):
     task_id = task_id.replace("|", "/")
     if task_id in progress_store:

@@ -8,7 +8,7 @@ module.exports = defineConfig({
         target: 'http://localhost:9297',
         changeOrigin: true
       },
-      '/ws': {
+      '/wsapi': {
         target: 'ws://localhost:9297',
         ws: true,
         changeOrigin: true,

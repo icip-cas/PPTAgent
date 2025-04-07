@@ -31,8 +31,8 @@ export default {
   },
   methods: {
     async startGeneration() {
-      console.log("Connecting to websocket", `/ws/${this.taskId}`)
-      this.socket = new WebSocket(`/ws/${this.taskId}`)
+      console.log("Connecting to websocket", `/wsapi/${this.taskId}`)
+      this.socket = new WebSocket(`/wsapi/${this.taskId}`)
 
       this.socket.onmessage = (event) => {
         console.log("Socket Received message:", event.data)
