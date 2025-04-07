@@ -107,7 +107,7 @@ pip install git+https://github.com/Force1ess/python-pptx
 
 2. **Launch Frontend**
 
-   > Note: The backend API endpoint is configured at `axios.defaults.baseURL` in `pptagent_ui/src/main.js`
+   > Note: The backend API endpoint is configured at `pptagent_ui/vue.config.js`
 
    ```bash
    cd pptagent_ui

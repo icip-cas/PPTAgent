@@ -5,9 +5,9 @@ template: |
   Review the document overview, which includes the titles of sections and subsections along with their associated images. Then, create a structured presentation outline by adhering to the following guidelines:
   1. Ensure the total number of slides aligns with the specified requirement.
   2. Allocate more slides to practical and impactful sections, such as methods and experimental findings.
-  3. For slides presenting meta-information (e.g., opening, closing, section outline), apply available functional layouts and specify the chosen layout in the slide description.
-  4. Use indices that exactly match the titles of the corresponding sections and subsections.
-  5. Maximize the use of provided images, prioritizing sections with image-related content for inclusion in the presentation.
+  3. Maximize the use of provided images, prioritizing slides with image-related content (image and slide may not belong to the same subsection) for inclusion in the presentation.
+  4. For slides presenting meta-information (e.g., opening, closing, section outline), apply available functional layouts and specify the chosen layout in the slide description.
+  5. Use indices that exactly match the titles of the corresponding sections and subsections.
 
   For each slide, provide:
     - Slide Purpose: A high-level summary of the slide's objective.

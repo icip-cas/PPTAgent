@@ -299,6 +299,7 @@ def link_medias(
         The rewritten paragraphs with medias linked to appropriate sections
     """
     # Process each media element
+    assert len(rewritten_paragraphs) != 0, "rewritten_paragraphs is empty"
     for media in medias:
         if len(media["near_chunks"][0]) < max_chunk_size:
             link_paragraph = rewritten_paragraphs[0]

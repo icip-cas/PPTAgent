@@ -18,32 +18,36 @@ export default {
       statusMessage: 'Starting...',
       downloadLink: '',
       taskId: history.state.taskId,
-      socketUrl: `ws://${this.$axios.defaults.baseURL.replace('http://', '')}/ws/${history.state.taskId}`,
       feedback: '',
-      filename: 'final.pptx'
+      filename: 'final.pptx',
+      socket: null,
     }
   },
   created() {
     this.startGeneration()
   },
+  beforeUnmount() {
+    this.closeSocket()
+  },
   methods: {
     async startGeneration() {
-      console.log("Connecting to websocket", this.socketUrl)
-      const socket = new WebSocket(this.socketUrl)
+      console.log("Connecting to websocket", `/ws/${this.taskId}`)
+      this.socket = new WebSocket(`/ws/${this.taskId}`)
 
-      socket.onmessage = (event) => {
+      this.socket.onmessage = (event) => {
         console.log("Socket Received message:", event.data)
         const data = JSON.parse(event.data)
         this.progress = data.progress
         this.statusMessage = data.status
         if (data.progress >= 100) {
-          socket.close()
+          this.closeSocket()
           this.fetchDownloadLink()
         }
       }
-      socket.onerror = (error) => {
+      this.socket.onerror = (error) => {
         console.error("WebSocket error:", error)
         this.statusMessage = 'WebSocket connection failed.'
+        this.closeSocket()
       }
     },
     async fetchDownloadLink() {
@@ -68,6 +72,12 @@ export default {
       } catch (error) {
         console.error("Feedback submission error:", error)
         this.statusMessage = 'Failed to submit feedback.'
+      }
+    },
+    closeSocket() {
+      if (this.socket) {
+        this.socket.close()
+        this.socket = null
       }
     }
   }

@@ -8,6 +8,11 @@ module.exports = defineConfig({
         target: 'http://localhost:9297',
         changeOrigin: true
       },
+      '/ws': {
+        target: 'ws://localhost:9297',
+        ws: true,
+        changeOrigin: true,
+      },
     },
     port: 8088
   },

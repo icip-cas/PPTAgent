@@ -20,7 +20,9 @@ env = Environment(undefined=StrictUndefined)
 MERGE_METADATA_PROMPT = env.from_string(
     open(package_join("prompts", "merge_metadata.txt")).read()
 )
-HEADING_EXTRACT_PROMPT = env.from_string(open("./prompts/heading_extract.txt").read())
+HEADING_EXTRACT_PROMPT = env.from_string(
+    open(package_join("prompts", "heading_extract.txt")).read()
+)
 
 
 MARKDOWN_IMAGE_REGEX = re.compile(r"!\[.*\]\(.*\)")

@@ -302,7 +302,11 @@ def markdown_table_to_image(markdown_text: str, output_path: str):
     assert "table" in html, "Failed to find table in markdown"
 
     parent_dir, basename = os.path.split(output_path)
-    hti = Html2Image(disable_logging=True, output_path=parent_dir)
+    hti = Html2Image(
+        disable_logging=True,
+        output_path=parent_dir,
+        custom_flags=["--no-sandbox", "--headless"],
+    )
     hti.browser.use_new_headless = None
     hti.screenshot(html_str=html, css_str=TABLE_CSS, save_as=basename)
 

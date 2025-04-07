@@ -47,11 +47,7 @@ STAGES = [
     "Success!",
 ]
 NUM_MODELS = 1 if len(sys.argv) == 1 else int(sys.argv[1])
-DEVICE = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps" if torch.backends.mps.is_available() else "cpu"
-)
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REFINE_TEMPLATE = Template(package_join("prompts", "document_refine.txt"))
 
 # models
@@ -275,6 +271,8 @@ async def ppt_gen(task_id: str, rerun=False):
             json.dump(
                 labler.image_stats,
                 open(pjoin(pptx_config.RUN_DIR, "image_stats.json"), "w"),
+                ensure_ascii=False,
+                indent=4,
             )
         await progress.report_progress()
 
@@ -300,6 +298,8 @@ async def ppt_gen(task_id: str, rerun=False):
             json.dump(
                 source_doc.to_dict(),
                 open(pjoin(parsedpdf_dir, "refined_doc.json"), "w"),
+                ensure_ascii=False,
+                indent=4,
             )
         else:
             source_doc = json.load(open(pjoin(parsedpdf_dir, "refined_doc.json")))
@@ -329,6 +329,8 @@ async def ppt_gen(task_id: str, rerun=False):
             json.dump(
                 slide_induction,
                 open(pjoin(pptx_config.RUN_DIR, "slide_induction.json"), "w"),
+                ensure_ascii=False,
+                indent=4,
             )
         else:
             slide_induction = json.load(
@@ -346,11 +348,11 @@ async def ppt_gen(task_id: str, rerun=False):
             presentation=presentation,
         )
 
-        await ppt_agent.generate_pres(
+        prs, _ = await ppt_agent.generate_pres(
             source_doc=source_doc,
             num_slides=task["numberOfPages"],
         )
-
+        prs.save(pjoin(generation_config.RUN_DIR, "final.pptx"))
         logger.info(f"{task_id}: generation finished")
         await progress.report_progress()
     except Exception as e:
