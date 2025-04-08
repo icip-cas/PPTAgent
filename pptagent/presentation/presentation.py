@@ -144,12 +144,8 @@ class SlidePage:
         for ph in slide.placeholders:
             ph.element.getparent().remove(ph.element)
 
-        # Build background
-        for background in self.backgrounds:
-            background.build(slide)
-
-        # Build shapes and apply closures
-        for shape in self.shapes:
+        # Build backgrounds, shapes and apply closures
+        for shape in sorted(self.backgrounds + self.shapes, key=lambda x: x.shape_idx):
             build_shape = shape.build(slide)
             for closure in shape.closures:
                 try:

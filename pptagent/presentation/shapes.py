@@ -163,6 +163,16 @@ class Background(Fill):
     A class to represent a slide background.
     """
 
+    def __init__(
+        self,
+        fill_type: MSO_FILL_TYPE,
+        fill_str: str,
+        fill_xml: str,
+        image_path: str | None = None,
+    ):
+        super().__init__(fill_type, fill_str, fill_xml, image_path)
+        self.shape_idx = -1
+
     @classmethod
     def from_slide(cls, slide: PPTXSlide, config: Config) -> "Background":
         """
@@ -190,6 +200,14 @@ class Background(Fill):
         Returns:
             str: The HTML representation of the background.
         """
+        raise NotImplementedError("Background to HTML conversion is not implemented")
+
+    @property
+    def closures(self) -> list:
+        """
+        Get the closure for the background.
+        """
+        return []
 
 
 @dataclass
@@ -1209,7 +1227,7 @@ class SemanticPicture(ShapeElement):
             shape_idx,
             style,
             [
-                "resource/pic_placeholder.png",
+                package_join("resource", "pic_placeholder.png"),
                 shape.name,
                 f"This is a picture of {shape_type}",
             ],

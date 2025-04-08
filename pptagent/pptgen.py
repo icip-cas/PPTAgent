@@ -123,7 +123,7 @@ class PPTGen(ABC):
             if self.force_pages and slide_idx == num_slides:
                 break
             try:
-                slide, code_executor = self._generate_slide(slide_idx, outline_item)
+                slide, code_executor = self.generate_slide(slide_idx, outline_item)
                 generated_slides.append(slide)
                 code_executors.append(code_executor)
             except Exception as e:
@@ -205,12 +205,23 @@ class PPTGen(ABC):
                 raise ValueError("Failed to generate outline, tried too many times")
 
     @abstractmethod
-    def _generate_slide(
+    def generate_slide(
         self, slide_idx: int, outline_item: OutlineItem
     ) -> tuple[SlidePage, CodeExecutor]:
         """
         Generate a slide from the outline item.
         """
+        raise NotImplementedError("Subclass must implement this method")
+
+    @abstractmethod
+    def interact(
+        self,
+        target_slide: SlidePage,
+        slide_idx: int,
+        outline_item: OutlineItem,
+        source_doc: Document,
+        query: str,
+    ) -> tuple[SlidePage, CodeExecutor]:
         raise NotImplementedError("Subclass must implement this method")
 
     def _collect_history(self, code_executor: CodeExecutor):
@@ -261,11 +272,70 @@ class PPTAgent(PPTGen):
     A class to generate PowerPoint presentations with a crew of agents.
     """
 
-    roles: list[str] = ["editor", "coder", "content_organizer", "layout_selector"]
+    roles: list[str] = [
+        "editor",
+        "coder",
+        "copilot",
+        "content_organizer",
+        "layout_selector",
+    ]
 
-    def _generate_slide(
+    def generate_slide(
         self, slide_idx: int, outline_item: OutlineItem
     ) -> tuple[SlidePage, CodeExecutor]:
+        """
+        Generate a slide from the outline item.
+        """
+        layout, header, slide_content = self._select_layout(slide_idx, outline_item)
+        command_list, template_id = self._generate_content(
+            layout, slide_content, header
+        )
+        slide, code_executor = self._edit_slide(command_list, template_id)
+        return slide, code_executor
+
+    def interact(
+        self,
+        target_slide: SlidePage,
+        slide_idx: int,
+        outline_item: OutlineItem,
+        source_doc: Document,
+        query: str,
+    ) -> tuple[SlidePage, CodeExecutor]:
+        """
+        Interact with the user on a specific slide.
+        """
+        self.source_doc = source_doc
+        for layout in self.layouts.values():
+            if (
+                target_slide.slide_idx in layout.slides
+            ):  # this slide_idx is the index of the slide in the original presentation, instead of the index of the slide in the outline
+                break
+        else:
+            raise ValueError(f"Slide {target_slide.slide_idx} not found in any layout")
+        header, content_source, images = outline_item.retrieve(
+            slide_idx, self.source_doc
+        )
+        if len(content_source) == 0:
+            key_points = []
+        else:
+            _, key_points = self.staffs["content_organizer"](
+                content_source=content_source
+            )
+        slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
+        if len(images) > 0 and target_slide.get_content_type() == "image":
+            slide_content += "\nImages:\n" + "\n".join(images)
+        _, copilot_output = self.staffs["copilot"](
+            query=query,
+            retr_chunks=slide_content,
+            schema=layout.content_schema,
+            slide_content=target_slide.to_html(),
+        )
+        command_list, template_id = self._generate_commands(copilot_output, layout)
+        return self._edit_slide(command_list, template_id)
+
+    def _select_layout(
+        self, slide_idx: int, outline_item: OutlineItem
+    ) -> tuple[Layout, str, str]:
         """
         Generate a slide from the outline item.
         """
@@ -301,18 +371,17 @@ class PPTAgent(PPTGen):
             )
         elif "image" not in layout and len(images) > 0:
             logger.info(
-                f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}"
+                f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}\n Set images to empty list."
             )
-        return self.edit_slide(
-            self.layouts[layout], slide_content, slide_description=header
-        )
+            slide_content = slide_content[: slide_content.rfind("\nImages:\n")]
+        return self.layouts[layout], header, slide_content
 
-    def edit_slide(
+    def _generate_content(
         self,
         layout: Layout,
         slide_content: str,
         slide_description: str,
-    ) -> tuple[SlidePage, CodeExecutor]:
+    ) -> tuple[list, int]:
         """
         Synergize Agents to generate a slide.
 
@@ -322,19 +391,22 @@ class PPTAgent(PPTGen):
             slide_description (str): The description of the slide.
 
         Returns:
-            tuple[SlidePage, CodeExecutor]: The generated slide and code executor.
+            tuple[list, int]: The generated command list and template id.
         """
-        code_executor = CodeExecutor(self.retry_times)
-        editor_turn_id, editor_output = self.staffs["editor"](
+        _, editor_output = self.staffs["editor"](
             outline=self.simple_outline,
             slide_description=slide_description,
-            schema=layout.content_schema,
             metadata=self.source_doc.metainfo,
             slide_content=slide_content,
+            schema=layout.content_schema,
         )
-        command_list, template_id = self._generate_commands(
-            editor_output, layout, editor_turn_id
-        )
+        command_list, template_id = self._generate_commands(editor_output, layout)
+        return command_list, template_id
+
+    def _edit_slide(
+        self, command_list: list, template_id: int
+    ) -> tuple[SlidePage, CodeExecutor]:
+        code_executor = CodeExecutor(self.retry_times)
         coder_turn_id, edit_actions = self.staffs["coder"](
             api_docs=code_executor.get_apis_docs(API_TYPES.Agent.value),
             edit_target=self.presentation.slides[template_id - 1].to_html(),
@@ -393,6 +465,11 @@ class PPTAgent(PPTGen):
                     retry + 1,
                 )
                 return self._generate_commands(new_output, layout, retry + 1)
+            elif retry > self.retry_times:
+                logger.error("Buggy condition, retry times > max_retry_times")
+                raise Exception(
+                    f"Failed to generate commands, retry times ({retry}) > max_retry_times ({self.retry_times}), may be a bug"
+                )
             else:
                 raise Exception(
                     f"Failed to generate commands, tried too many times at editing\ntraceback: {e}"
@@ -421,12 +498,12 @@ class PPTAgent(PPTGen):
         return command_list, template_id
 
 
-class PPTAgentAsync(PPTGen):
+@dataclass
+class PPTGenAsync(PPTGen):
     """
-    Asynchronous version of PPTAgent that uses AsyncAgent for concurrent processing.
+    Asynchronous base class for generating PowerPoint presentations.
+    Extends PPTGen with async functionality.
     """
-
-    roles: list[str] = ["editor", "coder", "content_organizer", "layout_selector"]
 
     def _hire_staffs(
         self,
@@ -459,17 +536,6 @@ class PPTAgentAsync(PPTGen):
     ):
         """
         Asynchronously generate a PowerPoint presentation.
-
-        Args:
-            source_doc (Document): The source document.
-            num_slides (Optional[int]): The number of slides to generate.
-            outline (Optional[List[OutlineItem]]): The outline of the presentation.
-
-        Returns:
-            tuple: A tuple containing the presentation object and history.
-
-        Raise:
-            ValueError: if failed to generate presentation outline.
         """
         assert (
             self._initialized
@@ -491,7 +557,7 @@ class PPTAgentAsync(PPTGen):
         for slide_idx, outline_item in enumerate(self.outline):
             if self.force_pages and slide_idx == num_slides:
                 break
-            slide_tasks.append(self._generate_slide(slide_idx, outline_item))
+            slide_tasks.append(self.generate_slide(slide_idx, outline_item))
 
         slide_results = await asyncio.gather(*slide_tasks, return_exceptions=True)
 
@@ -513,7 +579,6 @@ class PPTAgentAsync(PPTGen):
                 generated_slides.append(slide)
                 code_executors.append(code_executor)
 
-        # Collect history data
         history = self._collect_history(
             sum(code_executors, start=CodeExecutor(self.retry_times))
         )
@@ -545,8 +610,6 @@ class PPTAgentAsync(PPTGen):
             functional_layouts=self.functional_keys,
         )
         outline = await self._valid_outline(outline, source_doc, turn_id)
-
-        # Return the outline directly instead of saving to file
         return outline
 
     async def _valid_outline(
@@ -579,11 +642,105 @@ class PPTAgentAsync(PPTGen):
             else:
                 raise ValueError("Failed to generate outline, tried too many times")
 
-    async def _generate_slide(
+    @abstractmethod
+    async def generate_slide(
         self, slide_idx: int, outline_item: OutlineItem
     ) -> tuple[SlidePage, CodeExecutor]:
         """
         Asynchronously generate a slide from the outline item.
+        """
+        raise NotImplementedError("Subclass must implement this method")
+
+    @abstractmethod
+    async def interact(
+        self,
+        target_slide: SlidePage,
+        slide_idx: int,
+        outline_item: OutlineItem,
+        source_doc: Document,
+        query: str,
+    ) -> tuple[SlidePage, CodeExecutor]:
+        """
+        Asynchronously interact with the user on a specific slide.
+        """
+        raise NotImplementedError("Subclass must implement this method")
+
+
+class PPTAgentAsync(PPTGenAsync):
+    """
+    Asynchronous version of PPTAgent that uses AsyncAgent for concurrent processing.
+    """
+
+    roles: list[str] = [
+        "editor",
+        "coder",
+        "copilot",
+        "content_organizer",
+        "layout_selector",
+    ]
+
+    async def generate_slide(
+        self, slide_idx: int, outline_item: OutlineItem
+    ) -> tuple[SlidePage, CodeExecutor]:
+        """
+        Asynchronously generate a slide from the outline item.
+        """
+        layout, header, slide_content = await self._select_layout(
+            slide_idx, outline_item
+        )
+        command_list, template_id = await self._generate_content(
+            layout, slide_content, header
+        )
+        slide, code_executor = await self._edit_slide(command_list, template_id)
+        return slide, code_executor
+
+    async def interact(
+        self,
+        target_slide: SlidePage,
+        slide_idx: int,
+        outline_item: OutlineItem,
+        source_doc: Document,
+        query: str,
+    ) -> tuple[SlidePage, CodeExecutor]:
+        """
+        Asynchronously interact with the user on a specific slide.
+        """
+        self.source_doc = source_doc
+        for layout in self.layouts.values():
+            if target_slide.slide_idx in layout.slides:
+                break
+        else:
+            raise ValueError(f"Slide {target_slide.slide_idx} not found in any layout")
+
+        header, content_source, images = outline_item.retrieve(
+            slide_idx, self.source_doc
+        )
+        if len(content_source) == 0:
+            key_points = []
+        else:
+            _, key_points = await self.staffs["content_organizer"](
+                content_source=content_source
+            )
+        slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
+        if len(images) > 0 and target_slide.get_content_type() == "image":
+            slide_content += "\nImages:\n" + "\n".join(images)
+
+        _, copilot_output = await self.staffs["copilot"](
+            query=query,
+            retr_chunks=slide_content,
+            schema=layout.content_schema,
+            slide_content=target_slide.to_html(),
+        )
+        command_list, template_id = await self._generate_commands(
+            copilot_output, layout, 0
+        )
+        return await self._edit_slide(command_list, template_id)
+
+    async def _select_layout(
+        self, slide_idx: int, outline_item: OutlineItem
+    ) -> tuple[Layout, str, str]:
+        """
+        Asynchronously select a layout for the slide.
         """
         header, content_source, images = outline_item.retrieve(
             slide_idx, self.source_doc
@@ -600,6 +757,7 @@ class PPTAgentAsync(PPTGen):
         slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
         if len(images) > 0:
             slide_content += "\nImages:\n" + "\n".join(images)
+
         _, layout_selection = await self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
@@ -617,30 +775,20 @@ class PPTAgentAsync(PPTGen):
             )
         elif "image" not in layout and len(images) > 0:
             logger.info(
-                f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}"
+                f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}\n Set images to empty list."
             )
-        return await self.edit_slide(
-            self.layouts[layout], slide_content, slide_description=header
-        )
+            slide_content = slide_content[: slide_content.rfind("\nImages:\n")]
+        return self.layouts[layout], header, slide_content
 
-    async def edit_slide(
+    async def _generate_content(
         self,
         layout: Layout,
         slide_content: str,
         slide_description: str,
-    ) -> tuple[SlidePage, CodeExecutor]:
+    ) -> tuple[list, int]:
         """
-        Asynchronously synergize Agents to generate a slide.
-
-        Args:
-            layout (Layout): The layout data.
-            slide_content (str): The slide content.
-            slide_description (str): The description of the slide.
-
-        Returns:
-            tuple[SlidePage, CodeExecutor]: The generated slide and code executor.
+        Asynchronously generate content for the slide.
         """
-        code_executor = CodeExecutor(self.retry_times)
         editor_turn_id, editor_output = await self.staffs["editor"](
             outline=self.simple_outline,
             slide_description=slide_description,
@@ -651,11 +799,21 @@ class PPTAgentAsync(PPTGen):
         command_list, template_id = await self._generate_commands(
             editor_output, layout, editor_turn_id
         )
+        return command_list, template_id
+
+    async def _edit_slide(
+        self, command_list: list, template_id: int
+    ) -> tuple[SlidePage, CodeExecutor]:
+        """
+        Asynchronously edit the slide.
+        """
+        code_executor = CodeExecutor(self.retry_times)
         coder_turn_id, edit_actions = await self.staffs["coder"](
             api_docs=code_executor.get_apis_docs(API_TYPES.Agent.value),
             edit_target=self.presentation.slides[template_id - 1].to_html(),
             command_list="\n".join([str(i) for i in command_list]),
         )
+
         for error_idx in range(self.retry_times):
             edit_slide: SlidePage = deepcopy(self.presentation.slides[template_id - 1])
             feedback = code_executor.execute_actions(
@@ -669,7 +827,6 @@ class PPTAgentAsync(PPTGen):
                 self.retry_times,
                 str(feedback),
             )
-
             if error_idx == self.retry_times:
                 raise Exception(
                     f"Failed to generate slide, tried too many times at editing\ntraceback: {feedback[1]}"

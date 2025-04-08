@@ -106,7 +106,7 @@ def parse_pdf(
     for filename, image in images.items():
         image_filepath = os.path.join(output_path, filename)
         image.save(image_filepath, "JPEG")
-    with open(pjoin(output_path, "meta.json"), "w+") as f:
+    with open(pjoin(output_path, "meta.json"), "w+", encoding="utf-8") as f:
         f.write(json.dumps(rendered.metadata, indent=4))
 
     return full_text
@@ -231,6 +231,10 @@ def get_cluster(similarity: np.ndarray, sim_bound: float = 0.65):
             similarity[:, best_point] = 0
         else:
             if similarity.max() < sim_bound:
+                # append the remaining points invididual cluster
+                for i in range(num_points):
+                    if not added[i]:
+                        clusters.append([i])
                 break
             i, j = np.unravel_index(np.argmax(similarity), similarity.shape)
             clusters.append([int(i), int(j)])
