@@ -1,6 +1,6 @@
 import traceback
 from collections.abc import Generator
-from typing import Optional
+from typing import Literal, Optional
 
 from packaging.version import Version
 from pptx import Presentation as PPTXPre
@@ -9,8 +9,9 @@ from pptx.shapes.base import BaseShape
 from pptx.shapes.group import GroupShape as PPTXGroupShape
 from pptx.slide import Slide as PPTXSlide
 
-from pptagent.shapes import Background, GroupShape, Picture, ShapeElement, StyleArg, T
-from pptagent.utils import Config, get_logger
+from pptagent.utils import Config, get_logger, package_join
+
+from .shapes import Background, GroupShape, Picture, ShapeElement, StyleArg, T
 
 PPTXVersion, Mark = PPTXVersion.split("+")
 assert (
@@ -178,12 +179,12 @@ class SlidePage:
             elif isinstance(shape, GroupShape):
                 yield from self.shape_filter(shape_type, shape.data)
 
-    def get_content_type(self) -> str:
+    def get_content_type(self) -> Literal["text", "image"]:
         """
         Get the content type of the slide.
 
         Returns:
-            str: The content type of the slide.
+            Literal["text", "image"]: The content type of the slide.
         """
         if len(list(self.shape_filter(Picture))) == 0:
             return "text"
@@ -229,7 +230,7 @@ class SlidePage:
             [
                 shape.text_frame.text.strip()
                 for shape in self.shapes
-                if shape.text_frame.is_textframe
+                if shape.text_frame.is_textframe and shape.text_frame.text.strip()
             ]
         )
         if show_image:
@@ -405,7 +406,7 @@ class Presentation:
             if isinstance(shape, GroupShape):
                 self.clear_images(shape.data)
             elif isinstance(shape, Picture):
-                shape.img_path = "resource/pic_placeholder.png"
+                shape.img_path = package_join("resource", "pic_placeholder.png")
 
     def clear_text(self, shapes: list[BaseShape]):
         for shape in shapes:

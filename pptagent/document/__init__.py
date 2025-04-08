@@ -1,4 +1,4 @@
-from .document import *
-from .element import *
+from .document import Document, OutlineItem
+from .element import Media, Section, SubSection, Table
 
-__all__ = ["Section", "SubSection", "Media", "Table", "Document"]
+__all__ = ["Document", "OutlineItem", "Media", "Section", "SubSection", "Table"]

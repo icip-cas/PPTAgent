@@ -19,8 +19,7 @@ from pptx.text.text import _Run
 from pptx.util import Pt
 
 from pptagent.document import Document
-from pptagent.presentation import SlidePage
-from pptagent.shapes import Closure, Picture, ShapeElement
+from pptagent.presentation import Closure, Picture, ShapeElement, SlidePage
 from pptagent.utils import get_logger, runs_merge
 
 logger = get_logger(__name__)

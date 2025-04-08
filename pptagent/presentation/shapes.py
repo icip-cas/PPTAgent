@@ -27,6 +27,7 @@ from pptagent.utils import (
     get_font_style,
     merge_dict,
     object_to_dict,
+    package_join,
     parse_groupshape,
     parsing_image,
     pjoin,

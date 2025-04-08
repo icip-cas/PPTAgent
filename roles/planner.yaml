@@ -6,7 +6,7 @@ template: |
   1. Ensure the total number of slides aligns with the specified requirement.
   2. Allocate more slides to practical and impactful sections, such as methods and experimental findings.
   3. Maximize the use of provided images, prioritizing slides with image-related content (image and slide may not belong to the same subsection) for inclusion in the presentation.
-  4. For slides presenting meta-information (e.g., opening, closing, section outline), apply available functional layouts and specify the chosen layout in the slide description.
+  4. For slides presenting meta-information (e.g., opening, table of contents, closing for the first, second and last slide), apply available functional layouts and specify the chosen layout in the slide description.
   5. Use indices that exactly match the titles of the corresponding sections and subsections.
 
   For each slide, provide:

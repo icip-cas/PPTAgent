@@ -21,7 +21,6 @@ from .model_utils import *
 from .multimodal import *
 from .pptgen import *
 from .presentation import *
-from .shapes import *
 from .utils import *
 
 # Define the top-level exports
@@ -32,7 +31,6 @@ __all__ = [
     "llms",
     "presentation",
     "utils",
-    "shapes",
     "layout",
     "apis",
     "model_utils",
