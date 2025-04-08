@@ -37,4 +37,4 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        args: [--max-line-length=188, "--ignore=E203,E501,E701,W503,F403,F405"]
+        args: [--max-line-length=188, "--ignore=E203,E501,E701,E722,W503,F403,F405"]

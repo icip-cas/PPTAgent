@@ -111,7 +111,13 @@ class LLM:
             self.client.models.list()
             return True
         except Exception as e:
-            logger.error("Connection test failed: %s", e)
+            logger.warning(
+                "Connection test failed: %s\nLLM: %s: %s, %s",
+                e,
+                self.model,
+                self.base_url,
+                self.api_key,
+            )
             return False
 
     def format_message(
@@ -293,7 +299,13 @@ class AsyncLLM(LLM):
             await self.client.client.models.list()
             return True
         except Exception as e:
-            logger.warning("Async connection test failed: %s", e)
+            logger.warning(
+                "Async connection test failed: %s\nLLM: %s: %s, %s",
+                e,
+                self.model,
+                self.base_url,
+                self.api_key,
+            )
             return False
 
     async def gen_image(self, prompt: str, n: int = 1, **kwargs) -> str:

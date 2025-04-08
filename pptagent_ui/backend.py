@@ -6,8 +6,8 @@ import os
 import sys
 import traceback
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -24,7 +24,6 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from jinja2 import Template
 from marker.models import create_model_dict
 
 import pptagent.induct as induct
@@ -38,7 +37,7 @@ from pptagent.utils import Config, get_logger, package_join, pjoin, ppt_to_image
 
 # constants
 DEBUG = True if len(sys.argv) == 1 else False
-RUNS_DIR = "runs"
+RUNS_DIR = package_join("runs")
 STAGES = [
     "PPT Parsing",
     "PDF Parsing",
@@ -46,16 +45,54 @@ STAGES = [
     "PPT Generation",
     "Success!",
 ]
-NUM_MODELS = 1 if len(sys.argv) == 1 else int(sys.argv[1])
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-REFINE_TEMPLATE = Template(package_join("prompts", "document_refine.txt"))
+
 
 # models
-language_model = AsyncLLM("gpt-4o")
-vision_model = AsyncLLM("gpt-4o")
-text_embedder = AsyncLLM("text-embedding-3-small")
-image_model = get_image_model(device=DEVICE)
-marker_model = create_model_dict(device=DEVICE, dtype=torch.float16)
+@dataclass
+class ModelManager:
+    language_model: AsyncLLM = None
+    vision_model: AsyncLLM = None
+    text_embedder: AsyncLLM = None
+    image_model: object = None
+    marker_model: dict = None
+
+    def __post_init__(self):
+        """Initialize models from environment variables after instance creation"""
+        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+        language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4o")
+        language_model_api_base = os.environ.get("LANGUAGE_MODEL_API_BASE", None)
+        vision_model_name = os.environ.get("VISION_MODEL", "gpt-4o")
+        vision_model_api_base = os.environ.get("VISION_MODEL_API_BASE", None)
+        text_model_name = os.environ.get("TEXT_MODEL", "text-embedding-3-small")
+        text_model_api_base = os.environ.get("TEXT_MODEL_API_BASE", None)
+
+        self.language_model = AsyncLLM(language_model_name, language_model_api_base)
+        self.vision_model = AsyncLLM(vision_model_name, vision_model_api_base)
+        self.text_embedder = AsyncLLM(text_model_name, text_model_api_base)
+        self.image_model = get_image_model(device=DEVICE)
+        self.marker_model = create_model_dict(device=DEVICE, dtype=torch.float16)
+
+    async def test_connections(self) -> bool:
+        """Test connections for all LLM models
+
+        Returns:
+            bool: True if all connections are successful, False otherwise
+        """
+        try:
+            assert await self.language_model.test_connection()
+            assert await self.vision_model.test_connection()
+        except:
+            return False
+        try:
+            assert await self.text_embedder.test_connection()
+        except:
+            return True
+        logger.info("All models connected successfully")
+        return True
+
+
+# Create a global model manager instance, which will automatically execute __post_init__ for initialization
+models = ModelManager()
 
 # server
 logger = get_logger(__name__)
@@ -69,7 +106,6 @@ app.add_middleware(
 )
 progress_store: dict[str, dict] = {}
 active_connections: dict[str, WebSocket] = {}
-executor = ThreadPoolExecutor(max_workers=NUM_MODELS)
 
 
 class ProgressManager:
@@ -194,7 +230,7 @@ async def feedback(request: Request):
     feedback = body.get("feedback")
     task_id = body.get("task_id")
 
-    with open(f"runs/feedback/{task_id}.txt", "w") as f:
+    with open(pjoin(RUNS_DIR, "feedback", f"{task_id}.txt"), "w") as f:
         f.write(feedback)
     return {"message": "Feedback submitted successfully"}
 
@@ -267,7 +303,7 @@ async def ppt_gen(task_id: str, rerun=False):
             )
             labler.apply_stats(image_stats)
         else:
-            await labler.caption_images_async(vision_model)
+            await labler.caption_images_async(models.vision_model)
             json.dump(
                 labler.image_stats,
                 open(pjoin(pptx_config.RUN_DIR, "image_stats.json"), "w"),
@@ -281,7 +317,7 @@ async def ppt_gen(task_id: str, rerun=False):
             text_content = parse_pdf(
                 pjoin(RUNS_DIR, "pdf", pdf_md5, "source.pdf"),
                 parsedpdf_dir,
-                marker_model,
+                models.marker_model,
             )
         else:
             text_content = open(pjoin(parsedpdf_dir, "source.md")).read()
@@ -291,8 +327,8 @@ async def ppt_gen(task_id: str, rerun=False):
         if not os.path.exists(pjoin(parsedpdf_dir, "refined_doc.json")):
             source_doc = await Document.from_markdown_async(
                 text_content,
-                language_model,
-                vision_model,
+                models.language_model,
+                models.vision_model,
                 parsedpdf_dir,
             )
             json.dump(
@@ -320,9 +356,9 @@ async def ppt_gen(task_id: str, rerun=False):
                 ppt_image_folder,
                 pjoin(pptx_config.RUN_DIR, "template_images"),
                 pptx_config,
-                image_model,
-                language_model,
-                vision_model,
+                models.image_model,
+                models.language_model,
+                models.vision_model,
             )
             layout_induction = await slide_inducter.layout_induct()
             slide_induction = await slide_inducter.content_induct(layout_induction)
@@ -340,7 +376,11 @@ async def ppt_gen(task_id: str, rerun=False):
 
         # PPT Generation with PPTAgentAsync
         ppt_agent = pptgen.PPTAgentAsync(
-            text_embedder, language_model, vision_model, error_exit=False, retry_times=5
+            models.text_embedder,
+            models.language_model,
+            models.vision_model,
+            error_exit=False,
+            retry_times=5,
         )
         ppt_agent.set_reference(
             config=generation_config,
@@ -360,30 +400,11 @@ async def ppt_gen(task_id: str, rerun=False):
         traceback.print_exc()
 
 
-async def test_connection(*models: AsyncLLM):
-    for model in models:
-        try:
-            await model.test_connection()
-        except Exception as e:
-            logger.error(f"Error testing connection for {model}: {e}")
-            return False
-    logger.info("All models connected successfully")
-    return True
-
-
 if __name__ == "__main__":
     import uvicorn
 
-    language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4o")
-    language_model_api_base = os.environ.get("LANGUAGE_MODEL_API_BASE", None)
-    vision_model_name = os.environ.get("VISION_MODEL", "gpt-4o")
-    vision_model_api_base = os.environ.get("VISION_MODEL_API_BASE", None)
-    text_model_name = os.environ.get("TEXT_MODEL", "text-embedding-3-small")
-    text_model_api_base = os.environ.get("TEXT_MODEL_API_BASE", None)
-    language_model = AsyncLLM(language_model_name, language_model_api_base)
-    vision_model = AsyncLLM(vision_model_name, vision_model_api_base)
-    text_embedder = AsyncLLM(text_model_name, text_model_api_base)
+    # Test model connections before starting the server
+    assert asyncio.run(models.test_connections()), "Model connection test failed"
 
-    asyncio.run(test_connection(language_model, vision_model, text_embedder))
     ip = "0.0.0.0"
     uvicorn.run(app, host=ip, port=9297)

@@ -22,11 +22,6 @@
 
       <!-- Row 2: Selectors -->
       <div class="selectors">
-        <div class="model-selection">
-          <select v-model="selectedModel">
-            <option v-for="model in models" :key="model" :value="model">{{ model }}</option>
-          </select>
-        </div>
         <div class="pages-selection">
           <select v-model="selectedPages">
             <option v-for="page in pagesOptions" :key="page" :value="page">{{ page }} 页</option>
@@ -47,8 +42,6 @@ export default {
     return {
       pptxFile: null,
       pdfFile: null,
-      selectedModel: 'Qwen2.5-72B-Instruct',
-      models: ['Qwen2.5-72B-Instruct'],
       selectedPages: 6,
       pagesOptions: Array.from({ length: 12 }, (_, i) => i + 3),
       isPptxEnabled:true
@@ -84,11 +77,8 @@ export default {
       if (this.pptxFile) {
         formData.append('pptxFile', this.pptxFile);
       }
-      if (this.pdfFile) {
-        formData.append('pdfFile', this.pdfFile);
-      }
+      formData.append('pdfFile', this.pdfFile);
       formData.append('numberOfPages', this.selectedPages);
-      formData.append('selectedModel', this.selectedModel);
 
       try {
         const uploadResponse = await this.$axios.post('/api/upload', formData, {
@@ -138,7 +128,6 @@ export default {
 }
 
 .upload-section,
-.model-selection,
 .pages-selection {
   flex: 0 1 200px;
   display: flex;
@@ -152,7 +141,6 @@ export default {
   margin-right: 3em;
 }
 
-.model-selection,
 .pages-selection {
   margin-left: 3em;
   margin-right: 3em;
@@ -183,7 +171,6 @@ export default {
   display: none;
 }
 
-.model-selection select,
 .pages-selection select {
   padding: 10px;
   border-radius: 5px;

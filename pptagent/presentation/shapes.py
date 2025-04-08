@@ -163,15 +163,7 @@ class Background(Fill):
     A class to represent a slide background.
     """
 
-    def __init__(
-        self,
-        fill_type: MSO_FILL_TYPE,
-        fill_str: str,
-        fill_xml: str,
-        image_path: str | None = None,
-    ):
-        super().__init__(fill_type, fill_str, fill_xml, image_path)
-        self.shape_idx = -1
+    shape_idx: int = -1
 
     @classmethod
     def from_slide(cls, slide: PPTXSlide, config: Config) -> "Background":
