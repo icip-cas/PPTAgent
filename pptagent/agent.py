@@ -77,6 +77,7 @@ class Agent:
         if self.config is None:
             with open(package_join("roles", f"{name}.yaml")) as f:
                 self.config = yaml.safe_load(f)
+                assert isinstance(self.config, dict), "Agent config must be a dict"
         self.llm_mapping = llm_mapping
         self.llm = self.llm_mapping[self.config["use_model"]]
         self.model = self.llm.model

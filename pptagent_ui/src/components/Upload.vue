@@ -59,12 +59,12 @@ export default {
       console.log("file uploaded :", fileType)
       const file = event.target.files[0]
       if (fileType === 'pptx') {
-        this.pptxFile = file  // {{ edit: Assign single pptxFile }}
+        this.pptxFile = file
       } else if (fileType === 'pdf') {
-        this.pdfFile = file  // {{ edit: Assign single pdfFile }}
+        this.pdfFile = file
       }
     },
-    async goToGenerate() { // Renamed method from goToDoc to goToGenerate
+    async goToGenerate() {
       this.$axios.get('/')
         .then(response => {
           console.log("Backend is running", response.data);
@@ -75,7 +75,7 @@ export default {
           return;
         });
 
-      if (!this.pdfFile) { // Updated condition to check for PDF
+      if (!this.pdfFile) {
         alert('Please upload a PDF file.');
         return;
       }

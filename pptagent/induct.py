@@ -236,6 +236,8 @@ class SlideInducterAsync(SlideInducter):
             layout_name = slide.slide_layout_name
             content_split[(layout_name, content_type)].append(slide_idx)
 
+        vision_tasks = []
+        cluster_info = []
         for (layout_name, content_type), slides in content_split.items():
             sub_embeddings = [
                 embeddings[f"slide_{slide_idx:04d}.jpg"] for slide_idx in slides
@@ -247,20 +249,25 @@ class SlideInducterAsync(SlideInducter):
                     slide_indexs,
                     key=lambda x: len(self.prs.slides[x - 1].shapes),
                 )
-                cluster_name = (
-                    await self.vision_model(
+
+                vision_tasks.append(
+                    self.vision_model(
                         template.render(
                             existed_layoutnames=list(layout_induction.keys()),
                         ),
                         pjoin(self.ppt_image_folder, f"slide_{template_id:04d}.jpg"),
                     )
-                    + ":"
-                    + content_type
                 )
-                layout_induction[cluster_name]["template_id"] = template_id
-                layout_induction[cluster_name]["slides"] = slide_indexs
+                cluster_info.append((template_id, slide_indexs, content_type))
 
-    @tenacity
+        vision_results = await asyncio.gather(*vision_tasks)
+        for (template_id, slide_indexs, content_type), cluster_name_prefix in zip(
+            cluster_info, vision_results
+        ):
+            cluster_name = cluster_name_prefix + ":" + content_type
+            layout_induction[cluster_name]["template_id"] = template_id
+            layout_induction[cluster_name]["slides"] = slide_indexs
+
     async def layout_induct(self):
         """
         Async version: Perform layout induction for the presentation.
@@ -298,7 +305,7 @@ class SlideInducterAsync(SlideInducter):
         content_induct_prompt = Template(
             open(package_join("prompts", "content_induct.txt")).read()
         )
-        
+
         tasks = {}
         for layout_name, cluster in layout_induction.items():
             if "template_id" in cluster and "content_schema" not in cluster:
@@ -306,8 +313,7 @@ class SlideInducterAsync(SlideInducter):
                     element_id=False, paragraph_id=False
                 )
                 task = self.language_model(
-                    content_induct_prompt.render(slide=slide),
-                    return_json=True
+                    content_induct_prompt.render(slide=slide), return_json=True
                 )
                 tasks[layout_name] = task
 
@@ -321,10 +327,10 @@ class SlideInducterAsync(SlideInducter):
                     if not schema[key]["data"]:
                         logger.warning("Removing empty schema: %s", key)
                         schema.pop(key)
-                
+
                 if not schema:
                     raise ValueError(f"Empty schema generated for layout {layout_name}")
-                
+
                 layout_induction[layout_name]["content_schema"] = schema
                 logger.debug("Updated content schema for %s", layout_name)
 

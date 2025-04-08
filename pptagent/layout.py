@@ -53,7 +53,8 @@ class Element:
 @dataclass
 class Layout:
     title: str
-    slide_id: int
+    template_id: int
+    slides: list[int]
     elements: list[Element]
     vary_mapping: dict[int, int] | None  # mapping for variable elements
 
@@ -68,7 +69,8 @@ class Layout:
             raise ValueError("Only one variable element is allowed")
         return cls(
             title=title,
-            slide_id=data["template_id"],
+            template_id=data["template_id"],
+            slides=data["slides"],
             elements=elements,
             vary_mapping=data.get("vary_mapping", None),
         )
@@ -86,7 +88,7 @@ class Layout:
                         f"The length of {el.el_name}: {num_vary} is greater than the maximum length: {el.variable_length[1]}"
                     )
                 return self.vary_mapping[str(num_vary)]
-        return self.slide_id
+        return self.template_id
 
     def get_old_data(self, editor_output: Optional[dict] = None):
         if editor_output is None:
@@ -165,11 +167,15 @@ class Layout:
             overview += "\n"
         return overview
 
-    def __contains__(self, key: str):
-        for el in self.elements:
-            if el.el_name == key:
-                return True
-        return False
+    def __contains__(self, key: str | int):
+        if isinstance(key, int):
+            return key in self.slides
+        elif isinstance(key, str):
+            for el in self.elements:
+                if el.el_name == key:
+                    return True
+            return False
+        raise ValueError(f"Invalid key type: {type(key)}, should be str or int")
 
     def __getitem__(self, key: str):
         for el in self.elements:
