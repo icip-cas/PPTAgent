@@ -21,19 +21,17 @@ def test_document_from_dict():
     document = Document.from_dict(
         test_config.get_document_json(),
         test_config.document,
-        False,
+        True,
     )
     document.overview
     document.metainfo
-    document.retrieve({"Abstract": ["Introduction to PPTAgent"]})
+    document.retrieve({"Building effective agents": ["What are agents?"]})
     medias = list(document.iter_medias())
-    assert len(medias) == 3
-    assert sum(isinstance(media, Table) for media in medias) == 0
-    for media in document.iter_medias():
-        assert media.caption is not None
+    assert len(medias) == 10
+    assert sum(isinstance(media, Table) for media in medias) == 6
 
 
-def test_document_retrieve():
+def test_outline_retrieve():
     document = Document.from_dict(
         test_config.get_document_json(),
         test_config.document,

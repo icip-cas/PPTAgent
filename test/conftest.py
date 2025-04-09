@@ -1,15 +1,15 @@
 import json
 
 from pptagent.llms import AsyncLLM
-from pptagent.utils import Config, pjoin
+from pptagent.utils import Config, package_join, pjoin
 
 
 # Common test configuration
 class TestConfig:
     def __init__(self):
-        self.template = "resource/test/test_template"
-        self.document = "resource/test/test_pdf"
-        self.ppt = "resource/test/test.pptx"
+        self.template = package_join("runs", "pptx", "default_template")
+        self.document = package_join("runs", "pdf", "57b32a38d68d1e62908a3d4fe77441c2")
+        self.ppt = package_join("test", "test.pptx")
         self.api_base = "http://api.cipsup.cn/v1"
 
         # Models
@@ -22,9 +22,7 @@ class TestConfig:
 
     def get_slide_induction(self):
         """Load slide induction data"""
-        return json.load(
-            open(pjoin(self.template, "template_induct/backend/induct_cache.json"))
-        )
+        return json.load(open(pjoin(self.template, "slide_induction.json")))
 
     def get_document_json(self):
         """Load document JSON"""

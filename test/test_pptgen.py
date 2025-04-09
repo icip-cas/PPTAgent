@@ -6,6 +6,24 @@ from pptagent.presentation import Presentation
 from pptagent.utils import pjoin
 
 
+async def test_outline_generation():
+    document = Document.from_dict(
+        test_config.get_document_json(), test_config.document, False
+    )
+    pptgen = PPTAgentAsync(
+        test_config.text_embedder,
+        test_config.language_model,
+        test_config.vision_model,
+    ).set_reference(
+        config=test_config.config,
+        presentation=Presentation.from_file(
+            pjoin(test_config.template, "source.pptx"), test_config.config
+        ),
+        slide_induction=test_config.get_slide_induction(),
+    )
+    await pptgen.generate_outline(3, document)
+
+
 def test_pptgen():
     pptgen = PPTAgent(
         test_config.text_embedder.to_sync(),
