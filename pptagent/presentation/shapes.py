@@ -1,32 +1,27 @@
 import re
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Callable, Optional, TypeVar, Union
 
 from lxml import etree
-from pptx.chart.chart import Chart as PPTXChart
 from pptx.dml.fill import FillFormat
 from pptx.dml.line import LineFormat
 from pptx.enum.dml import MSO_FILL_TYPE
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml import parse_xml
 from pptx.parts.slide import SlidePart
-from pptx.shapes.autoshape import Shape as PPTXAutoShape
 from pptx.shapes.base import BaseShape
-from pptx.shapes.connector import Connector as PPTXConnector
-from pptx.shapes.graphfrm import GraphicFrame as PPTXGraphicalFrame
 from pptx.shapes.group import GroupShape as PPTXGroupShape
 from pptx.shapes.picture import Picture as PPTXPicture
 from pptx.shapes.placeholder import PlaceholderPicture, SlidePlaceholder
 from pptx.slide import Slide as PPTXSlide
-from pptx.table import Table as PPTXTable
 from pptx.text.text import _Paragraph
+from pptx.util import Length
 
 from pptagent.utils import (
     Config,
     dict_to_object,
     get_font_style,
-    merge_dict,
-    object_to_dict,
     package_join,
     parse_groupshape,
     parsing_image,
@@ -36,6 +31,21 @@ from pptagent.utils import (
 
 INDENT = "\t"
 T = TypeVar("T", bound="ShapeElement")
+
+
+class ClosureType(Enum):
+    CLONE = auto()
+    REPLACE = auto()
+    DELETE = auto()
+    STYLE = auto()
+    MERGE = auto()
+
+    def __str__(self):
+        return self.name.lower()
+
+    @classmethod
+    def to_default_dict(cls):
+        return {key: [] for key in cls}
 
 
 @dataclass
@@ -234,6 +244,41 @@ class Closure:
             return self.paragraph_id > other.paragraph_id
 
 
+@dataclass
+class Font:
+    name: str
+    color: str
+    size: Length
+    bold: bool
+    italic: bool
+    underline: bool
+    strikethrough: bool
+
+    def update(self, other: "Font"):
+        """
+        Merge a list of fonts into a single font.
+        """
+        for key, value in other.__dict__.items():
+            if value is not None:
+                setattr(self, key, value)
+
+    def merge(self, others: list["Font"], clear_others: bool = True):
+        """
+        Merge a list of fonts into a single font.
+        """
+        if len(others) == 0:
+            return
+        for key in list(self.__dict__.keys()):
+            values = [d.__dict__[key] for d in others]
+            if not all(value == values[0] for value in values):
+                continue
+            setattr(self, key, values[0])
+            if not clear_others:
+                continue
+            for d in others:
+                setattr(d, key, None)
+
+
 class Paragraph:
     """
     A class to represent a paragraph in a text frame.
@@ -254,9 +299,8 @@ class Paragraph:
         if run is None:
             self.idx = -1
             return
-        self.font = merge_dict(
-            object_to_dict(paragraph.font), [object_to_dict(run.font)]
-        )
+        self.font = Font(**paragraph.font.get_attrs())
+        self.font.update(Font(**run.font.get_attrs()))
         self.text = re.sub(r"(_x000B_|\\x0b)", " ", paragraph.text)
 
     def to_html(self, style_args: StyleArg) -> str:
@@ -326,10 +370,9 @@ class TextFrame:
         self.level = level
         self.text = shape.text
         self.is_textframe = True
-        self.font = merge_dict(
-            object_to_dict(shape.text_frame.font),
-            [para.font for para in self.paragraphs if para.idx != -1],
-        )
+        self.extents = shape.text_frame._extents
+        self.font = Font(**shape.text_frame.font.get_attrs())
+        self.font.merge([para.font for para in self.paragraphs if para.idx != -1])
 
     def to_html(self, style_args: StyleArg) -> str:
         """
@@ -371,45 +414,25 @@ class TextFrame:
         return len(self.text)
 
 
+@dataclass
 class ShapeElement:
     """
     Base class for shape elements in a presentation.
     """
 
-    def __init__(
-        self,
-        slide_idx: int,
-        shape_idx: int,
-        style: dict,
-        data: list,
-        text_frame: TextFrame,
-        slide_area: float,
-        level: int,
-    ):
-        """
-        Initialize a ShapeElement.
-
-        Args:
-            slide_idx (int): The index of the slide.
-            shape_idx (int): The index of the shape.
-            style (Dict): The style of the shape.
-            data (List): The data of the shape.
-            text_frame (TextFrame): The text frame of the shape.
-            slide_area (float): The area of the slide.
-            level (int): The indentation level.
-        """
-        self.slide_idx = slide_idx
-        self.shape_idx = shape_idx
-        self.style = style
-        self.data = data
-        self.text_frame = text_frame
-        self._closure_keys = ["clone", "replace", "delete", "style", "merge"]
-        self._closures: dict[str, list[Closure]] = {
-            key: [] for key in self._closure_keys
-        }
-        self.slide_area = slide_area
-        self.level = level
-        self.xml = None  # Will be set in from_shape
+    config: Config
+    slide_idx: int
+    shape_idx: int
+    style: dict
+    data: list
+    text_frame: TextFrame
+    level: int
+    slide_area: float
+    xml: str
+    fill: Fill
+    line: Line
+    shape: BaseShape
+    _closures: dict[ClosureType, list[Closure]]
 
     @classmethod
     def from_shape(
@@ -469,24 +492,23 @@ class ShapeElement:
 
         # Create appropriate shape element based on shape type
         shape_class = SHAPECAST.get(shape.shape_type, UnsupportedShape)
-        obj = shape_class.from_shape(
-            slide_idx,
-            shape_idx,
-            shape,
-            style,
-            text_frame,
-            config,
-            slide_area,
-            level,
+        if shape_class == Placeholder:
+            shape_class = Placeholder.from_shape
+        return shape_class(
+            config=config,
+            slide_idx=slide_idx,
+            shape_idx=shape_idx,
+            style=style,
+            data=[],
+            text_frame=text_frame,
+            level=level,
+            slide_area=slide_area,
+            xml=shape._element.xml,
+            fill=Fill.from_shape(getattr(shape, "fill", None), shape.part, config),
+            line=Line.from_shape(getattr(shape, "line", None), shape.part, config),
+            shape=shape,
+            _closures=ClosureType.to_default_dict(),
         )
-
-        # Store XML for later use
-        obj.xml = shape._element.xml
-        obj.fill = Fill.from_shape(getattr(shape, "fill", None), shape.part, config)
-        obj.line = Line.from_shape(getattr(shape, "line", None), shape.part, config)
-        # ? This is for debug use, mask to enable pickling
-        # obj.shape = shape
-        return obj
 
     def build(self, slide: PPTXSlide) -> BaseShape:
         """
@@ -507,15 +529,6 @@ class ShapeElement:
             self.line.build(shape.line, shape.part)
         return shape
 
-    def __repr__(self) -> str:
-        """
-        Get a string representation of the shape element.
-
-        Returns:
-            str: A string representation of the shape element.
-        """
-        return f"{self.__class__.__name__}: shape {self.shape_idx} of slide {self.slide_idx}"
-
     def to_html(self, style_args: StyleArg) -> str:
         """
         Convert the shape element to HTML.
@@ -533,6 +546,23 @@ class ShapeElement:
             f"to_html not implemented for {self.__class__.__name__}"
         )
 
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        state["shape"] = None
+        return state
+
+    def __setstate__(self, state: object) -> None:
+        self.__dict__.update(state)
+
+    def __repr__(self) -> str:
+        """
+        Get a string representation of the shape element.
+
+        Returns:
+            str: A string representation of the shape element.
+        """
+        return f"{self.__class__.__name__}: shape {self.shape_idx} of slide {self.slide_idx}"
+
     @property
     def closures(self) -> list[Closure]:
         """
@@ -542,10 +572,12 @@ class ShapeElement:
             List[Closure]: A list of closures.
         """
         closures = []
-        closures.extend(sorted(self._closures["clone"]))
-        closures.extend(self._closures["replace"] + self._closures["style"])
-        closures.extend(sorted(self._closures["delete"], reverse=True))
-        closures.extend(self._closures["merge"])
+        closures.extend(sorted(self._closures[ClosureType.CLONE]))
+        closures.extend(
+            self._closures[ClosureType.REPLACE] + self._closures[ClosureType.STYLE]
+        )
+        closures.extend(sorted(self._closures[ClosureType.DELETE], reverse=True))
+        closures.extend(self._closures[ClosureType.MERGE])
         return closures
 
     @property
@@ -712,52 +744,20 @@ class ShapeElement:
 
 
 class UnsupportedShape(ShapeElement):
-    """
-    A class to represent an unsupported shape.
-    """
-
-    @classmethod
-    def from_shape(
-        cls,
-        slide_idx: int,
-        shape_idx: int,
-        shape: BaseShape,
-        *args,
-        **kwargs,
-    ) -> None:
+    def __post_init__(self) -> None:
         """
-        Create an UnsupportedShape from a BaseShape.
+        Initialize an UnsupportedShape.
 
         Raises:
             ValueError: Always, as the shape is unsupported.
         """
-        raise ValueError(f"Unsupported shape {shape.shape_type}")
+        raise ValueError(f"Unsupported shape {self.shape.shape_type}")
 
 
 class TextBox(ShapeElement):
     """
     A class to represent a text box shape.
     """
-
-    @classmethod
-    def from_shape(
-        cls,
-        slide_idx: int,
-        shape_idx: int,
-        shape: TextFrame,
-        style: dict,
-        text_frame: TextFrame,
-        config: Config,
-        slide_area: float,
-        level: int,
-    ) -> "TextBox":
-        """
-        Create a TextBox from a TextFrame.
-
-        Returns:
-            TextBox: The created TextBox.
-        """
-        return cls(slide_idx, shape_idx, style, [], text_frame, slide_area, level)
 
     def to_html(self, style_args: StyleArg) -> str:
         """
@@ -779,23 +779,13 @@ class TextBox(ShapeElement):
         )
 
 
+@dataclass
 class Picture(ShapeElement):
     """
     A class to represent a picture shape.
     """
 
-    @classmethod
-    def from_shape(
-        cls,
-        slide_idx: int,
-        shape_idx: int,
-        shape: PPTXPicture,
-        style: dict,
-        text_frame: TextFrame,
-        config: Config,
-        slide_area: float,
-        level: int,
-    ) -> "Picture":
+    def __post_init__(self):
         """
         Create a Picture from a PPTXPicture.
 
@@ -806,30 +796,19 @@ class Picture(ShapeElement):
             ValueError: If the image type is unsupported.
         """
         img_path = pjoin(
-            config.IMAGE_DIR,
-            f"{shape.image.sha1}.{shape.image.ext}",
+            self.config.IMAGE_DIR,
+            f"{self.shape.image.sha1}.{self.shape.image.ext}",
         )
-        img_path = parsing_image(shape.image, img_path)
+        img_path = parsing_image(self.shape.image, img_path)
 
         # Add image style information
-        style["img_style"] = {
-            "crop_bottom": shape.crop_bottom,
-            "crop_top": shape.crop_top,
-            "crop_left": shape.crop_left,
-            "crop_right": shape.crop_right,
+        self.style["img_style"] = {
+            "crop_bottom": self.shape.crop_bottom,
+            "crop_top": self.shape.crop_top,
+            "crop_left": self.shape.crop_left,
+            "crop_right": self.shape.crop_right,
         }
-
-        # Create Picture object
-        picture = cls(
-            slide_idx,
-            shape_idx,
-            style,
-            [img_path, shape.name, None],  # [img_path, name, caption]
-            text_frame,
-            slide_area,
-            level=level,
-        )
-        return picture
+        self.data.extend([img_path, self.shape.name, None])  # [img_path, name, caption]
 
     def build(self, slide: PPTXSlide) -> PPTXPicture:
         """
@@ -946,109 +925,32 @@ class Picture(ShapeElement):
         )
 
 
-class Placeholder(ShapeElement):
-    """
-    A class to represent a placeholder shape.
-    """
-
-    @classmethod
-    def from_shape(
-        cls,
-        slide_idx: int,
-        shape_idx: int,
-        shape: SlidePlaceholder,
-        *args,
-        **kwargs,
-    ) -> Union[Picture, TextBox]:
-        """
-        Create a Placeholder from a SlidePlaceholder.
-
-        Returns:
-            Union[Picture, TextBox]: The created shape element.
-
-        Raises:
-            ValueError: If the placeholder type is unsupported.
-            AssertionError: If the placeholder has multiple types.
-        """
-        # Ensure placeholder has only one type
-        assert (
-            sum(
-                [
-                    shape.has_text_frame,
-                    shape.has_chart,
-                    shape.has_table,
-                    isinstance(shape, PlaceholderPicture),
-                ]
-            )
-            == 1
-        ), "Placeholder should have only one type"
-
-        # Create appropriate shape based on placeholder type
-        if isinstance(shape, PlaceholderPicture):
-            data = Picture.from_shape(
-                slide_idx,
-                shape_idx,
-                shape,
-                *args,
-                **kwargs,
-            )
-        elif shape.has_text_frame:
-            data = TextBox.from_shape(
-                slide_idx,
-                shape_idx,
-                shape,
-                *args,
-                **kwargs,
-            )
-        else:
-            raise ValueError(f"Unsupported placeholder {shape.placeholder_type}")
-
-        return data
-
-
+@dataclass
 class GroupShape(ShapeElement):
     """
     A class to represent a group shape.
     """
 
-    @classmethod
-    def from_shape(
-        cls,
-        slide_idx: int,
-        shape_idx: int,
-        shape: PPTXGroupShape,
-        style: dict,
-        text_frame: TextFrame,
-        config: Config,
-        slide_area: float,
-        level: int,
-    ) -> "GroupShape":
+    def __post_init__(self) -> None:
         """
-        Create a GroupShape from a PPTXGroupShape.
-
-        Returns:
-            GroupShape: The created GroupShape.
+        Initialize a GroupShape.
         """
         # Create shape elements for each shape in the group
-        data = [
+        self.data = [
             ShapeElement.from_shape(
-                slide_idx,
-                (shape_idx + 1) * 100 + i,
+                self.slide_idx,
+                (self.shape_idx + 1) * 100 + i,
                 sub_shape,
-                config,
-                slide_area,
-                level=level + 1,
+                self.config,
+                self.slide_area,
+                level=self.level + 1,
             )
-            for i, sub_shape in enumerate(shape.shapes)
+            for i, sub_shape in enumerate(self.shape.shapes)
         ]
 
         # Apply shape bounds to each shape in the group
-        for idx, shape_bounds in enumerate(parse_groupshape(shape)):
-            data[idx].style["shape_bounds"] = shape_bounds
-
-        return cls(
-            slide_idx, shape_idx, style, data, text_frame, slide_area, level=level
-        )
+        for idx, shape_bounds in enumerate(parse_groupshape(self.shape)):
+            self.data[idx].style["shape_bounds"] = shape_bounds
 
     def build(self, slide: PPTXSlide) -> PPTXSlide:
         """
@@ -1151,26 +1053,6 @@ class FreeShape(ShapeElement):
     A class to represent a free shape.
     """
 
-    @classmethod
-    def from_shape(
-        cls,
-        slide_idx: int,
-        shape_idx: int,
-        shape: PPTXAutoShape | PPTXConnector | PPTXGraphicalFrame,
-        style: dict,
-        text_frame: TextFrame,
-        config: Config,
-        slide_area: float,
-        level: int,
-    ) -> "FreeShape":
-        """
-        Create a FreeShape from a PPTXAutoShape.
-
-        Returns:
-            FreeShape: The created FreeShape.
-        """
-        return cls(slide_idx, shape_idx, style, [], text_frame, slide_area, level)
-
     def to_html(self, style_args: StyleArg) -> str:
         """
         Convert the free shape to HTML.
@@ -1189,46 +1071,79 @@ class FreeShape(ShapeElement):
         )
 
 
-class SemanticPicture(ShapeElement):
+@dataclass
+class SemanticPicture(Picture):
     """
     A class to represent a semantic picture (table, chart, etc.).
+    """
+
+    def __post_init__(self):
+        shape_type = str(self.shape.shape_type).split()[0]
+        self.style["img_style"] = {}
+        self.data = [
+            package_join("resource", "pic_placeholder.png"),
+            self.shape.name,
+            f"This is a picture of {shape_type}",
+        ]
+        self.semantic_name = shape_type
+
+
+class Placeholder:
+    """
+    A class to represent a placeholder shape.
     """
 
     @classmethod
     def from_shape(
         cls,
+        config: Config,
         slide_idx: int,
         shape_idx: int,
-        shape: Union[PPTXTable, PPTXChart],
-        style: dict,
-        text_frame: TextFrame,
-        config: Config,
-        slide_area: float,
-        level: int,
-    ) -> "SemanticPicture":
+        shape: SlidePlaceholder,
+        **kwargs,
+    ) -> Union[Picture, TextBox]:
         """
-        Convert a complex shape to a semantic picture.
+        Create a Placeholder from a SlidePlaceholder.
 
         Returns:
-            SemanticPicture: The created SemanticPicture.
+            Union[Picture, TextBox]: The created shape element.
+
+        Raises:
+            ValueError: If the placeholder type is unsupported.
+            AssertionError: If the placeholder has multiple types.
         """
-        shape_type = str(shape.shape_type).split()[0]
-        style["img_style"] = {}
-        obj = Picture(
-            slide_idx,
-            shape_idx,
-            style,
-            [
-                package_join("resource", "pic_placeholder.png"),
-                shape.name,
-                f"This is a picture of {shape_type}",
-            ],
-            text_frame,
-            slide_area,
-            level,
-        )
-        obj.semantic_name = shape_type
-        return obj
+        # Ensure placeholder has only one type
+        assert (
+            sum(
+                [
+                    shape.has_text_frame,
+                    shape.has_chart,
+                    shape.has_table,
+                    isinstance(shape, PlaceholderPicture),
+                ]
+            )
+            == 1
+        ), "Placeholder should have only one type"
+
+        # Create appropriate shape based on placeholder type
+        if isinstance(shape, PlaceholderPicture):
+            return Picture(
+                config=config,
+                slide_idx=slide_idx,
+                shape_idx=shape_idx,
+                shape=shape,
+                **kwargs,
+            )
+        elif shape.has_text_frame:
+            return TextBox(
+                config=config,
+                slide_idx=slide_idx,
+                shape_idx=shape_idx,
+                shape=shape,
+                **kwargs,
+            )
+        else:
+            raise ValueError(f"Unsupported placeholder {shape.placeholder_type}")
 
 
 # Define shape type mapping

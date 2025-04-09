@@ -238,11 +238,13 @@ class Section:
         assert (
             "title" in data and "subsections" in data
         ), f"'title' and 'subsections' keys are required in data dictionary but were not found. Input keys: {list(data.keys())}"
+        subsections = [
+            SubSection.from_dict(subsection) for subsection in data["subsections"]
+        ]
+        assert len(subsections) != 0, "subsections is empty"
         return cls(
             title=data["title"],
-            subsections=[
-                SubSection.from_dict(subsection) for subsection in data["subsections"]
-            ],
+            subsections=subsections,
         )
 
     def __contains__(self, key: str):

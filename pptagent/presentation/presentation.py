@@ -13,10 +13,14 @@ from pptagent.utils import Config, get_logger, package_join
 
 from .shapes import Background, GroupShape, Picture, ShapeElement, StyleArg, T
 
-PPTXVersion, Mark = PPTXVersion.split("+")
-assert (
-    Version(PPTXVersion) >= Version("1.0.3") and Mark == "PPTAgent"
-), "You should install the version of `python-pptx` maintained specifically for this project."
+try:
+    PPTXVersion, Mark = PPTXVersion.split("+")
+    assert Version(PPTXVersion) >= Version("1.0.4") and Mark == "PPTAgent"
+except:
+    raise ImportError(
+        "You should install the customized `python-pptx` for this project: Force1ess/python-pptx, but got %s."
+        % PPTXVersion
+    )
 
 # Type variable for ShapeElement subclasses
 

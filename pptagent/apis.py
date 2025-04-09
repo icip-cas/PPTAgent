@@ -19,7 +19,7 @@ from pptx.text.text import _Run
 from pptx.util import Pt
 
 from pptagent.document import Document
-from pptagent.presentation import Closure, Picture, ShapeElement, SlidePage
+from pptagent.presentation import Closure, ClosureType, Picture, ShapeElement, SlidePage
 from pptagent.utils import get_logger, runs_merge
 
 logger = get_logger(__name__)
@@ -361,7 +361,7 @@ def del_paragraph(slide: SlidePage, div_id: int, paragraph_id: int):
     for para in shape.text_frame.paragraphs:
         if para.idx == paragraph_id:
             shape.text_frame.paragraphs.remove(para)
-            shape._closures["delete"].append(
+            shape._closures[ClosureType.DELETE].append(
                 Closure(partial(del_para, para.real_idx), para.real_idx)
             )
             return
@@ -405,7 +405,7 @@ def replace_paragraph(slide: SlidePage, div_id: int, paragraph_id: int, text: st
     for para in shape.text_frame.paragraphs:
         if para.idx == paragraph_id:
             para.text = text
-            shape._closures["replace"].append(
+            shape._closures[ClosureType.REPLACE].append(
                 Closure(
                     partial(replace_para, para.real_idx, text),
                     para.real_idx,
@@ -482,7 +482,7 @@ def clone_paragraph(slide: SlidePage, div_id: int, paragraph_id: int):
         shape.text_frame.paragraphs.append(deepcopy(para))
         shape.text_frame.paragraphs[-1].idx = max_idx + 1
         shape.text_frame.paragraphs[-1].real_idx = len(shape.text_frame.paragraphs) - 1
-        shape._closures["clone"].append(
+        shape._closures[ClosureType.CLONE].append(
             Closure(
                 partial(clone_para, para.real_idx),
                 para.real_idx,
@@ -498,8 +498,12 @@ def replace_image_with_table(shape: Picture, doc: Document, image_path: str):
     table = doc.get_table(image_path)
     shape.is_table = True
     shape.grid = (len(table.cells), len(table.cells[0]))
-    shape._closures["replace"].append(Closure(partial(add_table, table.cells)))
-    shape._closures["merge"].append(Closure(partial(merge_cells, table.merge_area)))
+    shape._closures[ClosureType.REPLACE].append(
+        Closure(partial(add_table, table.cells))
+    )
+    shape._closures[ClosureType.MERGE].append(
+        Closure(partial(merge_cells, table.merge_area))
+    )
     return
 
 

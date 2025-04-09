@@ -3,8 +3,7 @@ from test.conftest import test_config
 
 import pytest
 
-import pptagent.utils as utils
-from pptagent.utils import get_json_from_response
+from pptagent.utils import get_json_from_response, ppt_to_images
 
 
 def test_extract_json_from_markdown_block():
@@ -86,4 +85,4 @@ def test_json_not_found():
 def test_ppt_to_images_conversion():
     """Test converting a PPTX file to images."""
     # Run the conversion
-    utils.ppt_to_images(test_config.ppt, tempfile.mkdtemp())
+    ppt_to_images(test_config.ppt, tempfile.mkdtemp())
