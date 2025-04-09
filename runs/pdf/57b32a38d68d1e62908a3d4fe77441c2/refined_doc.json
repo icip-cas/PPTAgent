@@ -2,10 +2,6 @@
     "image_dir": "/Users/forcelss/Code/pptagent/runs/pdf/57b32a38d68d1e62908a3d4fe77441c2",
     "sections": [
         {
-            "title": "Product 产品",
-            "subsections": []
-        },
-        {
             "title": "Building effective agents",
             "subsections": [
                 {
