@@ -8,7 +8,6 @@ import traceback
 from itertools import product
 from shutil import which
 from time import sleep, time
-from types import SimpleNamespace
 from typing import Any, Optional
 
 import json_repair
@@ -100,37 +99,6 @@ def is_image_path(file: str) -> bool:
         bool: True if the file is an image, False otherwise.
     """
     return file.split(".")[-1].lower() in IMAGE_EXTENSIONS
-
-
-def get_font_style(font: dict[str, Any]) -> str:
-    """
-    Convert a font dictionary to a CSS style string.
-
-    Args:
-        font (Dict[str, Any]): The font dictionary.
-
-    Returns:
-        str: The CSS style string.
-    """
-    font = SimpleNamespace(**font)
-    styles = []
-
-    if hasattr(font, "size") and font.size:
-        styles.append(f"font-size: {font.size}pt")
-
-    if hasattr(font, "color") and font.color:
-        if all(c in "0123456789abcdefABCDEF" for c in font.color):
-            styles.append(f"color: #{font.color}")
-        else:
-            styles.append(f"color: {font.color}")
-
-    if hasattr(font, "bold") and font.bold:
-        styles.append("font-weight: bold")
-
-    if hasattr(font, "italic") and font.italic:
-        styles.append("font-style: italic")
-
-    return "; ".join(styles)
 
 
 def runs_merge(paragraph: _Paragraph) -> Optional[_Run]:
@@ -550,7 +518,6 @@ class Config:
         self,
         rundir: Optional[str] = None,
         session_id: Optional[str] = None,
-        debug: bool = True,
     ):
         """
         Initialize the configuration.
@@ -560,8 +527,6 @@ class Config:
             session_id (Optional[str]): The session ID.
             debug (bool): Whether to enable debug mode.
         """
-        self.DEBUG = debug
-
         if rundir is not None:
             self.set_rundir(rundir)
         elif session_id is not None:

@@ -1,9 +1,8 @@
-import traceback
 from collections.abc import Generator
 from typing import Literal, Optional
 
 from packaging.version import Version
-from pptx import Presentation as PPTXPre
+from pptx import Presentation as load_prs
 from pptx import __version__ as PPTXVersion
 from pptx.shapes.base import BaseShape
 from pptx.shapes.group import GroupShape as PPTXGroupShape
@@ -307,7 +306,7 @@ class Presentation:
         self.slide_height = slide_height
         self.num_pages = num_pages
         self.source_file = file_path
-        self.prs = PPTXPre(self.source_file)
+        self.prs = load_prs(self.source_file)
         self.layout_mapping = {layout.name: layout for layout in self.prs.slide_layouts}
         self.prs.core_properties.last_modified_by = "PPTAgent"
 
@@ -323,7 +322,7 @@ class Presentation:
         Returns:
             Presentation: The parsed Presentation.
         """
-        prs = PPTXPre(file_path)
+        prs = load_prs(file_path)
         slide_width = prs.slide_width
         slide_height = prs.slide_height
         slides = []
@@ -355,13 +354,12 @@ class Presentation:
                 )
             except Exception as e:
                 error_history.append((slide_idx, str(e)))
-                if config.DEBUG:
-                    logger.warning(
-                        "Warning in slide %d of %s: %s",
-                        slide_idx,
-                        file_path,
-                        traceback.format_exc(),
-                    )
+                logger.warning(
+                    "Warning in slide %d of %s: %s",
+                    slide_idx,
+                    file_path,
+                    e,
+                )
 
         return cls(
             slides, error_history, slide_width, slide_height, file_path, num_pages

@@ -275,9 +275,7 @@ class Section:
                 if pexists(pjoin(image_dir, basename)):
                     media.path = pjoin(image_dir, basename)
                 else:
-                    raise FileNotFoundError(
-                        f"image file not found: {media.path}, leave null for table elements and real path for image elements"
-                    )
+                    raise FileNotFoundError(f"image file not found: {media.path}")
             assert (
                 media.caption is not None or not require_caption
             ), f"caption is required for media: {media.path}"

@@ -150,7 +150,6 @@ async def create_task(
     pdfFile: UploadFile = File(None),
     topic: str = Form(None),
     numberOfPages: int = Form(...),
-    selectedModel: str = Form(...),
 ):
     task_id = datetime.now().strftime("20%y-%m-%d") + "/" + str(uuid.uuid4())
     logger.info(f"task created: {task_id}")
@@ -158,7 +157,6 @@ async def create_task(
     task = {
         "numberOfPages": numberOfPages,
         "pptx": "default_template",
-        "model": selectedModel,
     }
     if pptxFile is not None:
         pptx_blob = await pptxFile.read()

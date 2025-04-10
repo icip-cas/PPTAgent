@@ -21,7 +21,6 @@ from pptx.util import Length
 from pptagent.utils import (
     Config,
     dict_to_object,
-    get_font_style,
     package_join,
     parse_groupshape,
     parsing_image,
@@ -259,10 +258,18 @@ class Font:
         Merge a list of fonts into a single font.
         """
         for key, value in other.__dict__.items():
+            if getattr(self, key) is None:
+                setattr(self, key, value)
+
+    def override(self, other: "Font"):
+        """
+        Merge a list of fonts into a single font.
+        """
+        for key, value in other.__dict__.items():
             if value is not None:
                 setattr(self, key, value)
 
-    def merge(self, others: list["Font"], clear_others: bool = True):
+    def unify(self, others: list["Font"], clear_others: bool = False):
         """
         Merge a list of fonts into a single font.
         """
@@ -277,6 +284,31 @@ class Font:
                 continue
             for d in others:
                 setattr(d, key, None)
+
+    def to_style(self) -> str:
+        """
+        Convert a font dictionary to a CSS style string.
+
+        Args:
+            font (Dict[str, Any]): The font dictionary.
+
+        Returns:
+            str: The CSS style string.
+        """
+        styles = []
+        if self.size:
+            styles.append(f"font-size: {self.size}pt")
+
+        if self.color:
+            styles.append(f"color: #{self.color}")
+
+        if self.bold:
+            styles.append("font-weight: bold")
+
+        if self.italic:
+            styles.append("font-style: italic")
+
+        return "; ".join(styles)
 
 
 class Paragraph:
@@ -300,7 +332,7 @@ class Paragraph:
             self.idx = -1
             return
         self.font = Font(**paragraph.font.get_attrs())
-        self.font.update(Font(**run.font.get_attrs()))
+        self.font.override(Font(**run.font.get_attrs()))
         self.text = re.sub(r"(_x000B_|\\x0b)", " ", paragraph.text)
 
     def to_html(self, style_args: StyleArg) -> str:
@@ -320,7 +352,7 @@ class Paragraph:
             raise ValueError(f"paragraph {self.idx} is not valid")
         tag = "li" if self.bullet else "p"
         id_str = f" id='{self.idx}'" if style_args.paragraph_id else ""
-        font_style = get_font_style(self.font)
+        font_style = self.font.to_style()
         style_str = (
             f" style='{font_style}'" if style_args.font_style and font_style else ""
         )
@@ -372,7 +404,7 @@ class TextFrame:
         self.is_textframe = True
         self.extents = shape.text_frame._extents
         self.font = Font(**shape.text_frame.font.get_attrs())
-        self.font.merge([para.font for para in self.paragraphs if para.idx != -1])
+        self.font.unify([para.font for para in self.paragraphs if para.idx != -1])
 
     def to_html(self, style_args: StyleArg) -> str:
         """
@@ -730,7 +762,7 @@ class ShapeElement:
         if style_args.geometry:
             styles.append(f"left: {self.left}pt; top: {self.top}pt;")
         if style_args.font_style and self.text_frame.is_textframe:
-            font_style = get_font_style(self.text_frame.font)
+            font_style = self.text_frame.font.to_style()
             if font_style:
                 styles.append(font_style)
 
