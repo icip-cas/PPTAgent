@@ -49,7 +49,7 @@ For a quick test, use the example in `resource/test/test_(pdf|template)` to save
       <td>Minimum 8GB RAM, recommended with CUDA or MPS support for better performance.</td>
     </tr>
     <tr>
-      <td>Required dependencies: <b>LibreOffice</b>, poppler-utils (conda: poppler), and NodeJS.</td>
+      <td><b>Required dependencies:</b> LibreOffice, Chrome, poppler-utils (conda: poppler), and NodeJS.</td>
     </tr>
   </tbody>
 </table>
@@ -72,7 +72,15 @@ docker run -dt --gpus all --ipc=host --name pptagent \
   forceless/pptagent
 ```
 
-You can monitor progress with `docker logs -f pptagent`.
+```bash
+docker exec -it pptagent bash
+# serve backend
+cd pptagent_ui
+python3 backend.py &
+# serve frontend
+npm install
+npm run serve
+```
 
 ### Running Locally 🛠
 

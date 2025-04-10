@@ -171,9 +171,7 @@ class CodeExecutor:
                 eval(line, {}, {func: partial_func})
                 self.code_history[-1][0] = HistoryMark.CODE_RUN_CORRECT
             except Exception as e:
-                if isinstance(e, SlideEditError):
-                    logger.info(f"Encountered SlideEditError: {e}")
-                else:
+                if not isinstance(e, SlideEditError):
                     logger.warning(f"Encountered unknown error: {e}")
 
                 trace_msg = traceback.format_exc()
@@ -355,9 +353,10 @@ def del_paragraph(slide: SlidePage, div_id: int, paragraph_id: int):
         SlideEditError: If the paragraph is not found.
     """
     shape = element_index(slide, div_id)
-    assert (
-        shape.text_frame.is_textframe
-    ), "The element does not have a text frame, please check the element id and type of element."
+    if not shape.text_frame.is_textframe:
+        raise SlideEditError(
+            f"The element {shape.shape_idx} of slide {slide.slide_idx} does not have a text frame, please check the element id and type of element."
+        )
     for para in shape.text_frame.paragraphs:
         if para.idx == paragraph_id:
             shape.text_frame.paragraphs.remove(para)
@@ -381,7 +380,10 @@ def del_image(slide: SlidePage, figure_id: int):
         figure_id (int): The ID of the image to delete.
     """
     shape = element_index(slide, figure_id)
-    assert isinstance(shape, Picture), "The element is not a Picture."
+    if not isinstance(shape, Picture):
+        raise SlideEditError(
+            f"The element {shape.shape_idx} of slide {slide.slide_idx} is not a Picture."
+        )
     slide.shapes.remove(shape)
 
 
@@ -399,9 +401,10 @@ def replace_paragraph(slide: SlidePage, div_id: int, paragraph_id: int, text: st
         SlideEditError: If the paragraph is not found.
     """
     shape = element_index(slide, div_id)
-    assert (
-        shape.text_frame.is_textframe
-    ), "The element does not have a text frame, please check the element id and type of element."
+    if not shape.text_frame.is_textframe:
+        raise SlideEditError(
+            f"The element {shape.shape_idx} of slide {slide.slide_idx} does not have a text frame, please check the element id and type of element."
+        )
     for para in shape.text_frame.paragraphs:
         if para.idx == paragraph_id:
             para.text = text
@@ -438,7 +441,10 @@ def replace_image(slide: SlidePage, doc: Document, img_id: int, image_path: str)
             f"The image {image_path} does not exist, consider use del_image if image_path in the given command is faked"
         )
     shape = element_index(slide, img_id)
-    assert isinstance(shape, Picture), "The element is not a Picture."
+    if not isinstance(shape, Picture):
+        raise SlideEditError(
+            f"The element {shape.shape_idx} of slide {slide.slide_idx} is not a Picture."
+        )
 
     try:
         if TABLE_REGEX.match(image_path):
@@ -472,9 +478,10 @@ def clone_paragraph(slide: SlidePage, div_id: int, paragraph_id: int):
     Mention: the cloned paragraph will have a paragraph_id one greater than the current maximum in the parent element.
     """
     shape = element_index(slide, div_id)
-    assert (
-        shape.text_frame.is_textframe
-    ), "The element does not have a text frame, please check the element id and type of element."
+    if not shape.text_frame.is_textframe:
+        raise SlideEditError(
+            f"The element {shape.shape_idx} of slide {slide.slide_idx} does not have a text frame, please check the element id and type of element."
+        )
     max_idx = max([para.idx for para in shape.text_frame.paragraphs])
     for para in shape.text_frame.paragraphs:
         if para.idx != paragraph_id:

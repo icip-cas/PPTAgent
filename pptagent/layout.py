@@ -1,7 +1,18 @@
+import asyncio
 from dataclasses import asdict, dataclass
 from typing import Literal, Optional
 
-from pptagent.utils import pbasename, pexists, pjoin
+from jinja2 import StrictUndefined, Template
+
+from pptagent.llms import LLM, AsyncLLM
+from pptagent.utils import get_logger, package_join, pbasename, pexists, pjoin
+
+logger = get_logger(__name__)
+
+LENGTHY_REWRITE_PROMPT = Template(
+    open(package_join("prompts", "lengthy_rewrite.txt")).read(),
+    undefined=StrictUndefined,
+)
 
 
 @dataclass
@@ -105,9 +116,7 @@ class Layout:
                 old_data[el.el_name] = el.content
         return old_data
 
-    def validate(
-        self, editor_output: dict, length_factor: float | None, image_dir: str
-    ):
+    def validate(self, editor_output: dict, image_dir: str):
         for el_name, el_data in editor_output.items():
             assert (
                 "data" in el_data
@@ -122,17 +131,6 @@ class Layout:
             assert (
                 el_name in self
             ), f"Element {el_name} is not a valid element, supported elements are {[el.el_name for el in self.elements]}"
-            if length_factor is not None:
-                charater_counts = [len(i) for i in el_data["data"]]
-                if (
-                    max(charater_counts)
-                    > self[el_name].suggested_characters * length_factor
-                ):
-                    raise ValueError(
-                        f"Content for '{el_name}' exceeds character limit ({max(charater_counts)} > {self[el_name].suggested_characters}). "
-                        f"Please reduce the content length to maintain slide readability and visual balance. "
-                        f"Current text: '{el_data['data']}'"
-                    )
             if self[el_name].el_type == "image":
                 for i in range(len(el_data["data"])):
                     if pexists(pjoin(image_dir, el_data["data"][i])):
@@ -147,6 +145,52 @@ class Layout:
                                 "Please check the image path and use only existing images\n"
                                 "Or, leave a blank list for this element"
                             )
+
+    def validate_length(
+        self, editor_output: dict, length_factor: float, language_model: LLM
+    ):
+        for el_name, el_data in editor_output.items():
+            if self[el_name].el_type == "text":
+                charater_counts = [len(i) for i in el_data["data"]]
+                if (
+                    max(charater_counts)
+                    > self[el_name].suggested_characters * length_factor
+                ):
+                    el_data["data"] = language_model(
+                        LENGTHY_REWRITE_PROMPT.render(
+                            el_name=el_name,
+                            content=el_data["data"],
+                            suggested_characters=self[el_name].suggested_characters,
+                        )
+                    )
+
+    async def validate_length_async(
+        self, editor_output: dict, length_factor: float, language_model: AsyncLLM
+    ):
+        async with asyncio.TaskGroup() as tg:
+            tasks = {}
+            for el_name, el_data in editor_output.items():
+                if self[el_name].el_type == "text":
+                    charater_counts = [len(i) for i in el_data["data"]]
+                    if (
+                        max(charater_counts)
+                        > self[el_name].suggested_characters * length_factor
+                    ):
+                        task = tg.create_task(
+                            language_model(
+                                LENGTHY_REWRITE_PROMPT.render(
+                                    el_name=el_name,
+                                    content=el_data["data"],
+                                    suggested_characters=self[
+                                        el_name
+                                    ].suggested_characters,
+                                )
+                            )
+                        )
+                        tasks[el_name] = task
+
+            for el_name, task in tasks.items():
+                editor_output[el_name]["data"] = await task
 
     @property
     def content_schema(self):

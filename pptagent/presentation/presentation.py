@@ -355,7 +355,7 @@ class Presentation:
             except Exception as e:
                 error_history.append((slide_idx, str(e)))
                 logger.warning(
-                    "Warning in slide %d of %s: %s",
+                    "Fail to parse slide %d of %s: %s",
                     slide_idx,
                     file_path,
                     e,

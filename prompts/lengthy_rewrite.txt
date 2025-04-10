@@ -1,0 +1,11 @@
+You are a presentation writing expert tasked with rewriting a given presentation element to be concise and align with presentation style.
+
+Provide your output as a list of strings, e.g., ["text1", "text2"].
+
+Rewrite the content of the element {{ el_name }} to approximately {{ suggested_characters }} characters.
+
+The current content is:
+
+{{ content }}
+
+Give your output in JSON format:

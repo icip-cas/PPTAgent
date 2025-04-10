@@ -502,11 +502,11 @@ class PPTAgent(PPTGen):
             key=lambda x: edit_distance(x, layout_selection["layout"]),
         )
         if "image" in layout and len(images) == 0:
-            logger.info(
+            logger.debug(
                 f"An image layout: {layout} is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
             )
         elif "image" not in layout and len(images) > 0:
-            logger.info(
+            logger.debug(
                 f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}\n Set images to empty list."
             )
             slide_content = slide_content[: slide_content.rfind("\nImages:\n")]
@@ -559,7 +559,7 @@ class PPTAgent(PPTGen):
                 "Failed to generate slide, tried %d/%d times, error: %s",
                 error_idx + 1,
                 self.retry_times,
-                str(feedback),
+                str(feedback[1]),
             )
             if error_idx == self.retry_times:
                 raise Exception(
@@ -588,8 +588,9 @@ class PPTAgent(PPTGen):
         """
         command_list = []
         try:
-            layout.validate(
-                editor_output, self.length_factor, self.source_doc.image_dir
+            layout.validate(editor_output, self.source_doc.image_dir)
+            layout.validate_length(
+                editor_output, self.length_factor, self.language_model
             )
             old_data = layout.get_old_data(editor_output)
             template_id = layout.get_slide_id(editor_output)
@@ -738,11 +739,11 @@ class PPTAgentAsync(PPTGenAsync):
             key=lambda x: edit_distance(x, layout_selection["layout"]),
         )
         if "image" in layout and len(images) == 0:
-            logger.info(
+            logger.debug(
                 f"An image layout is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
             )
         elif "image" not in layout and len(images) > 0:
-            logger.info(
+            logger.debug(
                 f"A pure text layout: {layout} is selected, but images are provided, please check the parsed document and outline item:\n {outline_item}\n Set images to empty list."
             )
             slide_content = slide_content[: slide_content.rfind("\nImages:\n")]
@@ -793,7 +794,7 @@ class PPTAgentAsync(PPTGenAsync):
                 "Failed to generate slide, tried %d/%d times, error: %s",
                 error_idx + 1,
                 self.retry_times,
-                str(feedback),
+                str(feedback[1]),
             )
             if error_idx == self.retry_times:
                 raise Exception(
@@ -825,8 +826,9 @@ class PPTAgentAsync(PPTGenAsync):
         """
         command_list = []
         try:
-            layout.validate(
-                editor_output, self.length_factor, self.source_doc.image_dir
+            layout.validate(editor_output, self.source_doc.image_dir)
+            await layout.validate_length_async(
+                editor_output, self.length_factor, self.language_model
             )
             old_data = layout.get_old_data(editor_output)
             template_id = layout.get_slide_id(editor_output)
