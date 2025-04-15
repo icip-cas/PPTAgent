@@ -2,20 +2,14 @@ Analyze the content layout and media types in the provided slide images.
 Your objective is to provide a concise, descriptive title that captures purely the layout pattern.
 Requirements:
 Focus on HOW content is structured and presented, not WHAT the content is
-Describe the visual arrangement and interaction between different content types (text, images, diagrams, etc.)
+Describe the number, visual arrangement, and interaction between different elements (text, images, diagrams, etc.)
 
 Avoid:
-Specific topics or subjects
-Detailed content descriptions
-
-
-You cannot use the following layout names:
-{{ existed_layoutnames }}
+Specific topics or subjects, and detailed content descriptions
 
 Example Outputs:
-Central Image with explanatory text
-Growth Overview Illustrated with the Chart
-Picture and illustrative key points
-Plain Bullet Points
+One Central Chart with a explanatory paragraph
+Picture and three illustrative key points
+Three Icon Columns with Descriptive Text Below Each
 
 Output: Provide a one-line layout pattern title.

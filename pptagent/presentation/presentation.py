@@ -10,7 +10,15 @@ from pptx.slide import Slide as PPTXSlide
 
 from pptagent.utils import Config, get_logger, package_join
 
-from .shapes import Background, GroupShape, Picture, ShapeElement, StyleArg, T
+from .shapes import (
+    Background,
+    GroupShape,
+    Paragraph,
+    Picture,
+    ShapeElement,
+    StyleArg,
+    T,
+)
 
 try:
     PPTXVersion, Mark = PPTXVersion.split("+")
@@ -157,9 +165,20 @@ class SlidePage:
                     raise ValueError(f"Failed to apply closures to slides: {e}")
         return slide
 
+    def iter_paragraphs(self) -> Generator[Paragraph, None, None]:
+        for shape in self:  # this considered the group shapes
+            if not shape.text_frame.is_textframe:
+                continue
+            for para in shape.text_frame.paragraphs:
+                if para.idx != -1:
+                    yield para
+
     def shape_filter(
-        self, shape_type: type[T], shapes: Optional[list[ShapeElement]] = None
-    ) -> Generator[T, None, None]:
+        self,
+        shape_type: type[T],
+        from_groupshape: bool = True,
+        return_father: bool = False,
+    ) -> Generator[T, None, None] | Generator[tuple["SlidePage", T], None, None]:
         """
         Filter shapes in the slide by type.
 
@@ -170,13 +189,14 @@ class SlidePage:
         Yields:
             T: The filtered shapes.
         """
-        if shapes is None:
-            shapes = self.shapes
-        for shape in shapes:
+        for shape in self.shapes:
             if isinstance(shape, shape_type):
-                yield shape
-            elif isinstance(shape, GroupShape):
-                yield from self.shape_filter(shape_type, shape.data)
+                if return_father:
+                    yield (self, shape)
+                else:
+                    yield shape
+            elif from_groupshape and isinstance(shape, GroupShape):
+                yield from shape.shape_filter(shape_type, return_father)
 
     def get_content_type(self) -> Literal["text", "image"]:
         """
@@ -228,30 +248,12 @@ class SlidePage:
             ValueError: If an image caption is not found.
         """
         text_content = "\n".join(
-            [
-                shape.text_frame.text.strip()
-                for shape in self.shapes
-                if shape.text_frame.is_textframe and shape.text_frame.text.strip()
-            ]
+            [para.text for para in self.iter_paragraphs() if para.text]
         )
         if show_image:
             for image in self.shape_filter(Picture):
-                if image.caption is None:
-                    raise ValueError(
-                        f"Caption not found for picture {image.shape_idx} of slide {image.slide_idx}"
-                    )
                 text_content += "\n" + "Image: " + image.caption
         return text_content
-
-    @property
-    def text_length(self) -> int:
-        """
-        Get the length of the text in the slide page.
-
-        Returns:
-            int: The length of the text.
-        """
-        return sum([len(shape.text_frame) for shape in self.shapes])
 
     def __iter__(self):
         """
@@ -431,6 +433,9 @@ class Presentation:
                 for slide in self.slides
             ]
         )
+
+    def __iter__(self):
+        yield from self.slides
 
     def __len__(self) -> int:
         """

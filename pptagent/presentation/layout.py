@@ -202,20 +202,15 @@ class Layout:
     def content_schema(self):
         return {el.el_name: el.get_schema() for el in self.elements}
 
-    @property
-    def overview(self):
-        overview = f"Layout: {self.title}\n"
+    def remove_item(self, item: str):
         for el in self.elements:
-            overview += f"{el.el_name}: {el.el_type}\n"
-            if el.variable_length is not None:
-                overview += f"variable length: {el.variable_length[0]} - {el.variable_length[1]}\n"
-            else:
-                overview += f"element length: {len(el.content)}\n"
-            overview += f"description: {el.description}\n"
-            if el.el_type == "text":
-                overview += f"suggested characters: {el.suggested_characters}\n"
-            overview += "\n"
-        return overview
+            if item in el.content:
+                el.content.remove(item)
+                if len(el.content) == 0:
+                    self.elements.remove(el)
+                return
+        else:
+            raise ValueError(f"Item {item} not found in layout {self.title}")
 
     def __contains__(self, key: str | int):
         if isinstance(key, int):

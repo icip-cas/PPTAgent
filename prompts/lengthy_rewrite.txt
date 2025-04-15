@@ -9,7 +9,7 @@ Provide your output as a JSON array of strings, e.g.,
 ]
 ```
 
-Rewrite the content of the element {{ el_name }} to approximately {{ suggested_characters }}.
+Rewrite or summarize the content of the element {{ el_name }} to approximately {{ suggested_characters }}.
 
 The current content is:
 

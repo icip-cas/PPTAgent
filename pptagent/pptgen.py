@@ -6,12 +6,11 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Optional
 
-from pptagent.agent import Agent, AsyncAgent
+from pptagent.agent import Agent
 from pptagent.apis import API_TYPES, CodeExecutor
 from pptagent.document import Document, OutlineItem
-from pptagent.layout import Layout
 from pptagent.llms import LLM, AsyncLLM
-from pptagent.presentation import Presentation, SlidePage, StyleArg
+from pptagent.presentation import Layout, Picture, Presentation, SlidePage, StyleArg
 from pptagent.utils import Config, edit_distance, get_logger
 
 logger = get_logger(__name__)
@@ -41,10 +40,7 @@ class PPTGen(ABC):
 
     def __post_init__(self):
         self._initialized = False
-        agent_class = AsyncAgent if isinstance(self.text_embedder, AsyncLLM) else Agent
-        self._hire_staffs(
-            self.record_cost, self.language_model, self.vision_model, agent_class
-        )
+        self._hire_staffs(self.record_cost, self.language_model, self.vision_model)
 
     def set_reference(
         self,
@@ -75,6 +71,8 @@ class PPTGen(ABC):
         source_doc: Document,
         num_slides: Optional[int] = None,
         outline: Optional[list[OutlineItem]] = None,
+        hide_small_pic_ratio: Optional[float] = None,
+        keep_in_background: bool = True,
     ):
         """
         Generate a PowerPoint presentation.
@@ -93,6 +91,8 @@ class PPTGen(ABC):
         assert self._initialized, "PPTGen not initialized, call `set_reference` first"
         self.source_doc = source_doc
         succ_flag = True
+        if hide_small_pic_ratio is not None:
+            self._hide_small_pics(hide_small_pic_ratio, keep_in_background)
         if outline is None:
             self.outline = self.generate_outline(num_slides, source_doc)
         else:
@@ -158,7 +158,7 @@ class PPTGen(ABC):
         )
         if num_slides == 1 and isinstance(outline, dict):
             outline = [outline]
-        outline = self._valid_outline(outline, source_doc, turn_id)
+        outline = self._fix_outline(outline, source_doc, turn_id)
         return outline
 
     @abstractmethod
@@ -181,7 +181,30 @@ class PPTGen(ABC):
     ) -> tuple[SlidePage, CodeExecutor]:
         raise NotImplementedError("Subclass must implement this method")
 
-    def _valid_outline(
+    def _hide_small_pics(self, area_ratio: float, keep_in_background: bool):
+        for layout in self.reference:
+            template_slide = self.presentation.slides[layout.template_id - 1]
+            pictures = list(template_slide.shape_filter(Picture, return_father=True))
+            if len(pictures) == 0:
+                continue
+            for father, pic in pictures:
+                if pic.area / pic.slide_area < area_ratio:
+                    if keep_in_background:
+                        father.shapes.remove(pic)
+                    else:
+                        father.shapes.remove(pic)
+                        father.backgrounds.append(pic)
+                    layout.remove_item(pic.caption.strip())
+
+            if len(list(template_slide.shape_filter(Picture))) == 0:
+                logger.debug(
+                    "All pictures in layout %s are too small, set to pure text layout",
+                    layout.title,
+                )
+                layout.title = layout.title.replace(":image", ":text")
+                layout.elements = [el for el in layout.elements if el.el_type == "text"]
+
+    def _fix_outline(
         self, outline: list[dict], source_doc: Document, turn_id: int, retry: int = 0
     ) -> list[OutlineItem]:
         """
@@ -209,7 +232,7 @@ class PPTGen(ABC):
                 new_outline = self.staffs["planner"].retry(
                     str(e), traceback.format_exc(), turn_id, retry + 1
                 )
-                return self._valid_outline(new_outline, source_doc, turn_id, retry + 1)
+                return self._fix_outline(new_outline, source_doc, turn_id, retry + 1)
             else:
                 raise ValueError("Failed to generate outline, tried too many times")
 
@@ -237,7 +260,6 @@ class PPTGen(ABC):
         record_cost: bool,
         language_model: LLM | AsyncLLM,
         vision_model: LLM | AsyncLLM,
-        agent_class: type[Agent] | type[AsyncAgent],
     ) -> dict[str, Agent]:
         """
         Initialize agent roles and their models
@@ -247,7 +269,7 @@ class PPTGen(ABC):
             "vision": vision_model,
         }
         self.staffs = {
-            role: agent_class(
+            role: Agent(
                 role,
                 record_cost=record_cost,
                 text_model=self.text_embedder,
@@ -264,11 +286,18 @@ class PPTGenAsync(PPTGen):
     Extends PPTGen with async functionality.
     """
 
+    def __post_init__(self):
+        super().__post_init__()
+        for k in list(self.staffs.keys()):
+            self.staffs[k] = self.staffs[k].to_async()
+
     async def generate_pres(
         self,
         source_doc: Document,
         num_slides: Optional[int] = None,
         outline: Optional[list[OutlineItem]] = None,
+        hide_small_pic_ratio: Optional[float] = None,
+        keep_in_background: bool = True,
     ):
         """
         Asynchronously generate a PowerPoint presentation.
@@ -278,6 +307,8 @@ class PPTGenAsync(PPTGen):
         ), "AsyncPPTAgent not initialized, call `set_reference` first"
         self.source_doc = source_doc
         succ_flag = True
+        if hide_small_pic_ratio is not None:
+            self._hide_small_pics(hide_small_pic_ratio, keep_in_background)
         if outline is None:
             self.outline = await self.generate_outline(num_slides, source_doc)
         else:
@@ -347,7 +378,7 @@ class PPTGenAsync(PPTGen):
         )
         if num_slides == 1 and isinstance(outline, dict):
             outline = [outline]
-        outline = await self._valid_outline(outline, source_doc, turn_id)
+        outline = await self._fix_outline(outline, source_doc, turn_id)
         return outline
 
     @abstractmethod
@@ -373,7 +404,7 @@ class PPTGenAsync(PPTGen):
         """
         raise NotImplementedError("Subclass must implement this method")
 
-    async def _valid_outline(
+    async def _fix_outline(
         self, outline: list[dict], source_doc: Document, turn_id: int, retry: int = 0
     ) -> list[OutlineItem]:
         """
@@ -398,7 +429,7 @@ class PPTGenAsync(PPTGen):
                 new_outline = await self.staffs["planner"].retry(
                     str(e), traceback.format_exc(), turn_id, retry + 1
                 )
-                return await self._valid_outline(
+                return await self._fix_outline(
                     new_outline, source_doc, turn_id, retry + 1
                 )
             else:
@@ -483,7 +514,7 @@ class PPTAgent(PPTGen):
             slide_idx, self.source_doc
         )
         available_layouts = "\n".join(
-            [layout.overview for layout in self.layouts.values()]
+            [layout.title for layout in self.layouts.values()]
         )
         if len(content_source) == 0:
             key_points = []
@@ -725,7 +756,7 @@ class PPTAgentAsync(PPTGenAsync):
             slide_idx, self.source_doc
         )
         available_layouts = "\n".join(
-            [layout.overview for layout in self.layouts.values()]
+            [layout.title for layout in self.layouts.values()]
         )
         if len(content_source) == 0:
             key_points = []

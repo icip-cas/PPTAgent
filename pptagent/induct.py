@@ -1,19 +1,89 @@
 import asyncio
 import os
+import traceback
 from collections import defaultdict
+from collections.abc import Coroutine
+from typing import Any
 
 from jinja2 import Template
 
+from pptagent.agent import Agent
 from pptagent.llms import LLM, AsyncLLM
 from pptagent.model_utils import (
     get_cluster,
     get_image_embedding,
     images_cosine_similarity,
 )
-from pptagent.presentation import Presentation
-from pptagent.utils import Config, get_logger, package_join, pjoin, tenacity
+from pptagent.presentation import Picture, Presentation, SlidePage
+from pptagent.utils import Config, edit_distance, get_logger, package_join, pjoin
 
 logger = get_logger(__name__)
+
+CATEGORY_SPLIT_TEMPLATE = Template(
+    open(package_join("prompts", "category_split.txt")).read()
+)
+ASK_CATEGORY_PROMPT = open(package_join("prompts", "ask_category.txt")).read()
+
+
+def check_schema(schema: dict | Any, slide: SlidePage):
+    if not isinstance(schema, dict):
+        raise ValueError(
+            f"Output schema should be a dict, but got {type(schema)}: {schema}\n",
+            """  {
+                "element_name": {
+                    "description": "purpose of this element", # do not mention any detail, just purpose
+                    "type": "text" or "image",
+                    "data": ["text1", "text2"] or ["logo:...", "logo:..."]
+                    }
+            }""",
+        )
+
+    similar_ele = None
+    max_similarity = -1
+    for el_name, element in schema.items():
+        if "data" not in element or len(element["data"]) == 0:
+            raise ValueError(
+                f"Empty element is not allowed, but got {el_name}: {element}. Content of each element should be in the `data` field.\n",
+                "If this infered to an empty or unexpected element, remove it from the schema.",
+            )
+        if not isinstance(element["data"], list):
+            logger.debug("Converting single text element to list: %s", element["data"])
+            element["data"] = [element["data"]]
+        if element["type"] == "text":
+
+            for item in element["data"]:
+                for para in slide.iter_paragraphs():
+                    similarity = edit_distance(para.text, item)
+                    if similarity > 0.8:
+                        break
+                    if similarity > max_similarity:
+                        max_similarity = similarity
+                        similar_ele = para.text
+                else:
+                    raise ValueError(
+                        f"Text element `{el_name}` contains text `{item}` that does not match any single paragraph <p> in the current slide. The most similar paragraph found was `{similar_ele}`.",
+                        "This error typically occurs when either: 1) multiple paragraphs are incorrectly merged into a single element, or 2) a single paragraph is incorrectly split into multiple items.",
+                    )
+
+        elif element["type"] == "image":
+
+            for caption in element["data"]:
+                for shape in slide.shape_filter(Picture):
+                    similarity = edit_distance(shape.caption, caption)
+                    if similarity > 0.8:
+                        break
+                    if similarity > max_similarity:
+                        max_similarity = similarity
+                        similar_ele = shape.caption
+                else:
+                    raise ValueError(
+                        f"Image caption of {el_name}: {caption} not found in the `alt` attribute of <img> elements of current slide, the most similar caption is {similar_ele}"
+                    )
+
+        else:
+            raise ValueError(
+                f"Unknown type of {el_name}: {element['type']}, should be one of ['text', 'image']"
+            )
 
 
 class SlideInducter:
@@ -50,6 +120,13 @@ class SlideInducter:
         self.language_model = language_model
         self.vision_model = vision_model
         self.image_models = image_models
+        self.schema_extractor = Agent(
+            "schema_extractor",
+            {
+                "language": language_model,
+                "vision": vision_model,
+            },
+        )
         if not use_assert:
             return
         assert (
@@ -58,9 +135,14 @@ class SlideInducter:
             == len(os.listdir(ppt_image_folder))
         ), "The number of slides in the template image folder and the presentation image folder must be the same as the number of slides in the presentation"
 
-    def layout_induct(self):
+    def layout_induct(self) -> dict:
         """
-        Perform layout induction for the presentation.
+        Perform layout induction for the presentation, should be called before content induction.
+        Return a dict representing layouts, each layout is a dict with keys:
+        - key: the layout name, e.g. "Title and Content:text"
+        - `template_id`: the id of the template slide
+        - `slides`: the list of slide ids
+        Moreover, the dict has a key `functional_keys`, which is a list of functional keys.
         """
         layout_induction = defaultdict(lambda: defaultdict(list))
         content_slides_index, functional_cluster = self.category_split()
@@ -91,13 +173,14 @@ class SlideInducter:
         """
         Split slides into categories based on their functional purpose.
         """
-        category_split_template = Template(
-            open(package_join("prompts", "category_split.txt")).read()
-        )
         functional_cluster = self.language_model(
-            category_split_template.render(slides=self.prs.to_text()),
+            CATEGORY_SPLIT_TEMPLATE.render(slides=self.prs.to_text()),
             return_json=True,
         )
+        assert isinstance(functional_cluster, dict) and all(
+            isinstance(k, str) and isinstance(v, list)
+            for k, v in functional_cluster.items()
+        ), "Functional cluster must be a dictionary with string keys and list values"
         functional_slides = set(sum(functional_cluster.values(), []))
         content_slides_index = set(range(1, len(self.prs) + 1)) - functional_slides
 
@@ -109,7 +192,6 @@ class SlideInducter:
         """
         embeddings = get_image_embedding(self.template_image_folder, *self.image_models)
         assert len(embeddings) == len(self.prs)
-        template = Template(open(package_join("prompts", "ask_category.txt")).read())
         content_split = defaultdict(list)
         for slide_idx in content_slides_index:
             slide = self.prs.slides[slide_idx - 1]
@@ -130,9 +212,7 @@ class SlideInducter:
                 )
                 cluster_name = (
                     self.vision_model(
-                        template.render(
-                            existed_layoutnames=list(layout_induction.keys()),
-                        ),
+                        ASK_CATEGORY_PROMPT,
                         pjoin(self.ppt_image_folder, f"slide_{template_id:04d}.jpg"),
                     )
                     + ":"
@@ -141,34 +221,43 @@ class SlideInducter:
                 layout_induction[cluster_name]["template_id"] = template_id
                 layout_induction[cluster_name]["slides"] = slide_indexs
 
-    @tenacity
-    def content_induct(self):
+    def content_induct(self, layout_induction: dict):
         """
         Perform content schema extraction for the presentation.
         """
-        layout_induction = self.layout_induct()
-        content_induct_prompt = Template(
-            open(package_join("prompts", "content_induct.txt")).read()
-        )
         for layout_name, cluster in layout_induction.items():
-            if "template_id" in cluster and "content_schema" not in cluster:
-                schema = self.language_model(
-                    content_induct_prompt.render(
-                        slide=self.prs.slides[cluster["template_id"] - 1].to_html(
-                            element_id=False, paragraph_id=False
-                        )
-                    ),
-                    return_json=True,
-                )
-                for k in list(schema.keys()):
-                    if "data" not in schema[k]:
-                        raise ValueError(f"Cannot find `data` in {k}\n{schema[k]}")
-                    if len(schema[k]["data"]) == 0:
-                        logger.warning("Empty content schema: %s", schema[k])
-                        schema.pop(k)
-                assert len(schema) > 0, "No content schema generated"
-                layout_induction[layout_name]["content_schema"] = schema
+            if layout_name == "functional_keys" or "content_schema" in cluster:
+                continue
+            slide = self.prs.slides[cluster["template_id"] - 1]
+            turn_id, schema = self.schema_extractor(slide=slide.to_html())
+            schema = self._fix_schema(schema, slide, turn_id)
+            layout_induction[layout_name]["content_schema"] = schema
+
         return layout_induction
+
+    def _fix_schema(
+        self,
+        schema: dict,
+        slide: SlidePage,
+        turn_id: int = None,
+        retry: int = 0,
+    ) -> dict:
+        """
+        Fix schema by checking and retrying if necessary.
+        """
+        try:
+            check_schema(schema, slide)
+        except ValueError as e:
+            retry += 1
+            logger.debug("Failed at schema extraction: %s", e)
+            if retry == 3:
+                logger.error("Failed to extract schema for slide-%s: %s", turn_id, e)
+                raise e
+            schema = self.schema_extractor.retry(
+                e, traceback.format_exc(), turn_id, retry
+            )
+            return self._fix_schema(schema, slide, turn_id, retry)
+        return schema
 
 
 class SlideInducterAsync(SlideInducter):
@@ -203,18 +292,20 @@ class SlideInducterAsync(SlideInducter):
             language_model,
             vision_model,
         )
+        self.schema_extractor = self.schema_extractor.to_async()
 
     async def category_split(self):
         """
         Async version: Split slides into categories based on their functional purpose.
         """
-        category_split_template = Template(
-            open(package_join("prompts", "category_split.txt")).read()
-        )
         functional_cluster = await self.language_model(
-            category_split_template.render(slides=self.prs.to_text()),
+            CATEGORY_SPLIT_TEMPLATE.render(slides=self.prs.to_text()),
             return_json=True,
         )
+        assert isinstance(functional_cluster, dict) and all(
+            isinstance(k, str) and isinstance(v, list)
+            for k, v in functional_cluster.items()
+        ), "Functional cluster must be a dictionary with string keys and list values"
         functional_slides = set(sum(functional_cluster.values(), []))
         content_slides_index = set(range(1, len(self.prs) + 1)) - functional_slides
 
@@ -228,7 +319,6 @@ class SlideInducterAsync(SlideInducter):
         """
         embeddings = get_image_embedding(self.template_image_folder, *self.image_models)
         assert len(embeddings) == len(self.prs)
-        template = Template(open(package_join("prompts", "ask_category.txt")).read())
         content_split = defaultdict(list)
         for slide_idx in content_slides_index:
             slide = self.prs.slides[slide_idx - 1]
@@ -252,9 +342,7 @@ class SlideInducterAsync(SlideInducter):
 
                 vision_tasks.append(
                     self.vision_model(
-                        template.render(
-                            existed_layoutnames=list(layout_induction.keys()),
-                        ),
+                        ASK_CATEGORY_PROMPT,
                         pjoin(self.ppt_image_folder, f"slide_{template_id:04d}.jpg"),
                     )
                 )
@@ -297,41 +385,45 @@ class SlideInducterAsync(SlideInducter):
         layout_induction["functional_keys"] = functional_keys
         return layout_induction
 
-    @tenacity
     async def content_induct(self, layout_induction: dict):
         """
         Async version: Perform content schema extraction for the presentation.
         """
-        content_induct_prompt = Template(
-            open(package_join("prompts", "content_induct.txt")).read()
-        )
 
         tasks = {}
         for layout_name, cluster in layout_induction.items():
-            if "template_id" in cluster and "content_schema" not in cluster:
-                slide = self.prs.slides[cluster["template_id"] - 1].to_html(
-                    element_id=False, paragraph_id=False
-                )
-                task = self.language_model(
-                    content_induct_prompt.render(slide=slide), return_json=True
-                )
-                tasks[layout_name] = task
+            if layout_name == "functional_keys" or "content_schema" in cluster:
+                continue
+            slide = self.prs.slides[cluster["template_id"] - 1]
+            coro = self.schema_extractor(slide=slide.to_html())
+            tasks[layout_name] = self._fix_schema(coro, slide)
 
         if tasks:
             results = await asyncio.gather(*tasks.values())
             for layout_name, schema in zip(tasks.keys(), results):
-                # Validate schema structure
-                for key in list(schema.keys()):
-                    if "data" not in schema[key]:
-                        raise ValueError(f"Missing data field in {key}\n{schema[key]}")
-                    if not schema[key]["data"]:
-                        logger.warning("Removing empty schema: %s", key)
-                        schema.pop(key)
-
-                if not schema:
-                    raise ValueError(f"Empty schema generated for layout {layout_name}")
-
                 layout_induction[layout_name]["content_schema"] = schema
-                logger.debug("Updated content schema for %s", layout_name)
 
         return layout_induction
+
+    async def _fix_schema(
+        self,
+        schema: dict | Coroutine[dict, None, None],
+        slide: SlidePage,
+        turn_id: int = None,
+        retry: int = 0,
+    ):
+        if retry == 0:
+            turn_id, schema = await schema
+        try:
+            check_schema(schema, slide)
+        except ValueError as e:
+            retry += 1
+            logger.debug("Failed at schema extraction: %s", e)
+            if retry == 3:
+                logger.error("Failed to extract schema for slide-%s: %s", turn_id, e)
+                raise e
+            schema = await self.schema_extractor.retry(
+                e, traceback.format_exc(), turn_id, retry
+            )
+            return await self._fix_schema(schema, slide, turn_id, retry)
+        return schema

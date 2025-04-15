@@ -158,6 +158,32 @@ class Agent:
         )
         return self.__post_process__(response, history, turn)
 
+    def to_sync(self):
+        """
+        Convert the agent to a synchronous agent.
+        """
+        return Agent(
+            self.name,
+            self.llm_mapping,
+            self.text_model,
+            self.record_cost,
+            self.config,
+            self.env,
+        )
+
+    def to_async(self):
+        """
+        Convert the agent to an asynchronous agent.
+        """
+        return AsyncAgent(
+            self.name,
+            self.llm_mapping,
+            self.text_model,
+            self.record_cost,
+            self.config,
+            self.env,
+        )
+
     @property
     def next_turn_id(self):
         if len(self._history) == 0:
@@ -249,7 +275,7 @@ class AsyncAgent(Agent):
         env: Optional[Environment] = None,
     ):
         super().__init__(name, llm_mapping, text_model, record_cost, config, env)
-        assert isinstance(self.llm, AsyncLLM), "You should use AsyncLLM for AsyncAgent"
+        self.llm = self.llm.to_async()
 
     async def retry(self, feedback: str, traceback: str, turn_id: int, error_idx: int):
         """

@@ -1,0 +1,63 @@
+system_prompt: You are an expert in extracting slide schemas for slides. Your task is to analyze slide HTML and create a JSON schema that captures the slide elements and their relationships. Your output should be a dictionary in JSON format, where each key-value pair strictly corresponds to the text content in a `<p>` element or the `alt` attribute of an `<img>` element.
+template: |
+  Please analyze the slide elements and create a structured slide schema in JSON format. You should:
+
+  1. Understand the html representation of the slide, especially the style, layout, and the logical relationship between elements
+
+  2. For each element, extract the following information:
+    - "name": The role and feature of the element, such as "main title", "content bullets/paragraph", "main image", "small images", "presenters", "dates", "acknowledgments", etc.
+    - "description": A clear description of the element's purpose, style feature(e.g. red bold bullets, small circular images), do not mention any content detail
+    - "type": Literal["text", "image"]
+    - "data": List[str]
+        * For text elements: The content of each paragraph, defined as text within `<p>` tags, must be treated as a single, distinct item.
+          - Preserve newlines (`\n`) within paragraphs, ensuring they remain intact and are not split into multiple items. Only `<p>` tags serve as separators.
+          - Do not combine multiple `<p>` tags into a single item, regardless of logical or narrative connections. Each `<p>` tag represents a separate item.
+        * For image elements: Use the `alt` attribute of the <img> tag as the data of the image
+
+  3. Do not include any empty elements, only given elements should be included
+
+  Example Input:
+  <div style="font-size: 32pt">
+    <p>text0</p>
+  </div>
+  <div style="font-size: 14pt">
+    <p>text1\ntext2\ntext3</p>
+  </div>
+  <img alt="caption of image" src="pic.png">
+
+  Example Output:
+  {
+    "main title": {
+      "description": "main title of the slide",
+      "type": "text",
+      "data": ["text0"]
+    },
+    "content bullets": {
+      "description": "content bullets of the slide",
+      "type": "text",
+      "data": ["text1\ntext2\ntext3"]
+    },
+    "main image": {
+      "description": "main image of the slide",
+      "type": "image",
+      "data": ["caption of image"]
+    }
+  }
+  Example format:
+  {
+    "element_name": {
+      "description": "purpose of this element", # do not mention any detail, just purpose
+      "type": "text" or "image",
+      "data": ["text1", "text2"] or ["logo:...", "logo:..."]
+    }
+  }
+  Input:
+  {{slide}}
+
+  Output: Please provide the slide schema in a dict of JSON format
+
+jinja_args:
+  - slide
+
+use_model: language
+return_json: True

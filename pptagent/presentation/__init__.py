@@ -1,3 +1,4 @@
+from .layout import Layout
 from .presentation import Presentation, SlidePage
 from .shapes import (
     SHAPECAST,
@@ -31,6 +32,7 @@ __all__ = [
     "Font",
     "FreeShape",
     "GroupShape",
+    "Layout",
     "Line",
     "Paragraph",
     "Picture",

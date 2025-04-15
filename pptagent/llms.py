@@ -88,6 +88,7 @@ class LLM:
         Returns:
             Union[str, Dict, Tuple]: Processed response.
         """
+        response = response.strip()
         if return_json:
             response = get_json_from_response(response)
         if return_message:
@@ -287,6 +288,20 @@ class AsyncLLM(LLM):
         response = completion["result"][0]["choices"][0]["message"]["content"]
         message.append({"role": "assistant", "content": response})
         return self.__post_process__(response, message, return_json, return_message)
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["client"] = None
+        return state
+
+    def __setstate__(self, state: dict):
+        self.__dict__.update(state)
+        self.client = Auto(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            timeout=self.timeout,
+            loglevel=0,
+        )
 
     async def test_connection(self) -> bool:
         """

@@ -593,9 +593,6 @@ class ShapeElement:
         state["shape"] = None
         return state
 
-    def __setstate__(self, state: object) -> None:
-        self.__dict__.update(state)
-
     def __repr__(self) -> str:
         """
         Get a string representation of the shape element.
@@ -1010,7 +1007,7 @@ class GroupShape(ShapeElement):
             shape.build(slide)
         return slide
 
-    def __iter__(self):
+    def shape_filter(self, shape_type: type[T], return_father: bool = False):
         """
         Iterate over all shapes in the group.
 
@@ -1019,9 +1016,16 @@ class GroupShape(ShapeElement):
         """
         for shape in self.data:
             if isinstance(shape, GroupShape):
-                yield from shape
+                yield from shape.shape_filter(shape_type, return_father)
             else:
-                yield shape
+                if return_father:
+                    yield (self, shape)
+                else:
+                    yield shape
+
+    @property
+    def shapes(self):
+        return self.data
 
     def __eq__(self, __value: object) -> bool:
         """
