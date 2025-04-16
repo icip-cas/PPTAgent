@@ -6,12 +6,11 @@ import os
 import sys
 import traceback
 import uuid
+from contextlib import asynccontextmanager
 from copy import deepcopy
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-import torch
 from fastapi import (
     FastAPI,
     File,
@@ -24,13 +23,11 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from marker.models import create_model_dict
 
 import pptagent.induct as induct
 import pptagent.pptgen as pptgen
 from pptagent.document import Document
-from pptagent.llms import AsyncLLM
-from pptagent.model_utils import get_image_model, parse_pdf
+from pptagent.model_utils import ModelManager, parse_pdf
 from pptagent.multimodal import ImageLabler
 from pptagent.presentation import Presentation
 from pptagent.utils import Config, get_logger, package_join, pjoin, ppt_to_images_async
@@ -47,56 +44,18 @@ STAGES = [
 ]
 
 
-# models
-@dataclass
-class ModelManager:
-    language_model: AsyncLLM = None
-    vision_model: AsyncLLM = None
-    text_embedder: AsyncLLM = None
-    image_model: object = None
-    marker_model: dict = None
-
-    def __post_init__(self):
-        """Initialize models from environment variables after instance creation"""
-        DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-        language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4o")
-        language_model_api_base = os.environ.get("LANGUAGE_MODEL_API_BASE", None)
-        vision_model_name = os.environ.get("VISION_MODEL", "gpt-4o")
-        vision_model_api_base = os.environ.get("VISION_MODEL_API_BASE", None)
-        text_model_name = os.environ.get("TEXT_MODEL", "text-embedding-3-small")
-        text_model_api_base = os.environ.get("TEXT_MODEL_API_BASE", None)
-
-        self.language_model = AsyncLLM(language_model_name, language_model_api_base)
-        self.vision_model = AsyncLLM(vision_model_name, vision_model_api_base)
-        self.text_embedder = AsyncLLM(text_model_name, text_model_api_base)
-        self.image_model = get_image_model(device=DEVICE)
-        self.marker_model = create_model_dict(device=DEVICE, dtype=torch.float16)
-
-    async def test_connections(self) -> bool:
-        """Test connections for all LLM models
-
-        Returns:
-            bool: True if all connections are successful, False otherwise
-        """
-        try:
-            assert await self.language_model.test_connection()
-            assert await self.vision_model.test_connection()
-        except:
-            return False
-        try:
-            assert await self.text_embedder.test_connection()
-        except:
-            return True
-        logger.info("All models connected successfully")
-        return True
-
-
-# Create a global model manager instance, which will automatically execute __post_init__ for initialization
 models = ModelManager()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    assert asyncio.run(models.test_connections()), "Model connection test failed"
+    yield
+
 
 # server
 logger = get_logger(__name__)
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -374,7 +333,7 @@ async def ppt_gen(task_id: str, rerun=False):
 
         # PPT Generation with PPTAgentAsync
         ppt_agent = pptgen.PPTAgentAsync(
-            models.text_embedder,
+            models.text_model,
             models.language_model,
             models.vision_model,
             error_exit=False,
@@ -400,9 +359,6 @@ async def ppt_gen(task_id: str, rerun=False):
 
 if __name__ == "__main__":
     import uvicorn
-
-    # Test model connections before starting the server
-    assert asyncio.run(models.test_connections()), "Model connection test failed"
 
     ip = "0.0.0.0"
     uvicorn.run(app, host=ip, port=9297)

@@ -1,6 +1,6 @@
 import json
 
-from pptagent.llms import AsyncLLM
+from pptagent.model_utils import ModelManager
 from pptagent.utils import Config, package_join, pjoin
 
 
@@ -10,12 +10,7 @@ class TestConfig:
         self.template = package_join("runs", "pptx", "default_template")
         self.document = package_join("runs", "pdf", "57b32a38d68d1e62908a3d4fe77441c2")
         self.ppt = package_join("test", "test.pptx")
-        self.api_base = "http://api.cipsup.cn/v1"
-
-        # Models
-        self.language_model = AsyncLLM("Qwen2.5-72B-Instruct-GPTQ-Int4", self.api_base)
-        self.vision_model = AsyncLLM("Qwen2.5-VL-72B-Instruct-AWQ", self.api_base)
-        self.text_embedder = AsyncLLM("bge-m3", self.api_base)
+        self.models = ModelManager()
 
         # Configuration object
         self.config = Config(self.template)
@@ -35,6 +30,26 @@ class TestConfig:
     def get_image_stats(self):
         """Load captions data"""
         return json.load(open(pjoin(self.template, "image_stats.json")))
+
+    @property
+    def language_model(self):
+        return self.models.language_model
+
+    @property
+    def vision_model(self):
+        return self.models.vision_model
+
+    @property
+    def text_embedder(self):
+        return self.models.text_model
+
+    @property
+    def image_model(self):
+        return self.models.image_model
+
+    @property
+    def marker_model(self):
+        return self.models.marker_model
 
 
 # Create a global instance

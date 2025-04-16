@@ -8,7 +8,7 @@ import torch
 from oaib import Auto
 from openai import OpenAI
 
-from pptagent.utils import get_json_from_response, get_logger, tenacity
+from pptagent.utils import get_json_from_response, get_logger, tenacity_decorator
 
 logger = get_logger(__name__)
 
@@ -29,7 +29,7 @@ class LLM:
             base_url=self.base_url, api_key=self.api_key, timeout=self.timeout
         )
 
-    @tenacity
+    @tenacity_decorator
     def __call__(
         self,
         content: str,
@@ -229,7 +229,7 @@ class AsyncLLM(LLM):
             loglevel=0,
         )
 
-    @tenacity
+    @tenacity_decorator
     async def __call__(
         self,
         content: str,
@@ -255,7 +255,6 @@ class AsyncLLM(LLM):
         Returns:
             Union[str, Dict, List, Tuple]: The response from the model.
         """
-        # ? here cause the bug of asyncio
         if threading.current_thread() is threading.main_thread():
             self.client = Auto(
                 base_url=self.base_url,

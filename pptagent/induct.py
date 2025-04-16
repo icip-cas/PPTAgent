@@ -124,7 +124,6 @@ class SlideInducter:
             "schema_extractor",
             {
                 "language": language_model,
-                "vision": vision_model,
             },
         )
         if not use_assert:
@@ -292,6 +291,8 @@ class SlideInducterAsync(SlideInducter):
             language_model,
             vision_model,
         )
+        self.language_model = self.language_model.to_async()
+        self.vision_model = self.vision_model.to_async()
         self.schema_extractor = self.schema_extractor.to_async()
 
     async def category_split(self):
@@ -326,35 +327,33 @@ class SlideInducterAsync(SlideInducter):
             layout_name = slide.slide_layout_name
             content_split[(layout_name, content_type)].append(slide_idx)
 
-        vision_tasks = []
-        cluster_info = []
-        for (layout_name, content_type), slides in content_split.items():
-            sub_embeddings = [
-                embeddings[f"slide_{slide_idx:04d}.jpg"] for slide_idx in slides
-            ]
-            similarity = images_cosine_similarity(sub_embeddings)
-            for cluster in get_cluster(similarity):
-                slide_indexs = [slides[i] for i in cluster]
-                template_id = max(
-                    slide_indexs,
-                    key=lambda x: len(self.prs.slides[x - 1].shapes),
-                )
-
-                vision_tasks.append(
-                    self.vision_model(
-                        ASK_CATEGORY_PROMPT,
-                        pjoin(self.ppt_image_folder, f"slide_{template_id:04d}.jpg"),
+        async with asyncio.TaskGroup() as tg:
+            for (layout_name, content_type), slides in content_split.items():
+                sub_embeddings = [
+                    embeddings[f"slide_{slide_idx:04d}.jpg"] for slide_idx in slides
+                ]
+                similarity = images_cosine_similarity(sub_embeddings)
+                for cluster in get_cluster(similarity):
+                    slide_indexs = [slides[i] for i in cluster]
+                    template_id = max(
+                        slide_indexs,
+                        key=lambda x: len(self.prs.slides[x - 1].shapes),
                     )
-                )
-                cluster_info.append((template_id, slide_indexs, content_type))
 
-        vision_results = await asyncio.gather(*vision_tasks)
-        for (template_id, slide_indexs, content_type), cluster_name_prefix in zip(
-            cluster_info, vision_results
-        ):
-            cluster_name = cluster_name_prefix + ":" + content_type
-            layout_induction[cluster_name]["template_id"] = template_id
-            layout_induction[cluster_name]["slides"] = slide_indexs
+                    tg.create_task(
+                        self.vision_model(
+                            ASK_CATEGORY_PROMPT,
+                            pjoin(
+                                self.ppt_image_folder, f"slide_{template_id:04d}.jpg"
+                            ),
+                        )
+                    ).add_done_callback(
+                        lambda f, tid=template_id, sidxs=slide_indexs, ctype=content_type: layout_induction[
+                            f.result() + ":" + ctype
+                        ].update(
+                            {"template_id": tid, "slides": sidxs}
+                        )
+                    )
 
     async def layout_induct(self):
         """
@@ -389,19 +388,18 @@ class SlideInducterAsync(SlideInducter):
         """
         Async version: Perform content schema extraction for the presentation.
         """
+        async with asyncio.TaskGroup() as tg:
+            for layout_name, cluster in layout_induction.items():
+                if layout_name == "functional_keys" or "content_schema" in cluster:
+                    continue
+                slide = self.prs.slides[cluster["template_id"] - 1]
+                coro = self.schema_extractor(slide=slide.to_html())
 
-        tasks = {}
-        for layout_name, cluster in layout_induction.items():
-            if layout_name == "functional_keys" or "content_schema" in cluster:
-                continue
-            slide = self.prs.slides[cluster["template_id"] - 1]
-            coro = self.schema_extractor(slide=slide.to_html())
-            tasks[layout_name] = self._fix_schema(coro, slide)
-
-        if tasks:
-            results = await asyncio.gather(*tasks.values())
-            for layout_name, schema in zip(tasks.keys(), results):
-                layout_induction[layout_name]["content_schema"] = schema
+                tg.create_task(self._fix_schema(coro, slide)).add_done_callback(
+                    lambda f, key=layout_name: layout_induction[key].update(
+                        {"content_schema": f.result()}
+                    )
+                )
 
         return layout_induction
 

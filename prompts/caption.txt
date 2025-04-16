@@ -4,5 +4,4 @@ Give your answer in the following format:
 <type>:<description>
 Example Output:
 Chart: Bar graph showing quarterly revenue growth over five years. Color-coded bars represent different product lines. Notable spike in Q4 of the most recent year, with a dotted line indicating industry average for comparison.
-
-Output:
+Now give your answer in one line only, without line breaks:

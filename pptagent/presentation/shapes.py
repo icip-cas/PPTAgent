@@ -1051,6 +1051,9 @@ class GroupShape(ShapeElement):
         """
         return f"{self.__class__.__name__}: {self.data}"
 
+    def __iter__(self):
+        return iter(self.data)
+
     def to_html(self, style_args: StyleArg) -> str:
         """
         Convert the group shape to HTML.

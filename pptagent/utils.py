@@ -239,7 +239,16 @@ def get_json_from_response(response: str) -> dict[str, Any]:
 
 
 # Create a tenacity decorator with custom settings
-tenacity = retry(wait=wait_fixed(3), stop=stop_after_attempt(5))
+def tenacity_decorator(_func=None, *, wait: int = 3, stop: int = 5):
+    def decorator(func):
+        return retry(wait=wait_fixed(wait), stop=stop_after_attempt(stop))(func)
+
+    if _func is None:
+        # Called with arguments
+        return decorator
+    else:
+        # Called without arguments
+        return decorator(_func)
 
 
 TABLE_CSS = """
@@ -294,7 +303,7 @@ def markdown_table_to_image(markdown_text: str, output_path: str):
     return output_path
 
 
-@tenacity
+@tenacity_decorator
 def ppt_to_images(file: str, output_dir: str):
     assert pexists(file), f"File {file} does not exist"
     if pexists(output_dir):
@@ -310,7 +319,12 @@ def ppt_to_images(file: str, output_dir: str):
             "--outdir",
             temp_dir,
         ]
-        subprocess.run(command_list, check=True, stdout=subprocess.DEVNULL)
+        process = subprocess.Popen(
+            command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        out, err = process.communicate()
+        if process.returncode != 0:
+            raise RuntimeError(f"soffice failed with error: {err.decode()}")
 
         for f in os.listdir(temp_dir):
             if not f.endswith(".pdf"):
@@ -321,13 +335,18 @@ def ppt_to_images(file: str, output_dir: str):
                 img.save(pjoin(output_dir, f"slide_{i+1:04d}.jpg"))
             return
 
-        raise RuntimeError("No PDF file was created in the temporary directory", file)
+        raise RuntimeError(
+            f"No PDF file was created in the temporary directory: {file}\n"
+            f"Output: {out.decode()}\n"
+            f"Error: {err.decode()}"
+        )
 
 
+@tenacity_decorator
 async def ppt_to_images_async(file: str, output_dir: str):
     assert pexists(file), f"File {file} does not exist"
     if pexists(output_dir):
-        logger.warning(f"ppt2images: {output_dir} already exists")
+        logger.debug(f"ppt2images: {output_dir} already exists")
     os.makedirs(output_dir, exist_ok=True)
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -346,7 +365,7 @@ async def ppt_to_images_async(file: str, output_dir: str):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        _, stderr = await process.communicate()
+        stdout, stderr = await process.communicate()
         if process.returncode != 0:
             raise RuntimeError(f"soffice failed with error: {stderr.decode()}")
         for f in os.listdir(temp_dir):
@@ -359,7 +378,9 @@ async def ppt_to_images_async(file: str, output_dir: str):
             return
 
         raise RuntimeError(
-            f"No PDF file was created in the temporary directory: {file}"
+            f"No PDF file was created in the temporary directory: {file}\n"
+            f"Output: {stdout.decode()}\n"
+            f"Error: {stderr.decode()}"
         )
 
 
@@ -380,7 +401,7 @@ def parsing_image(image: Image, image_path: str) -> str:
     return image_path
 
 
-@tenacity
+@tenacity_decorator
 def wmf_to_images(blob: bytes, filepath: str):
     if not filepath.endswith(".jpg"):
         raise ValueError("filepath must end with .jpg")

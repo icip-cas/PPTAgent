@@ -56,17 +56,21 @@ class ImageLabler:
         ), "vision_model must be an AsyncLLM instance"
         caption_prompt = open(package_join("prompts", "caption.txt")).read()
 
-        caption_tasks = {}
-        for image, stats in self.image_stats.items():
-            if "caption" not in stats:
-                task = vision_model(caption_prompt, pjoin(self.config.IMAGE_DIR, image))
-                caption_tasks[image] = task
-
-        if caption_tasks:
-            results = await asyncio.gather(*caption_tasks.values())
-            for image, caption in zip(caption_tasks.keys(), results):
-                self.image_stats[image]["caption"] = caption
-                logger.info("captioned %s: %s", image, caption)
+        async with asyncio.TaskGroup() as tg:
+            for image, stats in self.image_stats.items():
+                if "caption" not in stats:
+                    task = tg.create_task(
+                        vision_model(
+                            caption_prompt,
+                            pjoin(self.config.IMAGE_DIR, image),
+                        )
+                    )
+                    task.add_done_callback(
+                        lambda t, image=image: (
+                            self.image_stats[image].update({"caption": t.result()}),
+                            logger.debug("captioned %s: %s", image, t.result()),
+                        )
+                    )
 
         self.apply_stats()
         return self.image_stats
@@ -88,7 +92,7 @@ class ImageLabler:
                 stats["caption"] = vision_model(
                     caption_prompt, pjoin(self.config.IMAGE_DIR, image)
                 )
-                logger.info("captioned %s: %s", image, stats["caption"])
+                logger.debug("captioned %s: %s", image, stats["caption"])
         self.apply_stats()
         return self.image_stats
 
@@ -98,17 +102,20 @@ class ImageLabler:
         """
         for slide_index, slide in enumerate(self.presentation.slides):
             for shape in slide.shape_filter(Picture):
-                image_path = pbasename(shape.data[0])
-                if image_path != "pic_placeholder.png":
-                    size = PIL.Image.open(pjoin(self.config.IMAGE_DIR, image_path)).size
-                else:
-                    size = (400, 400)
-                self.image_stats[image_path] = {
+                image_path = pbasename(shape.img_path)
+                stat = {
                     "appear_times": 0,
                     "slide_numbers": set(),
                     "relative_area": shape.area / self.slide_area * 100,
-                    "size": size,
                 }
+                if image_path != "pic_placeholder.png":
+                    stat["size"] = PIL.Image.open(
+                        pjoin(self.config.IMAGE_DIR, image_path)
+                    ).size
+                else:
+                    stat["size"] = None
+                    stat["caption"] = shape.caption
+                self.image_stats[image_path] = stat
                 self.image_stats[image_path]["appear_times"] += 1
                 self.image_stats[image_path]["slide_numbers"].add(slide_index + 1)
         for image_path, stats in self.image_stats.items():

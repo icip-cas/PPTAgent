@@ -46,10 +46,10 @@ For a quick test, use the example in `resource/test/test_(pdf|template)` to save
       <td>Tested on Linux and macOS, <b>Windows is not supported</b>.</td>
     </tr>
     <tr>
-      <td>Minimum 8GB RAM, recommended with CUDA or MPS support for better performance.</td>
+      <td>Minimum 8GB RAM, recommended with CUDA or MPS support for faster presentation analysis.</td>
     </tr>
     <tr>
-      <td><b>Required dependencies:</b> LibreOffice, Chrome, poppler-utils (conda: poppler), and NodeJS.</td>
+      <td><b>Required dependencies:</b> Python 3.11+, LibreOffice, Chrome, poppler-utils (conda: poppler), and NodeJS.</td>
     </tr>
   </tbody>
 </table>
@@ -109,12 +109,10 @@ pip install git+https://github.com/Force1ess/python-pptx
    Or use the environment variables:
 
    ```bash
+   export API_BASE="http://localhost:7812/v1"
    export LANGUAGE_MODEL="Qwen2.5-72B-Instruct-GPTQ-Int4"
-   export LANGUAGE_MODEL_API_BASE="http://localhost:7812/v1"
    export VISION_MODEL="gpt-4o-2024-08-06"
-   export VISION_MODEL_API_BASE="http://localhost:7812/v1"
    export TEXT_MODEL="text-embedding-3-small"
-   export TEXT_MODEL_API_BASE="http://localhost:7812/v1"
    ```
 
 2. **Launch Frontend**

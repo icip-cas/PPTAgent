@@ -1,19 +1,81 @@
 import json
 import os
 from copy import deepcopy
+from typing import Optional
 
 import numpy as np
 import torch
 import torchvision.transforms as T
 from marker.config.parser import ConfigParser
 from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
 from marker.output import text_from_rendered
 from PIL import Image
 from transformers import AutoModel, AutoProcessor
 
-from pptagent.llms import LLM
+from pptagent.llms import LLM, AsyncLLM
 from pptagent.presentation import Presentation, SlidePage
-from pptagent.utils import is_image_path, pjoin
+from pptagent.utils import get_logger, is_image_path, pjoin
+
+logger = get_logger(__name__)
+
+
+class ModelManager:
+    """
+    A class to manage models.
+    """
+
+    def __init__(
+        self,
+        api_base: Optional[str] = None,
+        language_model_name: Optional[str] = None,
+        vision_model_name: Optional[str] = None,
+        text_model_name: Optional[str] = None,
+    ):
+        """Initialize models from environment variables after instance creation"""
+        if api_base is None:
+            api_base = os.environ.get("API_BASE")
+        if language_model_name is None:
+            language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4.1")
+        if vision_model_name is None:
+            vision_model_name = os.environ.get("VISION_MODEL", "gpt-4.1")
+        if text_model_name is None:
+            text_model_name = os.environ.get("TEXT_MODEL", "text-embedding-3-small")
+        self._image_model = None
+        self._marker_model = None
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.language_model = AsyncLLM(language_model_name, api_base)
+        self.vision_model = AsyncLLM(vision_model_name, api_base)
+        self.text_model = AsyncLLM(text_model_name, api_base)
+
+    @property
+    def image_model(self):
+        if self._image_model is None:
+            self._image_model = get_image_model(device=self.device)
+        return self._image_model
+
+    @property
+    def marker_model(self):
+        if self._marker_model is None:
+            self._marker_model = create_model_dict(
+                device=self.device, dtype=torch.float16
+            )
+        return self._marker_model
+
+    async def test_connections(self) -> bool:
+        """Test connections for all LLM models
+
+        Returns:
+            bool: True if all connections are successful, False otherwise
+        """
+        try:
+            assert await self.language_model.test_connection()
+            assert await self.vision_model.test_connection()
+            assert await self.text_model.test_connection()
+        except:
+            return False
+        return True
 
 
 def prs_dedup(

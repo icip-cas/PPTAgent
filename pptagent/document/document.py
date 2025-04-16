@@ -315,27 +315,33 @@ class Document:
             llm_mapping={"language": language_model, "vision": vision_model},
         )
 
-        parse_tasks = []
         headings = re.findall(r"^#+\s+.*", markdown_content, re.MULTILINE)
         adjusted_headings = await language_model(
             HEADING_EXTRACT_PROMPT.render(headings=headings), return_json=True
         )
-        for chunk in split_markdown_by_headings(
-            markdown_content, headings, adjusted_headings
-        ):
-            coro = cls._parse_chunk_async(
-                doc_extractor,
-                language_model,
-                vision_model,
-                table_model,
-                None,
-                chunk,
-                image_dir,
-            )
-            parse_tasks.append(coro)
-        results = await asyncio.gather(*parse_tasks)
-        metadata = [meta for meta, _ in results]
-        sections = [section for _, section in results]
+        metadata = []
+        sections = []
+
+        async with asyncio.TaskGroup() as tg:
+            for chunk in split_markdown_by_headings(
+                markdown_content, headings, adjusted_headings
+            ):
+                tg.create_task(
+                    cls._parse_chunk_async(
+                        doc_extractor,
+                        language_model,
+                        vision_model,
+                        table_model,
+                        None,
+                        chunk,
+                        image_dir,
+                    )
+                ).add_done_callback(
+                    lambda f: (
+                        metadata.append(f.result()[0]),
+                        sections.append(f.result()[1]),
+                    )
+                )
         merged_metadata = await language_model(
             MERGE_METADATA_PROMPT.render(metadata=metadata), return_json=True
         )
