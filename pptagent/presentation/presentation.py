@@ -1,9 +1,7 @@
 from collections.abc import Generator
 from typing import Literal, Optional
 
-from packaging.version import Version
 from pptx import Presentation as load_prs
-from pptx import __version__ as PPTXVersion
 from pptx.shapes.base import BaseShape
 from pptx.shapes.group import GroupShape as PPTXGroupShape
 from pptx.slide import Slide as PPTXSlide
@@ -19,15 +17,6 @@ from .shapes import (
     StyleArg,
     T,
 )
-
-try:
-    PPTXVersion, Mark = PPTXVersion.split("+")
-    assert Version(PPTXVersion) >= Version("1.0.4") and Mark == "PPTAgent"
-except:
-    raise ImportError(
-        "You should install the customized `python-pptx` for this project: Force1ess/python-pptx, but got %s."
-        % PPTXVersion
-    )
 
 # Type variable for ShapeElement subclasses
 
@@ -406,7 +395,7 @@ class Presentation:
     def clear_images(self, shapes: list[ShapeElement]):
         for shape in shapes:
             if isinstance(shape, GroupShape):
-                self.clear_images(shape.data)
+                self.clear_images(shape.shapes)
             elif isinstance(shape, Picture):
                 shape.img_path = package_join("resource", "pic_placeholder.png")
 

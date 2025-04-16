@@ -10,6 +10,25 @@ __version__ = "0.1.0"
 __author__ = "Hao Zheng"
 __email__ = "wszh712811@gmail.com"
 
+
+# Check the version of python and python-pptx
+import sys
+
+if sys.version_info < (3, 11):
+    raise ImportError("You should use Python 3.11 or higher for this project.")
+
+from packaging.version import Version
+from pptx import __version__ as PPTXVersion
+
+try:
+    PPTXVersion, Mark = PPTXVersion.split("+")
+    assert Version(PPTXVersion) >= Version("1.0.4") and Mark == "PPTAgent"
+except:
+    raise ImportError(
+        "You should install the customized `python-pptx` for this project: Force1ess/python-pptx, but got %s."
+        % PPTXVersion
+    )
+
 # Import main modules to make them directly accessible when importing the package
 from .agent import *
 from .apis import *

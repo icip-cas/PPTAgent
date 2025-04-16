@@ -26,15 +26,15 @@ class TestConfig:
 
     def get_document_json(self):
         """Load document JSON"""
-        return json.load(open(f"{self.document}/refined_doc.json"))
+        return json.load(open(pjoin(self.document, "refined_doc.json")))
 
     def get_outline(self):
         """Load outline data"""
-        return json.load(open(f"{self.document}/outline.json"))
+        return json.load(open(pjoin(self.document, "outline.json")))
 
     def get_image_stats(self):
         """Load captions data"""
-        return json.load(open(f"{self.template}/image_stats.json"))
+        return json.load(open(pjoin(self.template, "image_stats.json")))
 
 
 # Create a global instance

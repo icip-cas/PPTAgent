@@ -8,16 +8,13 @@ version = "0.1.0"
 authors = [{ name = "Hao Zheng", email = "wszh712811@gmail.com" }]
 description = "PPTAgent, a tool for utilizing LLMs to generate PowerPoint presentations from documents."
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Topic :: Office/Business :: Office Suites",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]

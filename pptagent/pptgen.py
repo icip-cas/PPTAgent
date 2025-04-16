@@ -71,7 +71,7 @@ class PPTGen(ABC):
         source_doc: Document,
         num_slides: Optional[int] = None,
         outline: Optional[list[OutlineItem]] = None,
-        hide_small_pic_ratio: Optional[float] = None,
+        hide_small_pic_ratio: Optional[float] = 0.2,
         keep_in_background: bool = True,
     ):
         """
@@ -296,7 +296,7 @@ class PPTGenAsync(PPTGen):
         source_doc: Document,
         num_slides: Optional[int] = None,
         outline: Optional[list[OutlineItem]] = None,
-        hide_small_pic_ratio: Optional[float] = None,
+        hide_small_pic_ratio: Optional[float] = 0.2,
         keep_in_background: bool = True,
     ):
         """

@@ -1015,9 +1015,7 @@ class GroupShape(ShapeElement):
             ShapeElement: Each shape in the group.
         """
         for shape in self.data:
-            if isinstance(shape, GroupShape):
-                yield from shape.shape_filter(shape_type, return_father)
-            else:
+            if isinstance(shape, shape_type):
                 if return_father:
                     yield (self, shape)
                 else:
