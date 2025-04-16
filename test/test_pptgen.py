@@ -61,5 +61,5 @@ async def test_pptgen_async():
         test_config.get_document_json(), test_config.document, False
     )
     outline = test_config.get_outline()
-    outline = [OutlineItem(**outline[3])]
+    outline = [OutlineItem(**outline[2])]
     await pptgen.generate_pres(document, outline=outline)

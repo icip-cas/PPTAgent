@@ -29,6 +29,22 @@ def test_extract_json_from_markdown_block():
     assert result["city"] == "New York"
 
 
+def test_extract_list_json():
+    """Test extracting JSON with a list of objects."""
+    response = """
+    Here's the JSON you requested:
+    ```json
+    [
+        {"name": "John", "age": 30},
+        {"name": "Jane", "age": 25}
+    ]
+    ```
+    """
+
+    result = get_json_from_response(response)
+    assert result == [{"name": "John", "age": 30}, {"name": "Jane", "age": 25}]
+
+
 def test_extract_complex_json():
     """Test extracting JSON with minor syntax errors that can be repaired."""
     response = """

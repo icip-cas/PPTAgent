@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import shutil
@@ -203,7 +204,7 @@ def get_json_from_response(response: str) -> dict[str, Any]:
     response = response.strip()
 
     try:
-        return json_repair.loads(response)
+        return json.loads(response)
     except Exception:
         pass
 
@@ -219,9 +220,9 @@ def get_json_from_response(response: str) -> dict[str, Any]:
     close_braces = []
 
     for i, char in enumerate(response):
-        if char == "{":
+        if char == "{" or char == "[":
             open_braces.append(i)
-        elif char == "}":
+        elif char == "}" or char == "]":
             close_braces.append(i)
 
     for i, j in product(open_braces, reversed(close_braces)):

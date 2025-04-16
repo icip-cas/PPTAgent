@@ -9,7 +9,7 @@ from marker.config.parser import ConfigParser
 from marker.converters.pdf import PdfConverter
 from marker.output import text_from_rendered
 from PIL import Image
-from transformers import AutoFeatureExtractor, AutoModel
+from transformers import AutoModel, AutoProcessor
 
 from pptagent.llms import LLM
 from pptagent.presentation import Presentation, SlidePage
@@ -58,10 +58,11 @@ def get_image_model(device: str = None):
     """
     model_base = "google/vit-base-patch16-224-in21k"
     return (
-        AutoFeatureExtractor.from_pretrained(
+        AutoProcessor.from_pretrained(
             model_base,
             torch_dtype=torch.float16,
             device_map=device,
+            use_fast=True,
         ),
         AutoModel.from_pretrained(
             model_base,
