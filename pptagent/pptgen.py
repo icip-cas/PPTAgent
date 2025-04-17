@@ -118,6 +118,7 @@ class PPTGen(ABC):
                     self.error_exit,
                     str(e),
                 )
+                traceback.print_exc()
                 if self.error_exit:
                     succ_flag = False
                     break
@@ -182,7 +183,7 @@ class PPTGen(ABC):
         raise NotImplementedError("Subclass must implement this method")
 
     def _hide_small_pics(self, area_ratio: float, keep_in_background: bool):
-        for layout in self.reference:
+        for layout in self.layouts.values():
             template_slide = self.presentation.slides[layout.template_id - 1]
             pictures = list(template_slide.shape_filter(Picture, return_father=True))
             if len(pictures) == 0:
@@ -221,6 +222,7 @@ class PPTGen(ABC):
                 source_doc.retrieve(outline_item.indexs)
             return outline_items
         except Exception as e:
+            retry += 1
             logger.info(
                 "Failed to generate outline, tried %d/%d times, error: %s",
                 retry,
@@ -230,9 +232,9 @@ class PPTGen(ABC):
             logger.debug(traceback.format_exc())
             if retry < self.retry_times:
                 new_outline = self.staffs["planner"].retry(
-                    str(e), traceback.format_exc(), turn_id, retry + 1
+                    str(e), traceback.format_exc(), turn_id, retry
                 )
-                return self._fix_outline(new_outline, source_doc, turn_id, retry + 1)
+                return self._fix_outline(new_outline, source_doc, turn_id, retry)
             else:
                 raise ValueError("Failed to generate outline, tried too many times")
 
@@ -418,6 +420,7 @@ class PPTGenAsync(PPTGen):
                 source_doc.retrieve(outline_item.indexs)
             return outline_items
         except Exception as e:
+            retry += 1
             logger.info(
                 "Failed to generate outline, tried %d/%d times, error: %s",
                 retry,
@@ -427,11 +430,9 @@ class PPTGenAsync(PPTGen):
             logger.debug(traceback.format_exc())
             if retry < self.retry_times:
                 new_outline = await self.staffs["planner"].retry(
-                    str(e), traceback.format_exc(), turn_id, retry + 1
+                    str(e), traceback.format_exc(), turn_id, retry
                 )
-                return await self._fix_outline(
-                    new_outline, source_doc, turn_id, retry + 1
-                )
+                return await self._fix_outline(new_outline, source_doc, turn_id, retry)
             else:
                 raise ValueError("Failed to generate outline, tried too many times")
 
@@ -629,9 +630,10 @@ class PPTAgent(PPTGen):
         command_list = []
         try:
             layout.validate(editor_output, self.source_doc.image_dir)
-            layout.validate_length(
-                editor_output, self.length_factor, self.language_model
-            )
+            if self.length_factor is not None:
+                layout.validate_length(
+                    editor_output, self.length_factor, self.language_model
+                )
             old_data = layout.get_old_data(editor_output)
             template_id = layout.get_slide_id(editor_output)
         except Exception as e:
@@ -869,9 +871,10 @@ class PPTAgentAsync(PPTGenAsync):
         command_list = []
         try:
             layout.validate(editor_output, self.source_doc.image_dir)
-            await layout.validate_length_async(
-                editor_output, self.length_factor, self.language_model
-            )
+            if self.length_factor is not None:
+                await layout.validate_length_async(
+                    editor_output, self.length_factor, self.language_model
+                )
             old_data = layout.get_old_data(editor_output)
             template_id = layout.get_slide_id(editor_output)
         except Exception as e:

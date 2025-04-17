@@ -32,6 +32,17 @@ INDENT = "\t"
 T = TypeVar("T", bound="ShapeElement")
 
 
+def shape_normalize(shape: BaseShape):
+    """
+    This function is used to filter out those malfunctioned attrs.
+    """
+    if not shape.has_text_frame:
+        return
+    for para in shape.text_frame.paragraphs:
+        for run in para.runs:
+            run.hyperlink.address = None
+
+
 class ClosureType(Enum):
     CLONE = auto()
     REPLACE = auto()
@@ -496,6 +507,8 @@ class ShapeElement:
         """
         if shape_idx > 100 and isinstance(shape, PPTXGroupShape):
             raise ValueError("Nested group shapes are not allowed")
+
+        shape_normalize(shape)
 
         # Create style dictionary
         style = {

@@ -369,7 +369,7 @@ class Document:
     def retrieve(
         self,
         indexs: dict[str, list[str]],
-        sim_bound: int = 0.8,
+        sim_bound: int = 0.7,
         from_all: bool = True,
     ) -> list[SubSection]:
         assert isinstance(

@@ -109,7 +109,8 @@ pip install git+https://github.com/Force1ess/python-pptx
    Or use the environment variables:
 
    ```bash
-   export API_BASE="http://localhost:7812/v1"
+   export OPENAI_API_KEY="your_key"
+   export API_BASE="http://your_service_provider/v1"
    export LANGUAGE_MODEL="Qwen2.5-72B-Instruct-GPTQ-Int4"
    export VISION_MODEL="gpt-4o-2024-08-06"
    export TEXT_MODEL="text-embedding-3-small"

@@ -81,7 +81,6 @@
     },
     "transition:image": {
         "slides": [
-            7,
             8,
             9,
             10,
@@ -138,6 +137,21 @@
                     "Be it the traditional expertise of the Chitrakars, or the entertaining art forms of Gotipua and Jatra parties, or the Ras Leela performances soaked in bhakti, or the innovations attempted at the Annapurna Theatre Groups, all these experiences, acquired not through formal training but through a continuous interaction with life, contributed richly to his understanding and creation of the Odissi form.",
                     "And it is the magnanimous presence and personality of this great Guru, his detailed teaching and in depth insights into the entire panorama of Odia culture, that have drawn dancers from across the world to his door to learn his art from him, and continue to attract many more",
                     "So we see that through Odissi, Kelu Babu was able to not only take Oriya culture to the world but he also succeeded in bringing the world to Odisha to appreciate her rich intangible heritage."
+                ]
+            }
+        }
+    },
+    "Central Grid Diagram with Directional Labels and Overlaid Curved Lines:image": {
+        "template_id": 7,
+        "slides": [
+            7
+        ],
+        "content_schema": {
+            "main image": {
+                "description": "central image of the slide, likely the main focus or visual representation of the topic",
+                "type": "image",
+                "data": [
+                    "Diagram: Detailed map with various labeled sections, including directions (North, South, East, West), and specific areas named such as Prithvi House, Brahma, and others, with a central focus on \"God\" at the top."
                 ]
             }
         }

@@ -11,7 +11,7 @@ async def test_outline_generation():
         test_config.get_document_json(), test_config.document, False
     )
     pptgen = PPTAgentAsync(
-        test_config.text_embedder,
+        test_config.text_model,
         test_config.language_model,
         test_config.vision_model,
     ).set_reference(
@@ -26,7 +26,7 @@ async def test_outline_generation():
 
 def test_pptgen():
     pptgen = PPTAgent(
-        test_config.text_embedder.to_sync(),
+        test_config.text_model.to_sync(),
         language_model=test_config.language_model.to_sync(),
         vision_model=test_config.vision_model.to_sync(),
     ).set_reference(
@@ -46,7 +46,7 @@ def test_pptgen():
 
 async def test_pptgen_async():
     pptgen = PPTAgentAsync(
-        test_config.text_embedder,
+        test_config.text_model,
         language_model=test_config.language_model,
         vision_model=test_config.vision_model,
     ).set_reference(
