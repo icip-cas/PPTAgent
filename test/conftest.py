@@ -1,7 +1,13 @@
 import json
+import warnings
 
 from pptagent.model_utils import ModelManager
 from pptagent.utils import Config, package_join, pjoin
+
+
+# warning of zipfile indicates that presentation save failed
+def pytest_configure():
+    warnings.filterwarnings("error", module=r"zipfile")
 
 
 # Common test configuration

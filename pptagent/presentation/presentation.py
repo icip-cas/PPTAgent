@@ -437,8 +437,10 @@ class Presentation:
     def __getstate__(self) -> object:
         state = self.__dict__.copy()
         state["prs"] = None
+        state["layout_mapping"] = None
         return state
 
     def __setstate__(self, state: object):
         self.__dict__.update(state)
         self.prs = load_prs(self.source_file)
+        self.layout_mapping = {layout.name: layout for layout in self.prs.slide_layouts}

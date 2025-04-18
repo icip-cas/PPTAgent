@@ -1,12 +1,29 @@
 from test.conftest import test_config
 
+import pytest
+
 from pptagent.document import Document, OutlineItem
 from pptagent.pptgen import PPTAgent, PPTAgentAsync
 from pptagent.presentation import Presentation
 from pptagent.utils import pjoin
 
 
-async def test_outline_generation():
+@pytest.mark.llm
+def test_outline_generation():
+    document = Document.from_dict(
+        test_config.get_document_json(), test_config.document, False
+    )
+    pptgen = PPTAgent(
+        test_config.text_model.to_sync(),
+        test_config.language_model.to_sync(),
+        test_config.vision_model.to_sync(),
+    )
+    pptgen.generate_outline(3, document)
+
+
+@pytest.mark.asyncio
+@pytest.mark.llm
+async def test_outline_generation_async():
     document = Document.from_dict(
         test_config.get_document_json(), test_config.document, False
     )
@@ -24,6 +41,7 @@ async def test_outline_generation():
     await pptgen.generate_outline(3, document)
 
 
+@pytest.mark.llm
 def test_pptgen():
     pptgen = PPTAgent(
         test_config.text_model.to_sync(),
@@ -44,6 +62,8 @@ def test_pptgen():
     pptgen.generate_pres(document, outline=outline)
 
 
+@pytest.mark.asyncio
+@pytest.mark.llm
 async def test_pptgen_async():
     pptgen = PPTAgentAsync(
         test_config.text_model,

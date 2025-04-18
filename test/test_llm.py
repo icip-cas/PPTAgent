@@ -4,6 +4,7 @@ import pytest
 
 
 @pytest.mark.asyncio
+@pytest.mark.llm
 async def test_asyncllm():
     """
     Test the async LLM connection and functionality.
@@ -18,6 +19,7 @@ async def test_asyncllm():
     assert len(response) > 0, "Async LLM returned empty response"
 
 
+@pytest.mark.llm
 def test_sync_llm():
     """
     Test the synchronous LLM connection and functionality.

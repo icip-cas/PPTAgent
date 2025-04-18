@@ -1,12 +1,17 @@
-name: PULL-REQUEST-CI
+name: PUSH-CI
 
 on:
-  pull_request:
+  push:
     branches: [ "main" ]
 
 jobs:
     test:
         runs-on: ubuntu-latest
+        env:
+            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            LANGUAGE_MODEL: ${{ secrets.LANGUAGE_MODEL }}
+            VISION_MODEL: ${{ secrets.VISION_MODEL }}
+            TEXT_MODEL: ${{ secrets.TEXT_MODEL }}
         strategy:
             matrix:
                 python-version: ["3.11", "3.12", "3.13"]
@@ -36,4 +41,4 @@ jobs:
 
             - name: Run tests
               run: |
-                  OPENAI_API_KEY=sk-mockey pytest -m "not llm" -n auto
+                  pytest -n auto

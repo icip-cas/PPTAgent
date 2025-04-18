@@ -12,3 +12,4 @@ def test_presentation():
     for sld in presentation.slides:
         sld.to_html(show_image=False)
     deepcopy(presentation)
+    presentation.save("test.pptx", layout_only=True)

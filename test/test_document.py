@@ -1,8 +1,11 @@
 from test.conftest import test_config
 
+import pytest
+
 from pptagent.document import Document, OutlineItem, Table
 
 
+@pytest.mark.llm
 def test_document():
     with open(f"{test_config.document}/source.md") as f:
         markdown_content = f.read()
@@ -19,6 +22,8 @@ def test_document():
     assert sum(isinstance(media, Table) for media in doc.iter_medias()) == 1
 
 
+@pytest.mark.asyncio
+@pytest.mark.llm
 async def test_document_async():
     with open(f"{test_config.document}/source.md") as f:
         markdown_content = f.read()
