@@ -22,7 +22,11 @@ Table of Contents
   - [Project Structure 📂](#project-structure-)
 
 ## Quick Start 🚀
-For a quick test, use the example in `resource/test/test_(pdf|template)` to save preprocessing time.
+
+For a quick test, use the example in `runs/pdf(pptx)/*/source.pdf(pptx)` to save preprocessing time.
+
+> [!NOTE]
+> When using a remote server, ensure both ports `8088` and `9297` are forwarded.
 
 ### Recommendations and Requirements
 
@@ -57,10 +61,7 @@ For a quick test, use the example in `resource/test/test_(pdf|template)` to save
 ### Docker 🐳
 
 > [!CAUTION]
-> As we cannot update the Docker image promptly, we recommend building your own Docker image instead.
-
-> [!NOTE]
-> When using a remote server, ensure both ports `8088` and `9297` are forwarded.
+> This image is outdated and heavy, you could refer to the [Docker](docker) to build your own image.
 
 ```bash
 docker pull forceless/pptagent
@@ -88,7 +89,6 @@ npm run serve
 
 ```bash
 pip install git+https://github.com/icip-cas/PPTAgent.git
-pip install git+https://github.com/Force1ess/python-pptx
 ```
 
 #### Usage
@@ -142,7 +142,6 @@ PPTAgent/
 │   ├── llms.py                     # Defines the `LLM` and `AsyncLLM`
 │   ├── induct.py                   # Presentation analysis (Stage Ⅰ)
 │   ├── pptgen.py                   # Presentation generation (Stage Ⅱ)
-│   ├── layout.py                   # Definition of the layout in pptxs
 ├── pptagent_ui/                    # UI for PPTAgent
 |   ├── src/                        # Frontend source code
 │   ├── backend.py                  # Backend server
