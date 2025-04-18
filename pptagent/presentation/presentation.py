@@ -417,7 +417,7 @@ class Presentation:
         return "\n----\n".join(
             [
                 (
-                    f"Slide {slide.slide_idx} of {len(self.prs.slides)}\n"
+                    f"Slide {slide.slide_idx} of {len(self.slides)}\n"
                     + (f"Title:{slide.slide_title}\n" if slide.slide_title else "")
                     + slide.to_text(show_image)
                 )

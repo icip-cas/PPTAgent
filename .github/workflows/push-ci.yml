@@ -50,4 +50,4 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -n auto
+          pytest -v -n 8 test

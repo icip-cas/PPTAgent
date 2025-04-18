@@ -17,6 +17,12 @@ def test_outline_generation():
         test_config.text_model.to_sync(),
         test_config.language_model.to_sync(),
         test_config.vision_model.to_sync(),
+    ).set_reference(
+        config=test_config.config,
+        presentation=Presentation.from_file(
+            pjoin(test_config.template, "source.pptx"), test_config.config
+        ),
+        slide_induction=test_config.get_slide_induction(),
     )
     pptgen.generate_outline(3, document)
 
