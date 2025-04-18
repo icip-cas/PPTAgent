@@ -34,7 +34,7 @@ class ModelManager:
     ):
         """Initialize models from environment variables after instance creation"""
         if api_base is None:
-            api_base = os.environ.get("API_BASE")
+            api_base = os.environ.get("API_BASE", None)
         if language_model_name is None:
             language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4.1")
         if vision_model_name is None:
