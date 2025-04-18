@@ -5,40 +5,48 @@ on:
     branches: [ "main" ]
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        env:
-            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-            LANGUAGE_MODEL: ${{ secrets.LANGUAGE_MODEL }}
-            VISION_MODEL: ${{ secrets.VISION_MODEL }}
-            TEXT_MODEL: ${{ secrets.TEXT_MODEL }}
-        strategy:
-            matrix:
-                python-version: ["3.11", "3.12", "3.13"]
+  test:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Check out Git repository
-              uses: actions/checkout@v4
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGUAGE_MODEL: ${{ secrets.LANGUAGE_MODEL }}
+      VISION_MODEL: ${{ secrets.VISION_MODEL }}
+      TEXT_MODEL: ${{ secrets.TEXT_MODEL }}
 
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v4
-              with:
-                  python-version: ${{ matrix.python-version }}
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
 
-            - name: Cache dependencies
-              uses: actions/cache@v4
-              with:
-                  path: ~/.cache/pip
-                  key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pip-
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
 
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -e .
-                  pip install pytest-asyncio pytest-xdist
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-            - name: Run tests
-              run: |
-                  pytest -n auto
+      - name: Install LibreOffice
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice
+          libreoffice --version
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest-asyncio pytest-xdist
+
+      - name: Run tests
+        run: |
+          pytest -n auto
