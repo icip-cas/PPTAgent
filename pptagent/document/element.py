@@ -86,7 +86,7 @@ class Media:
                 ),
                 self.path,
             )
-            logger.info(f"Caption: {self.caption}")
+            logger.debug(f"Caption: {self.caption}")
 
     async def get_caption_async(self, vision_model: AsyncLLM):
         assert self.path is not None, "Path is required to get caption"
@@ -97,7 +97,7 @@ class Media:
                 ),
                 self.path,
             )
-            logger.info(f"Caption: {self.caption}")
+            logger.debug(f"Caption: {self.caption}")
 
 
 @dataclass
@@ -185,7 +185,7 @@ class Table(Media):
                     markdown_caption=self.near_chunks,
                 )
             )
-            logger.info(f"Caption: {self.caption}")
+            logger.debug(f"Caption: {self.caption}")
 
     async def get_caption_async(self, language_model: AsyncLLM):
         if self.caption is None:
@@ -195,7 +195,7 @@ class Table(Media):
                     markdown_caption=self.near_chunks,
                 )
             )
-            logger.info(f"Caption: {self.caption}")
+            logger.debug(f"Caption: {self.caption}")
 
 
 @dataclass
@@ -231,10 +231,12 @@ class SubSection:
 @dataclass
 class Section:
     title: str
+    summary: Optional[str]
     subsections: list[SubSection]
+    markdown_content: str
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any], markdown_content: str = None):
         assert (
             "title" in data and "subsections" in data
         ), f"'title' and 'subsections' keys are required in data dictionary but were not found. Input keys: {list(data.keys())}"
@@ -245,6 +247,8 @@ class Section:
         return cls(
             title=data["title"],
             subsections=subsections,
+            summary=data.get("summary", None),
+            markdown_content=data.get("markdown_content", markdown_content),
         )
 
     def __contains__(self, key: str):

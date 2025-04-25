@@ -17,7 +17,7 @@ def test_document():
         test_config.vision_model.to_sync(),
         image_dir,
     )
-    doc.overview
+    doc.get_overview(include_summary=True)
     doc.metainfo
 
 
@@ -42,7 +42,7 @@ def test_document_from_dict():
         test_config.document,
         True,
     )
-    document.overview
+    document.get_overview(include_summary=True)
     document.metainfo
     document.retrieve({"Building effective agents": ["What are agents?"]})
 
@@ -55,5 +55,5 @@ def test_outline_retrieve():
     )
     outline = test_config.get_outline()
     for outline_item in outline:
-        item = OutlineItem(**outline_item)
+        item = OutlineItem.from_dict(outline_item)
         print(item.retrieve(0, document))

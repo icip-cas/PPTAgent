@@ -1,7 +1,7 @@
-Describe the main content of the image in less than 50 words, avoiding unnecessary details.
-Additionally, classify the image as 'Table,' 'Chart,', 'Diagram', 'Banner', 'Background', 'Icon', 'Logo', etc. or 'Picture' if it cannot be classified as one of the above.
+Describe the main content of the image in less than 50 words, avoiding unnecessary details or comments.
+Additionally, classify the image as 'Table', 'Chart', 'Diagram', 'Banner', 'Background', 'Icon', 'Logo', etc. or 'Picture' if it cannot be classified as one of the above.
 Give your answer in the following format:
 <type>:<description>
 Example Output:
 Chart: Bar graph showing quarterly revenue growth over five years. Color-coded bars represent different product lines. Notable spike in Q4 of the most recent year, with a dotted line indicating industry average for comparison.
-Now give your answer in one line only, without line breaks:
+Now give your answer in one sentence only, without line breaks:

@@ -4,19 +4,27 @@ import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 from pptagent.agent import Agent
 from pptagent.apis import API_TYPES, CodeExecutor
-from pptagent.document import Document, OutlineItem
+from pptagent.document import Document, OutlineItem, get_outlines_overview
 from pptagent.llms import LLM, AsyncLLM
 from pptagent.presentation import Layout, Picture, Presentation, SlidePage, StyleArg
-from pptagent.utils import Config, edit_distance, get_logger
+from pptagent.utils import Config, edit_distance, get_logger, tenacity_decorator
 
 logger = get_logger(__name__)
 
 style = StyleArg.all_true()
 style.area = False
+
+
+class FunctionalLayouts(Enum):
+    OPENING = "Opening"
+    TOC = "Table of Contents"
+    SECTION_OUTLINE = "Section Outline"
+    ENDING = "Ending"
 
 
 @dataclass
@@ -41,12 +49,17 @@ class PPTGen(ABC):
     def __post_init__(self):
         self._initialized = False
         self._hire_staffs(self.record_cost, self.language_model, self.vision_model)
+        assert (
+            self.length_factor is None or self.length_factor > 0
+        ), "length_factor must be positive or None"
 
     def set_reference(
         self,
         config: Config,
         slide_induction: dict,
         presentation: Presentation,
+        hide_small_pic_ratio: Optional[float] = 0.2,
+        keep_in_background: bool = True,
     ):
         """
         Set the reference presentation and extracted presentation information.
@@ -61,8 +74,16 @@ class PPTGen(ABC):
         self.config = config
         self.presentation = presentation
         self.functional_keys = slide_induction.pop("functional_keys")
+        self.content_keys = [
+            k for k in slide_induction if k not in self.functional_keys
+        ]
         self.layouts = {k: Layout.from_dict(k, v) for k, v in slide_induction.items()}
         self.empty_prs = deepcopy(self.presentation)
+        assert (
+            hide_small_pic_ratio is None or hide_small_pic_ratio > 0
+        ), "hide_small_pic_ratio must be positive or None"
+        if hide_small_pic_ratio is not None:
+            self._hide_small_pics(hide_small_pic_ratio, keep_in_background)
         self._initialized = True
         return self
 
@@ -71,8 +92,6 @@ class PPTGen(ABC):
         source_doc: Document,
         num_slides: Optional[int] = None,
         outline: Optional[list[OutlineItem]] = None,
-        hide_small_pic_ratio: Optional[float] = 0.2,
-        keep_in_background: bool = True,
     ):
         """
         Generate a PowerPoint presentation.
@@ -91,18 +110,11 @@ class PPTGen(ABC):
         assert self._initialized, "PPTGen not initialized, call `set_reference` first"
         self.source_doc = source_doc
         succ_flag = True
-        if hide_small_pic_ratio is not None:
-            self._hide_small_pics(hide_small_pic_ratio, keep_in_background)
         if outline is None:
             self.outline = self.generate_outline(num_slides, source_doc)
         else:
             self.outline = outline
-        self.simple_outline = "\n".join(
-            [
-                f"Slide {slide_idx+1}: {item.purpose}"
-                for slide_idx, item in enumerate(self.outline)
-            ]
-        )
+        self.simple_outline = get_outlines_overview(self.outline)
         generated_slides = []
         code_executors = []
         for slide_idx, outline_item in enumerate(self.outline):
@@ -154,13 +166,12 @@ class PPTGen(ABC):
         assert self._initialized, "PPTGen not initialized, call `set_reference` first"
         turn_id, outline = self.staffs["planner"](
             num_slides=num_slides,
-            document_overview=source_doc.overview,
-            functional_layouts=self.functional_keys,
+            document_overview=source_doc.get_overview(),
         )
         if num_slides == 1 and isinstance(outline, dict):
             outline = [outline]
         outline = self._fix_outline(outline, source_doc, turn_id)
-        return outline
+        return self._add_functional_layouts(outline)
 
     @abstractmethod
     def generate_slide(
@@ -181,6 +192,42 @@ class PPTGen(ABC):
         query: str,
     ) -> tuple[SlidePage, CodeExecutor]:
         raise NotImplementedError("Subclass must implement this method")
+
+    def _add_functional_layouts(self, outline: list[OutlineItem]):
+        """
+        Add functional layouts to the outline.
+        """
+        fixed_functional_slides = [
+            (FunctionalLayouts.TOC.value, 0),  # toc should be added before opening
+            (FunctionalLayouts.OPENING.value, 0),
+            (FunctionalLayouts.ENDING.value, 999999),  # append to the end
+        ]
+        for title, pos in fixed_functional_slides:
+            layout = max(self.functional_keys, key=lambda x: edit_distance(x, title))
+            if edit_distance(layout, title) > 0.7:
+                outline.insert(pos, OutlineItem(title, "Functional", {}))
+
+        section_outline = max(
+            self.functional_keys,
+            key=lambda x: edit_distance(x, FunctionalLayouts.SECTION_OUTLINE.value),
+        )
+        if (
+            not edit_distance(section_outline, FunctionalLayouts.SECTION_OUTLINE.value)
+            > 0.7
+        ):
+            return outline
+        pre_section = None
+        for item in deepcopy(outline):
+            if item.section == "Functional":
+                continue
+            if item.section != pre_section:
+                new_item = OutlineItem(
+                    f"Section Outline of {item.section}", "Functional", {}
+                )
+                outline.insert(outline.index(item), new_item)
+            if item.section != pre_section:
+                pre_section = item.section
+        return outline
 
     def _hide_small_pics(self, area_ratio: float, keep_in_background: bool):
         for layout in self.layouts.values():
@@ -298,8 +345,6 @@ class PPTGenAsync(PPTGen):
         source_doc: Document,
         num_slides: Optional[int] = None,
         outline: Optional[list[OutlineItem]] = None,
-        hide_small_pic_ratio: Optional[float] = 0.2,
-        keep_in_background: bool = True,
     ):
         """
         Asynchronously generate a PowerPoint presentation.
@@ -309,18 +354,11 @@ class PPTGenAsync(PPTGen):
         ), "AsyncPPTAgent not initialized, call `set_reference` first"
         self.source_doc = source_doc
         succ_flag = True
-        if hide_small_pic_ratio is not None:
-            self._hide_small_pics(hide_small_pic_ratio, keep_in_background)
         if outline is None:
             self.outline = await self.generate_outline(num_slides, source_doc)
         else:
             self.outline = outline
-        self.simple_outline = "\n".join(
-            [
-                f"Slide {slide_idx+1}: {item.purpose}"
-                for slide_idx, item in enumerate(self.outline)
-            ]
-        )
+        self.simple_outline = get_outlines_overview(self.outline)
 
         slide_tasks = []
         for slide_idx, outline_item in enumerate(self.outline):
@@ -334,11 +372,6 @@ class PPTGenAsync(PPTGen):
         code_executors = []
         for result in slide_results:
             if isinstance(result, Exception):
-                logger.warning(
-                    "Failed to generate slide, error_exit=%s, error: %s",
-                    self.error_exit,
-                    str(result),
-                )
                 if self.error_exit:
                     succ_flag = False
                     break
@@ -375,13 +408,12 @@ class PPTGenAsync(PPTGen):
 
         turn_id, outline = await self.staffs["planner"](
             num_slides=num_slides,
-            document_overview=source_doc.overview,
-            functional_layouts=self.functional_keys,
+            document_overview=source_doc.get_overview(),
         )
         if num_slides == 1 and isinstance(outline, dict):
             outline = [outline]
         outline = await self._fix_outline(outline, source_doc, turn_id)
-        return outline
+        return self._add_functional_layouts(outline)
 
     @abstractmethod
     async def generate_slide(
@@ -505,17 +537,15 @@ class PPTAgent(PPTGen):
         )
         return self._edit_slide(command_list, template_id)
 
+    @tenacity_decorator
     def _select_layout(
         self, slide_idx: int, outline_item: OutlineItem
     ) -> tuple[Layout, str, str]:
         """
-        Generate a slide from the outline item.
+        Select a layout for the slide.
         """
         header, content_source, images = outline_item.retrieve(
             slide_idx, self.source_doc
-        )
-        available_layouts = "\n".join(
-            [layout.title for layout in self.layouts.values()]
         )
         if len(content_source) == 0:
             key_points = []
@@ -526,12 +556,12 @@ class PPTAgent(PPTGen):
         slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
         if len(images) > 0:
             slide_content += "\nImages:\n" + "\n".join(images)
+
         _, layout_selection = self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
             slide_content=slide_content,
-            available_layouts=available_layouts,
-            functional_layouts=self.functional_keys,
+            available_layouts=self.content_keys,
         )
         layout = max(
             self.layouts.keys(),
@@ -567,8 +597,8 @@ class PPTAgent(PPTGen):
         """
         turn_id, editor_output = self.staffs["editor"](
             outline=self.simple_outline,
-            slide_description=slide_description,
             metadata=self.source_doc.metainfo,
+            slide_description=slide_description,
             slide_content=slide_content,
             schema=layout.content_schema,
         )
@@ -615,17 +645,6 @@ class PPTAgent(PPTGen):
     ):
         """
         Generate commands for editing the slide content.
-
-        Args:
-            editor_output (dict): The editor output.
-            layout (Layout): The layout object containing content schema.
-            retry (int, optional): The number of retries. Defaults to 0.
-
-        Returns:
-            list: A list of commands.
-
-        Raises:
-            Exception: If command generation fails.
         """
         command_list = []
         try:
@@ -645,11 +664,6 @@ class PPTAgent(PPTGen):
                     retry + 1,
                 )
                 return self._generate_commands(new_output, layout, turn_id, retry + 1)
-            elif retry > self.retry_times:
-                logger.error("Buggy condition, retry times > max_retry_times")
-                raise Exception(
-                    f"Failed to generate commands, retry times ({retry}) > max_retry_times ({self.retry_times}), may be a bug"
-                )
             else:
                 raise Exception(
                     f"Failed to generate commands, tried too many times at editing\ntraceback: {e}"
@@ -667,7 +681,7 @@ class PPTAgent(PPTGen):
             command_list.append(
                 (
                     el_name,
-                    layout.content_schema[el_name]["type"],
+                    layout[el_name].el_type,
                     f"quantity_change: {quantity_change}",
                     old_content,
                     new_content,
@@ -697,13 +711,35 @@ class PPTAgentAsync(PPTGenAsync):
         """
         Asynchronously generate a slide from the outline item.
         """
-        layout, header, slide_content = await self._select_layout(
-            slide_idx, outline_item
-        )
-        command_list, template_id = await self._generate_content(
-            layout, slide_content, header
-        )
-        slide, code_executor = await self._edit_slide(command_list, template_id)
+        try:
+            if outline_item.section == "Functional":
+                layout = self.layouts[
+                    max(
+                        self.functional_keys,
+                        key=lambda x: edit_distance(x, outline_item.purpose),
+                    )
+                ]
+
+                header, _, _ = outline_item.retrieve(slide_idx, self.source_doc)
+                if outline_item.purpose == FunctionalLayouts.SECTION_OUTLINE.value:
+                    slide_content = (
+                        "Overview of the Document:\n"
+                        + self.source_doc.get_overview(include_summary=True)
+                    )
+                else:
+                    slide_content = ""
+            else:
+                layout, header, slide_content = await self._select_layout(
+                    slide_idx, outline_item
+                )
+            command_list, template_id = await self._generate_content(
+                layout, slide_content, header
+            )
+            slide, code_executor = await self._edit_slide(command_list, template_id)
+        except Exception as e:
+            logger.error(f"Failed to generate slide {slide_idx}, error: {e}")
+            traceback.print_exc()
+            raise e
         return slide, code_executor
 
     async def interact(
@@ -748,6 +784,7 @@ class PPTAgentAsync(PPTGenAsync):
         )
         return await self._edit_slide(command_list, template_id)
 
+    @tenacity_decorator
     async def _select_layout(
         self, slide_idx: int, outline_item: OutlineItem
     ) -> tuple[Layout, str, str]:
@@ -756,9 +793,6 @@ class PPTAgentAsync(PPTGenAsync):
         """
         header, content_source, images = outline_item.retrieve(
             slide_idx, self.source_doc
-        )
-        available_layouts = "\n".join(
-            [layout.title for layout in self.layouts.values()]
         )
         if len(content_source) == 0:
             key_points = []
@@ -774,8 +808,7 @@ class PPTAgentAsync(PPTGenAsync):
             outline=self.simple_outline,
             slide_description=header,
             slide_content=slide_content,
-            available_layouts=available_layouts,
-            functional_layouts=self.functional_keys,
+            available_layouts=self.content_keys,
         )
         layout = max(
             self.layouts.keys(),
@@ -783,7 +816,7 @@ class PPTAgentAsync(PPTGenAsync):
         )
         if "image" in layout and len(images) == 0:
             logger.debug(
-                f"An image layout is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
+                f"An image layout: {layout} is selected, but no images are provided, please check the parsed document and outline item:\n {outline_item}"
             )
         elif "image" not in layout and len(images) > 0:
             logger.debug(
@@ -839,7 +872,6 @@ class PPTAgentAsync(PPTGenAsync):
                 self.retry_times,
                 str(feedback[1]),
             )
-            logger.debug(traceback.format_exc())
             if error_idx == self.retry_times:
                 raise Exception(
                     f"Failed to generate slide, tried too many times at editing\ntraceback: {feedback[1]}"
@@ -905,7 +937,7 @@ class PPTAgentAsync(PPTGenAsync):
             command_list.append(
                 (
                     el_name,
-                    layout.content_schema[el_name]["type"],
+                    layout[el_name].el_type,
                     f"quantity_change: {quantity_change}",
                     old_content,
                     new_content,

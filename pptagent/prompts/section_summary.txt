@@ -1,0 +1,6 @@
+Please summarize the content of the document section into a concise paragraph less than 100 words.
+
+Input:
+{{section_content}}
+
+Output:

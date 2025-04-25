@@ -146,15 +146,8 @@ class SlideInducter:
         layout_induction = defaultdict(lambda: defaultdict(list))
         content_slides_index, functional_cluster = self.category_split()
         for layout_name, cluster in functional_cluster.items():
-            for slide_idx in cluster:
-                content_type = self.prs.slides[slide_idx - 1].get_content_type()
-                layout_key = layout_name + ":" + content_type
-                if "slides" not in layout_induction[layout_key]:
-                    layout_induction[layout_key]["slides"] = []
-                layout_induction[layout_key]["slides"].append(slide_idx)
-        for layout_name, cluster in layout_induction.items():
-            if "slides" in cluster and cluster["slides"]:
-                cluster["template_id"] = cluster["slides"][-1]
+            layout_induction[layout_name]["slides"] = cluster
+            layout_induction[layout_name]["template_id"] = cluster[0]
 
         functional_keys = list(layout_induction.keys())
         function_slides_index = set()
@@ -362,15 +355,8 @@ class SlideInducterAsync(SlideInducter):
         layout_induction = defaultdict(lambda: defaultdict(list))
         content_slides_index, functional_cluster = await self.category_split()
         for layout_name, cluster in functional_cluster.items():
-            for slide_idx in cluster:
-                content_type = self.prs.slides[slide_idx - 1].get_content_type()
-                layout_key = layout_name + ":" + content_type
-                if "slides" not in layout_induction[layout_key]:
-                    layout_induction[layout_key]["slides"] = []
-                layout_induction[layout_key]["slides"].append(slide_idx)
-        for layout_name, cluster in layout_induction.items():
-            if "slides" in cluster and cluster["slides"]:
-                cluster["template_id"] = cluster["slides"][-1]
+            layout_induction[layout_name]["slides"] = cluster
+            layout_induction[layout_name]["template_id"] = cluster[0]
 
         functional_keys = list(layout_induction.keys())
         function_slides_index = set()

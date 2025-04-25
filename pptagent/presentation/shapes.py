@@ -16,6 +16,7 @@ from pptx.shapes.group import GroupShape as PPTXGroupShape
 from pptx.shapes.picture import Picture as PPTXPicture
 from pptx.shapes.placeholder import PlaceholderPicture, SlidePlaceholder
 from pptx.slide import Slide as PPTXSlide
+from pptx.slide import _Background
 from pptx.text.text import _Paragraph
 from pptx.util import Length
 
@@ -125,7 +126,10 @@ class Fill:
             image_path = parsing_image(image, image_path)
         return cls(fill_type, fill_str, fill_xml, image_path)
 
-    def build(self, fill: FillFormat, part: SlidePart) -> None:
+    # We pass an element with fill attribute instead of a fill object because `python-pptx` automatically creates a fill object when accessing this attribute, which would cause inconsistency
+    def build(
+        self, fill_ele: LineFormat | _Background | BaseShape, part: SlidePart
+    ) -> None:
         """
         Build the fill in a shape.
         Args:
@@ -134,6 +138,7 @@ class Fill:
         """
         if self.fill_type == MSO_FILL_TYPE.BACKGROUND:
             return
+        fill = fill_ele.fill
         if self.fill_type == MSO_FILL_TYPE.PICTURE:
             fill.blip()
             _, rId = part.get_or_add_image_part(self.image_path)
@@ -174,7 +179,7 @@ class Line:
         """
         if self.fill.fill_type == MSO_FILL_TYPE.BACKGROUND:
             return
-        self.fill.build(line.fill, part)
+        self.fill.build(line, part)
         line.width = self.line_width
         line.dash_style = self.line_dash_style
 
@@ -201,7 +206,7 @@ class Background(Fill):
         """
         Build the background in a slide.
         """
-        super().build(slide.background.fill, slide.part)
+        super().build(slide.background, slide.part)
 
     def to_html(self, style_args: StyleArg) -> str:
         """
@@ -579,7 +584,7 @@ class ShapeElement:
             slide.shapes._spTree.insert_element_before(parse_xml(self.xml), "p:extLst")
         )
         if getattr(shape, "fill", None) is not None:
-            self.fill.build(shape.fill, shape.part)
+            self.fill.build(shape, shape.part)
         if getattr(shape, "line", None) is not None:
             self.line.build(shape.line, shape.part)
         return shape

@@ -1,5 +1,5 @@
 import asyncio
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Literal, Optional
 
 from jinja2 import StrictUndefined, Template
@@ -26,20 +26,15 @@ class Element:
     variable_data: dict[str, list[str]] | None
 
     def get_schema(self):
-        schema = asdict(self)
-        schema.pop("content")
-        schema.pop("variable_data")
-        if self.el_type == "image":
-            schema.pop("suggested_characters")
-        if self.variable_length is None:
-            schema.pop("variable_length")
-        else:
-            schema["variableLength"] = "The length of the element should be between "
-            schema[
-                "variableLength"
-            ] += f"{self.variable_length[0]} and {self.variable_length[1]}"
-        schema["type"] = schema.pop("el_type")
-        schema["defaultQuantitity"] = len(self.content)
+        schema = f"Element: {self.el_name}\n"
+        base_attrs = ["description", "el_type"]
+        for attr in base_attrs:
+            schema += f"\t{attr}: {getattr(self, attr)}\n"
+        if self.el_type == "text":
+            schema += f"\tsuggested_characters: {self.suggested_characters}\n"
+        if self.variable_length is not None:
+            schema += f"\tThe length of the element can vary between {self.variable_length[0]} and {self.variable_length[1]}\n"
+        schema += f"\tThe default quantity of the element is {len(self.content)}\n"
         return schema
 
     @classmethod
@@ -193,14 +188,18 @@ class Layout:
                         tasks[el_name] = task
 
             for el_name, task in tasks.items():
-                editor_output[el_name]["data"] = await task
                 assert isinstance(
                     editor_output[el_name]["data"], list
                 ), f"Generated data is lengthy, expect {self[el_name].suggested_characters} characters, but got {len(editor_output[el_name]['data'])} characters for element {el_name}"
+                new_data = await task
+                logger.debug(
+                    f"Lengthy rewrite for {el_name}:\n From {editor_output[el_name]['data']}\n To {new_data}"
+                )
+                editor_output[el_name]["data"] = new_data
 
     @property
     def content_schema(self):
-        return {el.el_name: el.get_schema() for el in self.elements}
+        return "\n".join([el.get_schema() for el in self.elements])
 
     def remove_item(self, item: str):
         for el in self.elements:

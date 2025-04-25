@@ -23,7 +23,9 @@ MERGE_METADATA_PROMPT = env.from_string(
 HEADING_EXTRACT_PROMPT = env.from_string(
     open(package_join("prompts", "heading_extract.txt")).read()
 )
-
+SECTION_SUMMARY_PROMPT = env.from_string(
+    open(package_join("prompts", "section_summary.txt")).read()
+)
 
 MARKDOWN_IMAGE_REGEX = re.compile(r"!\[.*\]\(.*\)")
 MARKDOWN_TABLE_REGEX = re.compile(r"\|.*\|")
@@ -290,7 +292,9 @@ class Document:
                 chunk,
                 image_dir,
             )
-
+            section.summary = language_model(
+                SECTION_SUMMARY_PROMPT.render(section_content=chunk),
+            )
             metadata_list.append(metadata)
             sections.append(section)
 
@@ -321,12 +325,13 @@ class Document:
         )
         metadata = []
         sections = []
+        tasks = []
 
         async with asyncio.TaskGroup() as tg:
             for chunk in split_markdown_by_headings(
                 markdown_content, headings, adjusted_headings
             ):
-                tg.create_task(
+                task1 = tg.create_task(
                     cls._parse_chunk_async(
                         doc_extractor,
                         language_model,
@@ -336,12 +341,22 @@ class Document:
                         chunk,
                         image_dir,
                     )
-                ).add_done_callback(
-                    lambda f: (
-                        metadata.append(f.result()[0]),
-                        sections.append(f.result()[1]),
+                )
+                task2 = tg.create_task(
+                    language_model(
+                        SECTION_SUMMARY_PROMPT.render(section_content=chunk),
                     )
                 )
+                tasks.append((task1, task2))
+
+        # Process results in order
+        for task1, task2 in tasks:
+            meta, section = task1.result()
+            metadata.append(meta)
+            sections.append(section)
+            for section in sections:
+                section.summary = task2.result()
+
         merged_metadata = await language_model(
             MERGE_METADATA_PROMPT.render(metadata=metadata), return_json=True
         )
@@ -412,21 +427,22 @@ class Document:
 
         return subsecs
 
-    @property
-    def metainfo(self):
-        return "\n".join([f"{k}: {v}" for k, v in self.metadata.items()])
-
-    @property
-    def overview(self):
+    def get_overview(self, include_summary: bool = False):
         overview = ""
         for section in self.sections:
             overview += f"Section: {section.title}\n"
+            if include_summary:
+                overview += f"\tSummary: {section.summary}\n"
             for subsection in section.subsections:
                 overview += f"\tSubsection: {subsection.title}\n"
                 for media in subsection.medias:
                     overview += f"\t\tMedia: {media.caption}\n"
                 overview += "\n"
         return overview
+
+    @property
+    def metainfo(self):
+        return "\n".join([f"{k}: {v}" for k, v in self.metadata.items()])
 
     @property
     def subsections(self):
@@ -436,25 +452,23 @@ class Document:
 @dataclass
 class OutlineItem:
     purpose: str
-    description: str
+    section: str
     indexs: dict[str, list[str]]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]):
         assert (
-            "purpose" in data and "description" in data
-        ), "purpose and description of outline item are required"
+            "purpose" in data and "section" in data
+        ), "purpose and section of outline item are required"
         return cls(
             purpose=data["purpose"],
-            description=data["description"],
+            section=data["section"],
             indexs=data.get("indexs", {}),
         )
 
     def retrieve(self, slide_idx: int, document: Document):
         subsections = document.retrieve(self.indexs)
-        header = (
-            f"Slide-{slide_idx+1}: {self.purpose}\nDescription: {self.description}\n"
-        )
+        header = f"Slide-{slide_idx+1}: {self.purpose}\n"
         content = ""
         for subsection in subsections:
             content += f"Paragraph: {subsection.title}\nContent: {subsection.content}\n"
@@ -465,3 +479,17 @@ class OutlineItem:
                     f"Image: {media.path}\nSize: {media.size}\nCaption: {media.caption}"
                 )
         return header, content, images
+
+
+def get_outlines_overview(outlines: list[OutlineItem]):
+    overview = ""
+    presection = None
+    for idx, item in enumerate(outlines):
+        if item.section == "Functional":
+            overview += f"slide {idx+1}: {item.purpose}\n"
+            continue
+        if item.section != presection:
+            overview += f"Section: {item.section}\n"
+            presection = item.section
+        overview += f"\tslide {idx+1}: {item.purpose}\n"
+    return overview

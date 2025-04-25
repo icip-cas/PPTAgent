@@ -64,7 +64,7 @@ def test_pptgen():
         test_config.get_document_json(), test_config.document, False
     )
     outline = test_config.get_outline()
-    outline = [OutlineItem(**outline[2])]
+    outline = [OutlineItem.from_dict(outline[2])]
     pptgen.generate_pres(document, outline=outline)
 
 
@@ -87,5 +87,5 @@ async def test_pptgen_async():
         test_config.get_document_json(), test_config.document, False
     )
     outline = test_config.get_outline()
-    outline = [OutlineItem(**outline[2])]
+    outline = [OutlineItem.from_dict(outline[2])]
     await pptgen.generate_pres(document, outline=outline)

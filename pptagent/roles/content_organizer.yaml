@@ -13,10 +13,7 @@ template: |
   [
       {
           "pointName": "Challenges",
-          "paragraphForm": [
-              "One of the main challenges in this domain is the ability to scale efficiently while maintaining accuracy. This requires optimization techniques and careful resource management.",
-              "Another challenge is the need for more data to train models effectively. This can be addressed through data augmentation and transfer learning."
-          ],
+          "paragraphForm": "One of the main challenges in this domain is the ability to scale efficiently while maintaining accuracy. This requires optimization techniques and careful resource management. Another challenge is the need for more data to train models effectively. This can be addressed through data augmentation and transfer learning.",
           "bulletForm": [
               "Scaling while maintaining accuracy is difficult.",
               "Requires optimization techniques.",
@@ -27,9 +24,7 @@ template: |
       },
       {
           "pointName": "Methods",
-          "paragraphForm": [
-              "The approach used involves a combination of distributed training techniques and model parallelism to efficiently manage resources while improving processing speed."
-          ],
+          "paragraphForm": "The approach used involves a combination of distributed training techniques and model parallelism to efficiently manage resources while improving processing speed.",
           "bulletForm": [
               "Uses distributed training techniques.",
               "Employs model parallelism.",

@@ -38,8 +38,8 @@ class ImageLabler:
 
         for slide in self.presentation.slides:
             for shape in slide.shape_filter(Picture):
-                stats = image_stats[pbasename(shape.img_path)]
-                shape.caption = stats["caption"]
+                if shape.caption is None:
+                    shape.caption = image_stats[pbasename(shape.img_path)]["caption"]
 
     async def caption_images_async(self, vision_model: AsyncLLM):
         """
@@ -103,19 +103,16 @@ class ImageLabler:
         for slide_index, slide in enumerate(self.presentation.slides):
             for shape in slide.shape_filter(Picture):
                 image_path = pbasename(shape.img_path)
-                stat = {
-                    "appear_times": 0,
-                    "slide_numbers": set(),
-                    "relative_area": shape.area / self.slide_area * 100,
-                }
-                if image_path != "pic_placeholder.png":
-                    stat["size"] = PIL.Image.open(
-                        pjoin(self.config.IMAGE_DIR, image_path)
-                    ).size
-                else:
-                    stat["size"] = None
-                    stat["caption"] = shape.caption
-                self.image_stats[image_path] = stat
+                if image_path == "pic_placeholder.png":
+                    continue
+                if image_path not in self.image_stats:
+                    size = PIL.Image.open(pjoin(self.config.IMAGE_DIR, image_path)).size
+                    self.image_stats[image_path] = {
+                        "size": size,
+                        "appear_times": 0,
+                        "slide_numbers": set(),
+                        "relative_area": shape.area / self.slide_area * 100,
+                    }
                 self.image_stats[image_path]["appear_times"] += 1
                 self.image_stats[image_path]["slide_numbers"].add(slide_index + 1)
         for image_path, stats in self.image_stats.items():

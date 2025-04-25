@@ -8,8 +8,8 @@ Avoid:
 Specific topics or subjects, and detailed content descriptions
 
 Example Outputs:
-One Central Chart with a explanatory paragraph
+One Central Square Chart with a explanatory paragraph
 Picture and three illustrative key points
-Three Icon Columns with Descriptive Text Below Each
+Two Landscape Images with Descriptive Text Below Each
 
-Output: Provide a one-line layout pattern title.
+Output: Provide a one-line layout pattern description, without line breaks or other formatting.

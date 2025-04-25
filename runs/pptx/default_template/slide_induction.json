@@ -1,26 +1,26 @@
 {
-    "opening:text": {
+    "opening": {
         "slides": [
             1
         ],
         "template_id": 1,
         "content_schema": {
             "main title": {
-                "description": "main title of the slide",
+                "description": "main title of the slide, typically the largest text and often at the top of the slide",
                 "type": "text",
                 "data": [
                     "Tourism & Culture:"
                 ]
             },
             "subtitle": {
-                "description": "subtitle or main topic of the slide",
+                "description": "subtitle of the slide, provides additional context or a brief introduction",
                 "type": "text",
                 "data": [
                     "APPRECIATING THE TANGIBLE & THE INTANGIBLE OF BHUBANESWAR THROUGH CULTURAL TOURISM"
                 ]
             },
-            "author": {
-                "description": "author of the presentation",
+            "presenter": {
+                "description": "name of the presenter or author of the slide, usually smaller and positioned below the main title or subtitle",
                 "type": "text",
                 "data": [
                     "By Ayona Bhaduri"
@@ -28,109 +28,21 @@
             }
         }
     },
-    "table of contents:text": {
-        "slides": [
-            2,
-            3,
-            4
-        ],
-        "template_id": 4,
-        "content_schema": {
-            "main title": {
-                "description": "main title of the slide",
-                "type": "text",
-                "data": [
-                    "What do we mean by Cultural Tourism?"
-                ]
-            },
-            "content paragraph": {
-                "description": "detailed explanation of the concept",
-                "type": "text",
-                "data": [
-                    "Cultural Tourism is the subset of tourism concerned with a particular country or region\u2019s culture, specifically the lifestyle of the people in those geographical areas, the history of those people, their art and craft, their language and literature, their architecture, their religion, and all other elements that have helped shape their way of life."
-                ]
-            },
-            "content bullets": {
-                "description": "key points or statements in a specific color",
-                "type": "text",
-                "data": [
-                    "Every race has something essential to contribute to the world\u2019s civilisation in the course of its own self-expression and self-realisation.",
-                    "And the essential contribution of India is simply her Indianness.",
-                    "All that India has to offer to the world proceeds from her philosophy.",
-                    "That this philosophy has held India together and seen her through many upheavals \u2013 political, social, economic, intellectual, is brought to the fore when Max Muller, the famous scholar and Orientalist, remarks, \u2018There is, in fact, an unbroken continuity between the most modern and the most ancient phases of Hindu thought, extending over more than three thousand years.\u2019"
-                ]
-            }
-        }
-    },
-    "transition:text": {
-        "slides": [
-            5,
-            6,
-            13
-        ],
-        "template_id": 13,
-        "content_schema": {
-            "main content": {
-                "description": "main content of the slide, presenting a detailed explanation of the practice of Indian classical dance and its spiritual and metaphysical aspects",
-                "type": "text",
-                "data": [
-                    "The practice of Indian classical dance, like meditation, tames and purifies the external Sthula-Sharira (the body composed of fluid, with humours and saps, as also of the bones, muscles and vital vulnerable junctures) as it quiets and balances the body\u2019s three humours (tridosha, tridhaatu) \u2013 wind (vata), phlegm (kapha) and fire (pitta). Eventually the dancer should begin to discover the Suksma Sharira (the subtle, metaphysical interior body) within her which articulates the psycho-spiritual experiences similar to those of the yogi and the pilgrim or devotee visiting the temple. This subtle body, most often identified with Kundalini Yoga, is defined by one of the many scholars as \u201c an invisible mandala formed by a combination of symbolic (but also very real) geometric figures\u201d and often depicted as a microcosm of the universe, with the Shiva Samhita noting, \u201cAll the beings that exist in the three worlds are also to be found in the subtle body\u201d. Rightly, it is called the seat of the Atma or soul.  And the discovery of this subtle body is made possible by the awakening of the vital Kundalini energy within the dancer\u2019s body through the practise and performance of the Odissi repertoire wherein the dancer begins with Mangalacharan, an invocation at the entrance to the temple, proceeds to circumambulate the temple structure depicting the exquisite physical beauty of the numerous postures in various bhangi-s sculpted on the temple walls through Batu, then advancing through the Natya Mandapa with the joyous Pallavi, enters the Garbha griha with the self-reflective Abhinaya, an Ashatapadi wherein she is in private conversation with her Lord, finally leading to Moshya Nata, the dance of liberation. Thus, the repertoire leads the dancer from collective external consciousness to singular internal consciousness such that in Mokshya Nata a moment of absolute peace and stillness is reached when the dancer is in total union while in movement with her Atma or soul within.  "
-                ]
-            }
-        }
-    },
-    "transition:image": {
-        "slides": [
-            8,
-            9,
-            10,
-            11,
-            12
-        ],
-        "template_id": 12,
-        "content_schema": {
-            "main title": {
-                "description": "main title of the slide",
-                "type": "text",
-                "data": [
-                    "The Connecting Link"
-                ]
-            },
-            "content bullets": {
-                "description": "detailed explanations and concepts related to the topic",
-                "type": "text",
-                "data": [
-                    "In India the ultimate temple, since times ancient, has always been the human body.",
-                    "The Hindu temple is perceived as a link between man and God, between the earthly life and the divine life, between the actual and the ideal.",
-                    "The origin of all the classical dances of India has been the Hindu temple; it is in the temple that they were conceived and nourished and it is in the temple itself that they acquired their full stature. Fostered by religion, they continue to be an intrinsic part of worship in the temples even today.",
-                    "The intangible, born and nurtured in the tangible that is built on the metaphysical plan of the cosmic intangible, contains within it, the entire structure of the tangible itself. Neither without the other.",
-                    "Thus, the dancer, while in the dance akin to yoga, seeks the sacred temple within."
-                ]
-            },
-            "main image": {
-                "description": "diagram comparing the structure of a Hindu temple and the human body",
-                "type": "image",
-                "data": [
-                    "Diagram: Comparison between the structure of a Hindu temple and the human body, using labeled illustrations and proportions. Main features include chakra symbols on the body and corresponding parts of the temple."
-                ]
-            }
-        }
-    },
-    "ending:text": {
+    "ending": {
         "slides": [
             14
         ],
         "template_id": 14,
         "content_schema": {
             "main title": {
-                "description": "main title of the slide, prominently displayed",
+                "description": "main title of the slide, highlighting the subject and its cultural significance",
                 "type": "text",
                 "data": [
                     "ODISSI DANCER \u2013 A Global Ambassador of cultural heritage of Odisha"
                 ]
             },
-            "content paragraphs": {
-                "description": "detailed content paragraphs of the slide, providing in-depth information",
+            "content bullets": {
+                "description": "content bullets of the slide, detailing the artistic journey and cultural impact of Kelucharan Mahapatra",
                 "type": "text",
                 "data": [
                     "Kelucharan Mahapatra\u2019s artistic journey touches every key aspect of the cultural life of Odisha",
@@ -141,26 +53,205 @@
             }
         }
     },
-    "Central Grid Diagram with Directional Labels and Overlaid Curved Lines:image": {
+    "Bold Title Above Bulleted Text with Highlighted Keywords:text": {
+        "template_id": 2,
+        "slides": [
+            2,
+            6,
+            4
+        ],
+        "content_schema": {
+            "main title": {
+                "description": "main title of the slide",
+                "type": "text",
+                "data": [
+                    "What is culture?"
+                ]
+            },
+            "source quote": {
+                "description": "introduction to the source of the quote",
+                "type": "text",
+                "data": [
+                    "In Sri Aurobindo\u2019s words,"
+                ]
+            },
+            "content paragraphs": {
+                "description": "detailed explanation of the concept in paragraphs",
+                "type": "text",
+                "data": [
+                    "The culture of a people may be described as the expression of a consciousness of life which formulates itself in three aspects.",
+                    "There is a side of thought, of ideal, of upward will and soul\u2019s aspiration, which is reflected in the people\u2019s philosophy and religion.",
+                    "There is a side of creative self-expression and appreciative aesthesis, intelligence and imagination, which finds expression in its art, poetry, literature, music, dance",
+                    "And, there is a side of practical and outward formulation, which is provided for in its society and politics"
+                ]
+            }
+        }
+    },
+    "**Title: Title at Top with Bulleted Text Arranged Vertically**:text": {
+        "template_id": 3,
+        "slides": [
+            3
+        ],
+        "content_schema": {
+            "main title": {
+                "description": "main title of the slide, large and prominent",
+                "type": "text",
+                "data": [
+                    "What is Tourism?"
+                ]
+            },
+            "content paragraphs": {
+                "description": "detailed content paragraphs of the slide, in a smaller font size and specific color",
+                "type": "text",
+                "data": [
+                    "The World Tourism Organisation defines tourism in terms which go",
+                    "\u201c beyond the common perception of tourism as being limited to holiday activity only\u201d, as people \u201c travelling to and staying in places outside their usual environment for not more than one consecutive year for leisure, business and other purposes\u201d",
+                    "Its importance was recognised in the Manila Declaration on World Tourism of 1980 as an activity essential to the life of nations because of its direct effects on the social, cultural, educational, and economic sectors of national societies and on their international relations",
+                    "Today, tourism is a major source of income for many countries, and affects the economy of both the source and the host countries, in some cases being of vital importance"
+                ]
+            }
+        }
+    },
+    "**Bulleted Text Layout with Green Gradient Background**:text": {
+        "template_id": 5,
+        "slides": [
+            5
+        ],
+        "content_schema": {
+            "main title": {
+                "description": "main title of the slide",
+                "type": "text",
+                "data": [
+                    "Bhubaneswar \u2013 The Temple City of India"
+                ]
+            },
+            "content paragraph": {
+                "description": "detailed content of the slide",
+                "type": "text",
+                "data": [
+                    "The land of Odisha is a thriving example of India\u2019s exquisite cultural heritage \u2013 be it tangible, as observed in Orissan sculpture and architecture, or intangible, as in the rich legacy of Odissi dance and allied arts.",
+                    "Within it, the city of Bhubaneswar is found to be a confluence of Hindu, Buddhist and Jain heritage boasting of some of the finest Kalingan temples. With many 6th-13th century CE Hindu temples, which span the entire spectrum of Kalinga architecture, Bhubaneswar is often referred to as a \"Temple City of India\".",
+                    "Along with the old town, the region, historically was often depicted as Ekamra Kshetra (Temple City). With the diverse ranges of heritage resources, it showcases significant sacred cultural landscape components which have evolved with the support of available natural resource base and cultural trigger.",
+                    "Although the modern city of Bhubaneswar was formally established only in 1948, the history of the areas in and around the present-day city can be traced to 3rd century BCE and earlier. With Puri and Konark it forms the Swarna Tribhuja (Golden Triangle), one of eastern India's most visited destinations."
+                ]
+            }
+        }
+    },
+    "Blocks of stacked text over a geometric gradient background:text": {
+        "template_id": 13,
+        "slides": [
+            13
+        ],
+        "content_schema": {
+            "main content": {
+                "description": "detailed explanation of the practice of Indian classical dance and its relation to meditation and spiritual awakening",
+                "type": "text",
+                "data": [
+                    "The practice of Indian classical dance, like meditation, tames and purifies the external Sthula-Sharira (the body composed of fluid, with humours and saps, as also of the bones, muscles and vital vulnerable junctures) as it quiets and balances the body\u2019s three humours (tridosha, tridhaatu) \u2013 wind (vata), phlegm (kapha) and fire (pitta). Eventually the dancer should begin to discover the Suksma Sharira (the subtle, metaphysical interior body) within her which articulates the psycho-spiritual experiences similar to those of the yogi and the pilgrim or devotee visiting the temple. This subtle body, most often identified with Kundalini Yoga, is defined by one of the many scholars as \u201c an invisible mandala formed by a combination of symbolic (but also very real) geometric figures\u201d and often depicted as a microcosm of the universe, with the Shiva Samhita noting, \u201cAll the beings that exist in the three worlds are also to be found in the subtle body\u201d. Rightly, it is called the seat of the Atma or soul.  And the discovery of this subtle body is made possible by the awakening of the vital Kundalini energy within the dancer\u2019s body through the practise and performance of the Odissi repertoire wherein the dancer begins with Mangalacharan, an invocation at the entrance to the temple, proceeds to circumambulate the temple structure depicting the exquisite physical beauty of the numerous postures in various bhangi-s sculpted on the temple walls through Batu, then advancing through the Natya Mandapa with the joyous Pallavi, enters the Garbha griha with the self-reflective Abhinaya, an Ashatapadi wherein she is in private conversation with her Lord, finally leading to Moshya Nata, the dance of liberation. Thus, the repertoire leads the dancer from collective external consciousness to singular internal consciousness such that in Mokshya Nata a moment of absolute peace and stillness is reached when the dancer is in total union while in movement with her Atma or soul within.  "
+                ]
+            }
+        }
+    },
+    "Detailed Diagram with Labelled Pathways and Reference Points:image": {
         "template_id": 7,
         "slides": [
             7
         ],
         "content_schema": {
             "main image": {
-                "description": "central image of the slide, likely the main focus or visual representation of the topic",
+                "description": "central image with detailed labels and sections, used to illustrate the main topic of the slide",
                 "type": "image",
                 "data": [
-                    "Diagram: Detailed map with various labeled sections, including directions (North, South, East, West), and specific areas named such as Prithvi House, Brahma, and others, with a central focus on \"God\" at the top."
+                    "Diagram: Detailed map with various labeled sections, including directions (North, South, East, West), and specific areas named such as Prithvi House, Brahma, and others, with a central focus on 'God' at the top."
+                ]
+            }
+        }
+    },
+    "Single Monument Image with Detailed Caption Text Below:image": {
+        "template_id": 8,
+        "slides": [
+            8,
+            9
+        ],
+        "content_schema": {
+            "main title": {
+                "description": "main title of the slide, prominently displayed",
+                "type": "text",
+                "data": [
+                    "The Mukteswara Temple \u2013 Early Orissan style"
+                ]
+            },
+            "main image": {
+                "description": "main image of the slide, illustrating the subject matter",
+                "type": "image",
+                "data": [
+                    "Picture: Traditional temple architecture with intricate carvings on a domed structure, surrounded by a paved area with some modern buildings in the background."
+                ]
+            },
+            "content paragraphs": {
+                "description": "detailed content of the slide, providing context and explanation",
+                "type": "text",
+                "data": [
+                    "The finest monument of this early style wherein the sanctum cella and its jagamohana, now more organically related, stand within a balustraded court with an elegant Torana in front \u2013 two columns supporting a superstructure of arched shape. The sanctum is pancharatha in plan and the jagamohana with a pyramidal superstructure approaches more nearly the typical Orissan form of the pidha deul.",
+                    "Belonging approximately to the 9th century AD, the Mukteshwara represents a mature expression of the Nagara temple style in Odisha."
+                ]
+            }
+        }
+    },
+    "Landscape Image with Long Explanatory Text Beside:image": {
+        "template_id": 11,
+        "slides": [
+            11,
+            12
+        ],
+        "content_schema": {
+            "content paragraph": {
+                "description": "main content of the slide, providing a detailed historical and cultural context of Odissi dance",
+                "type": "text",
+                "data": [
+                    "Born out of two ancient traditions, the Mahari \u2013 servants of God who, consecrated to the deity as young maidens, sang and danced for the deity alone within the temple\u2019s sanctum sanctorum, and the Gotipua \u2013 young boys dressed up as women who sang and danced in public propagating the Vaishnava consciousness of the union of  humanity (the female) and the Infinite (the only male), Odissi, deeply impacted over centuries by the religious, social and political changes of its birth land Orissa, was reconstructed from extant dance treatises such as the invaluable Abhinaya Chandrika of the 15th century  and the endless sculptural poses on the Orissan temple walls, these serving as reference points of authenticity to the scholars and gurus who set themselves the task of identifying what was true to the form, refining it and finally not only codifying the grammar and technique, but also devising a fixed repertory for the dance."
+                ]
+            },
+            "main image": {
+                "description": "illustrative image of the content, depicting a dancer in traditional attire performing a classical dance pose",
+                "type": "image",
+                "data": [
+                    "Picture: A dancer in traditional attire performing a classical dance pose."
+                ]
+            }
+        }
+    },
+    "**Title:** Title, Bulleted Text, and Historical Image on Dark Gradient Background:image": {
+        "template_id": 10,
+        "slides": [
+            10
+        ],
+        "content_schema": {
+            "main title": {
+                "description": "main title of the slide",
+                "type": "text",
+                "data": [
+                    "The Intangible \u2013 Indian Classical Dance ODISSI of ODISHA"
+                ]
+            },
+            "content paragraph": {
+                "description": "detailed content paragraph of the slide",
+                "type": "text",
+                "data": [
+                    "Odissi dance as an indispensable element of the intangible cultural heritage of Odisha, the earliest evidence of which is found in the form of carvings found in the caves of Khandagiri and Udaygiri dating back to 100 B.C.(D N Patnaik), establish without doubt that Odissi is one of the oldest dance traditions in the world today."
+                ]
+            },
+            "main image": {
+                "description": "main image of the slide",
+                "type": "image",
+                "data": [
+                    "Picture: Ancient stone structure with carved pillars and a large stone elephant sculpture in the foreground."
                 ]
             }
         }
     },
     "functional_keys": [
-        "opening:text",
-        "table of contents:text",
-        "transition:text",
-        "transition:image",
-        "ending:text"
+        "opening",
+        "ending"
     ]
 }

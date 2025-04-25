@@ -1,26 +1,34 @@
 [
     {
-        "purpose": "Opening",
-        "description": "Introduce the topic of building effective agents and set the stage for the presentation using the 'opening:text' layout.",
-        "indexs": {}
-    },
-    {
-        "purpose": "Overview of Agents and Workflows",
-        "description": "Provide a high-level overview of what agents are and the key workflows involved in building them. Use the flowchart illustrating the LLM process from input to output to explain the interactions between components.",
+        "purpose": "Introduce the concept of agents and their components.",
+        "section": "Building effective agents",
         "indexs": {
             "Building effective agents": [
-                "What are agents?",
-                "Building blocks, workflows, and agents"
+                "What are agents?"
             ]
         }
     },
     {
-        "purpose": "Examples and Summary",
-        "description": "Highlight specific examples where agents are useful and summarize the key takeaways from the presentation. Use the 'ending:text' layout to conclude the presentation.",
+        "purpose": "Discuss the various workflows and building blocks in agent design.",
+        "section": "Building effective agents",
         "indexs": {
             "Building effective agents": [
-                "Examples where agents are useful",
-                "Summary"
+                "Building blocks, workflows, and agents",
+                "Workflow: Prompt chaining",
+                "Workflow: Routing",
+                "Workflow: Parallelization",
+                "Workflow: Orchestrator-workers",
+                "Workflow: Evaluator-optimizer"
+            ]
+        }
+    },
+    {
+        "purpose": "Summarize key points and provide a closing note.",
+        "section": "Building effective agents",
+        "indexs": {
+            "Building effective agents": [
+                "Summary",
+                "Acknowledgements"
             ]
         }
     }

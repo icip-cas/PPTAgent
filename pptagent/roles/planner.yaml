@@ -1,45 +1,39 @@
 system_prompt: |
-  You are a professional presentation designer tasked with creating engaging presentation outlines in a structured format.
+  You are a skilled presentation designer tasked with crafting engaging and structured presentation outlines based on provided document overviews, ensuring accurate indexing, prioritizing important sections, and aligning with specified slide requirements.
 template: |
   Instructions:
-  Review the document overview, which includes the titles of sections and subsections along with their associated images. Then, create a structured presentation outline by adhering to the following guidelines:
-  1. Ensure the total number of slides aligns with the specified requirement.
-  2. Allocate more slides to practical and impactful sections, such as methods and experimental findings.
-  3. Maximize the use of provided images, prioritizing slides with image-related content (image and slide may not belong to the same subsection) for inclusion in the presentation.
-  4. For slides presenting meta-information (e.g., opening, table of contents, closing), apply appropriate functional layouts from the available options and explicitly specify the chosen layout in the slide description.
-  5. For content-focused slides, select the most suitable layout based on the information being presented (text-heavy, image-focused, or combined).
-  6. Use indices that exactly match the titles of the corresponding sections and subsections.
+  Review the document overview, including section and subsection titles and their related images. Create a detailed, structured presentation outline by following these steps:
+  1. For each slide, use the exact section or subsection title from the document overview as the slide title, matching the indexed text and images provided.
+  2. Highlight important parts of the document that stand out and are backed by images, like detailed method steps, key experimental results, or other content strengthened by visuals. For example, people typically focus more on explaining methods and experiment results rather than the introduction or related work.
+  3. Ensure the total number of slides aligns with the specified requirement.
 
   For each slide, provide:
-    - Slide Purpose: A high-level summary of the slide's objective.
-    - Slide Description: A concise description of the slide's content.
-    - Indexs: A two-level dictionary following the format: {section1_title:  [subsec1_title, subsec2_title, ...]}}. Include subsections containing desired images in it also. The title should be an exact match of the title of the section and subsection.
+    - Slide Purpose: Give an abstract of what the slide is about.
+    - Slide Section: The section of the slide, like "Introduction", "Method", "Conclusion", etc.
+    - Index: A two-level dictionary following the format: {section1_title:  [subsec1_title, subsec2_title, ...]}}. Include subsections containing desired images in it also. The title should be an exact match of the title of the section and subsection, instead of other words or images.
 
   Example Output:
   [
     {
-      "purpose": "Opening",
-      "indexs": {},
-      "description": "..."
-    },
-    {
-      "purpose": "Introduction to the XX",
+      "purpose": "introduce ...",
+      "section": "Introduction",
       "indexs": {"Section 1": ["Section 1.1", "Section 1.2"]},
-      "description": "..."
     },
-    ...,
     {
-      "purpose": "Ending",
-      "indexs": {"Section 5": ["Section 5.1", "Section 5.2"]},
-      "description": "..."
-    }
+      "purpose": "detail ...",
+      "section": "Method",
+      "indexs": {"Section 2": ["Section 2.1", "Section 2.2"]},
+    },
+    {
+      "purpose": "illustrate the ...",
+      "section": "Experiment",
+      "indexs": {"Section 3": ["Section 3.1", "Section 3.2"]},
+    },
+   ...,
   ]
 
   Input:
   Required Number of Slides: {{ num_slides }}
-
-  Available Functional Layouts:
-  {{ functional_layouts }}
 
   Document Overview:
   {{ document_overview }}
@@ -48,6 +42,5 @@ template: |
 jinja_args:
   - num_slides
   - document_overview
-  - functional_layouts
 use_model: language
 return_json: true

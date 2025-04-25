@@ -1,6 +1,5 @@
 import traceback
 from collections.abc import Generator
-from copy import deepcopy
 from typing import Literal, Optional
 
 from pptx import Presentation as load_prs
@@ -392,15 +391,14 @@ class Presentation:
             file_path (str): The path to save the presentation to.
             layout_only (bool): Whether to save only the layout.
         """
-        output_pr = deepcopy(self)
-        output_pr.clear_slides()
-        for slide in output_pr.slides:
+        self.clear_slides()
+        for slide in self.slides:
             if layout_only:
-                output_pr.clear_images(slide.shapes)
-            pptx_slide = output_pr.build_slide(slide)
+                self.clear_images(slide.shapes)
+            pptx_slide = self.build_slide(slide)
             if layout_only:
-                output_pr.clear_text(pptx_slide.shapes)
-        output_pr.prs.save(file_path)
+                self.clear_text(pptx_slide.shapes)
+        self.prs.save(file_path)
 
     def build_slide(self, slide: SlidePage) -> PPTXSlide:
         """
