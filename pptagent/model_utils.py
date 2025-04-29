@@ -268,10 +268,11 @@ def get_cluster(similarity: np.ndarray, sim_bound: float = 0.65):
     Returns:
         list: A list of clusters.
     """
-    num_points = similarity.shape[0]
-    clusters = []
     sim_copy = deepcopy(similarity)
+    num_points = sim_copy.shape[0]
+    clusters = []
     added = [False] * num_points
+
     while True:
         max_avg_dist = sim_bound
         best_cluster = None
@@ -290,21 +291,22 @@ def get_cluster(similarity: np.ndarray, sim_bound: float = 0.65):
         if best_point is not None:
             best_cluster.append(best_point)
             added[best_point] = True
-            similarity[best_point, :] = 0
-            similarity[:, best_point] = 0
+            sim_copy[best_point, :] = 0
+            sim_copy[:, best_point] = 0
         else:
-            if similarity.max() < sim_bound:
+            if sim_copy.max() < sim_bound:
                 # append the remaining points invididual cluster
                 for i in range(num_points):
                     if not added[i]:
                         clusters.append([i])
                 break
-            i, j = np.unravel_index(np.argmax(similarity), similarity.shape)
+            i, j = np.unravel_index(np.argmax(sim_copy), sim_copy.shape)
             clusters.append([int(i), int(j)])
             added[i] = True
             added[j] = True
-            similarity[i, :] = 0
-            similarity[:, i] = 0
-            similarity[j, :] = 0
-            similarity[:, j] = 0
+            sim_copy[i, :] = 0
+            sim_copy[:, i] = 0
+            sim_copy[j, :] = 0
+            sim_copy[:, j] = 0
+
     return clusters

@@ -3,14 +3,15 @@ system_prompt: |
 template: |
   Instructions:
   Review the document overview, including section and subsection titles and their related images. Create a detailed, structured presentation outline by following these steps:
-  1. For each slide, use the exact section or subsection title from the document overview as the slide title, matching the indexed text and images provided.
+  1. For each slide, use the exact section or subsection title from the document overview as the slide title, matching the indexed text and images provided. Distribute multiple images to different slides, each slide can only present a single image directly associated with a specific subsection, and do not repeat the same image in different slides.
   2. Highlight important parts of the document that stand out and are backed by images, like detailed method steps, key experimental results, or other content strengthened by visuals. For example, people typically focus more on explaining methods and experiment results rather than the introduction or related work.
   3. Ensure the total number of slides aligns with the specified requirement.
 
   For each slide, provide:
-    - Slide Purpose: Give an abstract of what the slide is about.
-    - Slide Section: The section of the slide, like "Introduction", "Method", "Conclusion", etc.
-    - Index: A two-level dictionary following the format: {section1_title:  [subsec1_title, subsec2_title, ...]}}. Include subsections containing desired images in it also. The title should be an exact match of the title of the section and subsection, instead of other words or images.
+    - Slide Purpose: Give an abstract of what the slide is about. Do not include excessive information (e.g. a slide can only present one image) and this should be related to the index and images you have selected.
+    - Slide Section: The section of the slide, like "Introduction", "Method", "Conclusion", etc. You should use the language same as the document overview.
+    - Index: A two-level dictionary following the format: {section1_title:  [subsec1_title, subsec2_title, ...]}}. Use exact section and subsection titles as they appear without any modification or formatting, e.g., "1. Introduction" instead of "Introduction", "2  Method" instead of "2 Method".
+    - Images: A list of images that are related to the slide, select the most relevant images from the document overview, each image should be a string exactly matching the caption of the image.
 
   Example Output:
   [
@@ -18,16 +19,19 @@ template: |
       "purpose": "introduce ...",
       "section": "Introduction",
       "indexs": {"Section 1": ["Section 1.1", "Section 1.2"]},
+      "images": [],
     },
     {
       "purpose": "detail ...",
       "section": "Method",
       "indexs": {"Section 2": ["Section 2.1", "Section 2.2"]},
+      "images": ["workflow of the method..."],
     },
     {
       "purpose": "illustrate the ...",
       "section": "Experiment",
       "indexs": {"Section 3": ["Section 3.1", "Section 3.2"]},
+        "images": ["experiment results..."],
     },
    ...,
   ]

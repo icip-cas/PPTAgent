@@ -6,11 +6,11 @@ from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import PIL
 from bs4 import BeautifulSoup
-from mistune import html as markdown
+from mistune import HTMLRenderer, create_markdown
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml import parse_xml
 from pptx.shapes.base import BaseShape
@@ -24,6 +24,21 @@ from pptagent.utils import get_logger, runs_merge
 
 logger = get_logger(__name__)
 TABLE_REGEX = re.compile(r".*table_[0-9a-fA-F]{4}\.png$")
+
+
+class SlideRenderer(HTMLRenderer):
+    """
+    A renderer that does not render lists.
+    """
+
+    def list(self, text: str, ordered: bool, **attrs: Any) -> str:
+        return text
+
+    def list_item(self, text: str) -> str:
+        return text
+
+
+markdown = create_markdown(renderer=SlideRenderer(), plugins=["strikethrough"])
 
 
 class SlideEditError(Exception):
@@ -458,6 +473,7 @@ def replace_image(slide: SlidePage, doc: Document, img_id: int, image_path: str)
     r = min(shape.width / img_size[0], shape.height / img_size[1])
     new_width = int(img_size[0] * r)
     new_height = int(img_size[1] * r)
+    shape.top = Pt(shape.top + (shape.height - new_height) / 2)
     shape.width = Pt(new_width)
     shape.height = Pt(new_height)
     shape.img_path = image_path

@@ -1,8 +1,15 @@
 from test.conftest import test_config
 
+from bs4 import BeautifulSoup
 from pptx import Presentation
 
-from pptagent.apis import API_TYPES, CodeExecutor, replace_para
+from pptagent.apis import (
+    API_TYPES,
+    CodeExecutor,
+    markdown,
+    process_element,
+    replace_para,
+)
 
 
 def test_api_docs():
@@ -22,3 +29,18 @@ def test_replace_para():
     assert runs[6].font.name == "Consolas"
     assert runs[8].font.strikethrough
     assert runs[10].hyperlink.address == "http://example.com"
+
+
+def test_list_parsing():
+    text = """
+    - 项目1
+    - 项目2
+
+    1. 项目1
+    2. 项目2
+    """
+    html = markdown(text).strip()
+    soup = BeautifulSoup(html, "html.parser")
+    blocks = process_element(soup)
+    assert len(blocks) == 1
+    assert "ol" not in html and "ul" not in html

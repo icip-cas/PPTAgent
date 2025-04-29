@@ -15,7 +15,14 @@ from pptagent.model_utils import (
     images_cosine_similarity,
 )
 from pptagent.presentation import Picture, Presentation, SlidePage
-from pptagent.utils import Config, edit_distance, get_logger, package_join, pjoin
+from pptagent.utils import (
+    Config,
+    edit_distance,
+    get_logger,
+    is_image_path,
+    package_join,
+    pjoin,
+)
 
 logger = get_logger(__name__)
 
@@ -128,11 +135,21 @@ class SlideInducter:
         )
         if not use_assert:
             return
-        assert (
-            len(os.listdir(template_image_folder))
-            == len(prs.slides)
-            == len(os.listdir(ppt_image_folder))
-        ), "The number of slides in the template image folder and the presentation image folder must be the same as the number of slides in the presentation"
+
+        num_template_images = sum(
+            is_image_path(f) for f in os.listdir(template_image_folder)
+        )
+        num_ppt_images = sum(is_image_path(f) for f in os.listdir(ppt_image_folder))
+        num_slides = len(prs.slides)
+
+        if not (num_template_images == num_ppt_images == num_slides):
+            raise ValueError(
+                f"Slide count mismatch detected:\n"
+                f"- Presentation slides: {num_slides}\n"
+                f"- Template images: {num_template_images} ({template_image_folder})\n"
+                f"- PPT images: {num_ppt_images} ({ppt_image_folder})\n"
+                f"All counts must be equal."
+            )
 
     def layout_induct(self) -> dict:
         """

@@ -2,7 +2,7 @@ name: PUSH-CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "*" ]
 
 jobs:
   test:

@@ -2,7 +2,7 @@ name: PULL-REQUEST-CI
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "*" ]
 
 jobs:
   test:

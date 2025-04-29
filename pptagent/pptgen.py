@@ -21,10 +21,18 @@ style.area = False
 
 
 class FunctionalLayouts(Enum):
-    OPENING = "Opening"
-    TOC = "Table of Contents"
-    SECTION_OUTLINE = "Section Outline"
-    ENDING = "Ending"
+    OPENING = "opening"
+    TOC = "table of contents"
+    SECTION_OUTLINE = "section outline"
+    ENDING = "ending"
+
+
+FunctionalContent = {
+    FunctionalLayouts.OPENING.value: "This slide is a presentation opening, presenting available meta information, like title, author, date, etc.",
+    FunctionalLayouts.TOC.value: "This slide is the Table of Contents, outlining the presentation's sections (rather than slides) based on the previously provided outline. Please ensure *all section titles are included and consistently formatted*, for example, by either numbering all section titles uniformly or using no numbering.",
+    FunctionalLayouts.SECTION_OUTLINE.value: "This slide is a section start , briefly presenting the section title, and optionally the section summary.",
+    FunctionalLayouts.ENDING.value: "This slide is an *ending slide*, simply express your gratitude like 'Thank you!' or '谢谢' as the main title and *do not* include other meta information if not specified.",
+}
 
 
 @dataclass
@@ -40,6 +48,7 @@ class PPTGen(ABC):
     language_model: LLM | AsyncLLM
     vision_model: LLM | AsyncLLM
     retry_times: int = 3
+    sim_bound: float = 0.5
     force_pages: bool = False
     error_exit: bool = False
     record_cost: bool = False
@@ -73,10 +82,23 @@ class PPTGen(ABC):
         """
         self.config = config
         self.presentation = presentation
-        self.functional_keys = slide_induction.pop("functional_keys")
-        self.content_keys = [
-            k for k in slide_induction if k not in self.functional_keys
+
+        self.functional_layouts = slide_induction.pop("functional_keys")
+        self.text_layouts = [
+            k
+            for k in slide_induction
+            if k.endswith("text") and k not in self.functional_layouts
         ]
+        self.multimodal_layouts = [
+            k
+            for k in slide_induction
+            if not k.endswith("text") and k not in self.functional_layouts
+        ]
+        if len(self.text_layouts) == 0:
+            self.text_layouts = self.multimodal_layouts
+        if len(self.multimodal_layouts) == 0:
+            self.multimodal_layouts = self.text_layouts
+
         self.layouts = {k: Layout.from_dict(k, v) for k, v in slide_induction.items()}
         self.empty_prs = deepcopy(self.presentation)
         assert (
@@ -198,17 +220,20 @@ class PPTGen(ABC):
         Add functional layouts to the outline.
         """
         fixed_functional_slides = [
-            (FunctionalLayouts.TOC.value, 0),  # toc should be added before opening
+            (FunctionalLayouts.TOC.value, 0),  # toc should be inserted before opening
             (FunctionalLayouts.OPENING.value, 0),
             (FunctionalLayouts.ENDING.value, 999999),  # append to the end
         ]
         for title, pos in fixed_functional_slides:
-            layout = max(self.functional_keys, key=lambda x: edit_distance(x, title))
+            layout = max(
+                self.functional_layouts,
+                key=lambda x: edit_distance(x.lower(), title),
+            )
             if edit_distance(layout, title) > 0.7:
-                outline.insert(pos, OutlineItem(title, "Functional", {}))
+                outline.insert(pos, OutlineItem(title, "Functional", {}, []))
 
         section_outline = max(
-            self.functional_keys,
+            self.functional_layouts,
             key=lambda x: edit_distance(x, FunctionalLayouts.SECTION_OUTLINE.value),
         )
         if (
@@ -216,18 +241,23 @@ class PPTGen(ABC):
             > 0.7
         ):
             return outline
+        full_outline = []
         pre_section = None
-        for item in deepcopy(outline):
+        for item in outline:
             if item.section == "Functional":
+                full_outline.append(item)
                 continue
             if item.section != pre_section:
                 new_item = OutlineItem(
-                    f"Section Outline of {item.section}", "Functional", {}
+                    FunctionalLayouts.SECTION_OUTLINE.value,
+                    "Functional",
+                    item.section,
+                    [],
                 )
-                outline.insert(outline.index(item), new_item)
-            if item.section != pre_section:
-                pre_section = item.section
-        return outline
+                full_outline.append(new_item)
+            full_outline.append(item)
+            pre_section = item.section
+        return full_outline
 
     def _hide_small_pics(self, area_ratio: float, keep_in_background: bool):
         for layout in self.layouts.values():
@@ -250,7 +280,6 @@ class PPTGen(ABC):
                     layout.title,
                 )
                 layout.title = layout.title.replace(":image", ":text")
-                layout.elements = [el for el in layout.elements if el.el_type == "text"]
 
     def _fix_outline(
         self, outline: list[dict], source_doc: Document, turn_id: int, retry: int = 0
@@ -266,7 +295,10 @@ class PPTGen(ABC):
                 OutlineItem.from_dict(outline_item) for outline_item in outline
             ]
             for outline_item in outline_items:
-                source_doc.retrieve(outline_item.indexs)
+                outline_item.check_retrieve(source_doc, self.sim_bound)
+                outline_item.check_images(
+                    source_doc, self.text_embedder, self.sim_bound
+                )
             return outline_items
         except Exception as e:
             retry += 1
@@ -448,8 +480,14 @@ class PPTGenAsync(PPTGen):
             outline_items = [
                 OutlineItem.from_dict(outline_item) for outline_item in outline
             ]
-            for outline_item in outline_items:
-                source_doc.retrieve(outline_item.indexs)
+            async with asyncio.TaskGroup() as tg:
+                for outline_item in outline_items:
+                    outline_item.check_retrieve(source_doc, self.sim_bound)
+                    tg.create_task(
+                        outline_item.check_images_async(
+                            source_doc, self.text_embedder, self.sim_bound
+                        )
+                    )
             return outline_items
         except Exception as e:
             retry += 1
@@ -488,7 +526,27 @@ class PPTAgent(PPTGen):
         """
         Generate a slide from the outline item.
         """
-        layout, header, slide_content = self._select_layout(slide_idx, outline_item)
+        if outline_item.section == "Functional":
+            layout = self.layouts[
+                max(
+                    self.functional_layouts,
+                    key=lambda x: edit_distance(x, outline_item.purpose),
+                )
+            ]
+            slide_desc = FunctionalContent[outline_item.purpose]
+            if outline_item.purpose == FunctionalLayouts.SECTION_OUTLINE.value:
+                outline_item.purpose = f"Section Outline of {outline_item.indexs}"
+                outline_item.indexs = {}
+                slide_content = (
+                    "Overview of the Document:\n"
+                    + self.source_doc.get_overview(include_summary=True)
+                )
+            else:
+                slide_content = "This slide is a functional layout, please follow the slide description and content schema to generate the slide content."
+            header, _, _ = outline_item.retrieve(slide_idx, self.source_doc)
+            header += slide_desc
+        else:
+            layout, header, slide_content = self._select_layout(slide_idx, outline_item)
         command_list, template_id = self._generate_content(
             layout, slide_content, header
         )
@@ -554,14 +612,16 @@ class PPTAgent(PPTGen):
                 content_source=content_source
             )
         slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
+        layouts = self.text_layouts
         if len(images) > 0:
             slide_content += "\nImages:\n" + "\n".join(images)
+            layouts = self.multimodal_layouts
 
         _, layout_selection = self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
             slide_content=slide_content,
-            available_layouts=self.content_keys,
+            available_layouts=layouts,
         )
         layout = max(
             self.layouts.keys(),
@@ -715,19 +775,22 @@ class PPTAgentAsync(PPTGenAsync):
             if outline_item.section == "Functional":
                 layout = self.layouts[
                     max(
-                        self.functional_keys,
-                        key=lambda x: edit_distance(x, outline_item.purpose),
+                        self.functional_layouts,
+                        key=lambda x: edit_distance(x.lower(), outline_item.purpose),
                     )
                 ]
-
-                header, _, _ = outline_item.retrieve(slide_idx, self.source_doc)
+                slide_desc = FunctionalContent[outline_item.purpose]
                 if outline_item.purpose == FunctionalLayouts.SECTION_OUTLINE.value:
+                    outline_item.purpose = f"Section Outline of {outline_item.indexs}"
+                    outline_item.indexs = {}
                     slide_content = (
                         "Overview of the Document:\n"
                         + self.source_doc.get_overview(include_summary=True)
                     )
                 else:
-                    slide_content = ""
+                    slide_content = "This slide is a functional layout, please follow the slide description and content schema to generate the slide content."
+                header, _, _ = outline_item.retrieve(slide_idx, self.source_doc)
+                header += slide_desc
             else:
                 layout, header, slide_content = await self._select_layout(
                     slide_idx, outline_item
@@ -801,14 +864,16 @@ class PPTAgentAsync(PPTGenAsync):
                 content_source=content_source
             )
         slide_content = json.dumps(key_points, indent=2, ensure_ascii=False)
+        layouts = self.text_layouts
         if len(images) > 0:
             slide_content += "\nImages:\n" + "\n".join(images)
+            layouts = self.multimodal_layouts
 
         _, layout_selection = await self.staffs["layout_selector"](
             outline=self.simple_outline,
             slide_description=header,
             slide_content=slide_content,
-            available_layouts=self.content_keys,
+            available_layouts=layouts,
         )
         layout = max(
             self.layouts.keys(),

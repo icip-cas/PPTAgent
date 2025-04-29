@@ -4,7 +4,7 @@ template: |
 
   Requirements:
   1. Content Generation Rules:
-    - Follow default_quantity for elements, adjust when necessary, you can properly rewrite the content to fit the schema
+    - Follow default_quantity for elements, adjust when necessary and it is not 1, you can properly rewrite the content to fit the schema
     - Ensure text content meets character limits
     - Generated text should use concise and impactful presentation style
 
@@ -24,7 +24,7 @@ template: |
   }
 
   Input:
-  Outline:
+  Presentation Outline:
   {{outline}}
 
   Current Slide Description:

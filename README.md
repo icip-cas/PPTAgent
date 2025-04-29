@@ -92,13 +92,6 @@ The workflow of PPTEval is shown below:
 <img src="resource/fig3.jpg" alt="PPTEval Workflow" style="width:70%;"/>
 </p>
 
-## Contributing 🤝
-So you want to contribute? Yay! 🎉
-
-This project is actively maintained! We welcome:
-- Issues: Bug reports, feature requests, and questions
-- Pull Requests: Code improvements, documentation updates, and fixes
-- Discussions: Share your ideas and experiences
 
 ## Citation 🙏
 

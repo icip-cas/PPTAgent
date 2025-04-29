@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 from jinja2 import Environment, StrictUndefined
+from torch import cosine_similarity
 
 from pptagent.agent import Agent, AsyncAgent
 from pptagent.llms import LLM, AsyncLLM
@@ -384,48 +385,22 @@ class Document:
     def retrieve(
         self,
         indexs: dict[str, list[str]],
-        sim_bound: int = 0.7,
-        from_all: bool = True,
     ) -> list[SubSection]:
         assert isinstance(
             indexs, dict
         ), "subsection_keys for index must be a dict, follow a two-level structure"
         subsecs = []
         for sec_key, subsec_keys in indexs.items():
-            if sec_key in self:
-                section = self[sec_key]
-            else:
-                section = max(
-                    self.sections, key=lambda x: edit_distance(x.title, sec_key)
-                )
-                if edit_distance(section.title, sec_key) < sim_bound:
-                    logger.warning(
-                        f"section not found: {sec_key}, available sections: {[section.title for section in self.sections]}.",
-                    )
-                    raise ValueError(
-                        f"section not found: {sec_key}, available sections: {[section.title for section in self.sections]}."
-                    )
+            section = self[sec_key]
             for subsec_key in subsec_keys:
-                if subsec_key in section:
-                    retr = section[subsec_key]
-                else:
-                    retr = max(
-                        section.subsections,
-                        key=lambda x: edit_distance(x.title, subsec_key),
-                    )
-                    if edit_distance(retr.title, subsec_key) < sim_bound and from_all:
-                        retr = max(
-                            self.subsections,
-                            key=lambda x: edit_distance(x.title, subsec_key),
-                        )
-                    if edit_distance(retr.title, subsec_key) < sim_bound:
-                        raise ValueError(
-                            f"subsection not found: {subsec_key} in section {section.title}, available subsections: {[subsection.title for subsection in section.subsections]}."
-                        )
-
-                subsecs.append(retr)
-
+                subsecs.append(section[subsec_key])
         return subsecs
+
+    def find_caption(self, caption: str):
+        for media in self.iter_medias():
+            if media.caption == caption:
+                return media.path
+        raise ValueError(f"Image caption not found: {caption}")
 
     def get_overview(self, include_summary: bool = False):
         overview = ""
@@ -453,7 +428,8 @@ class Document:
 class OutlineItem:
     purpose: str
     section: str
-    indexs: dict[str, list[str]]
+    indexs: dict[str, list[str]] | str
+    images: list[str]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]):
@@ -464,6 +440,7 @@ class OutlineItem:
             purpose=data["purpose"],
             section=data["section"],
             indexs=data.get("indexs", {}),
+            images=data.get("images", []),
         )
 
     def retrieve(self, slide_idx: int, document: Document):
@@ -472,13 +449,86 @@ class OutlineItem:
         content = ""
         for subsection in subsections:
             content += f"Paragraph: {subsection.title}\nContent: {subsection.content}\n"
-        images = []
-        for sec_key in self.indexs:
-            for media in document[sec_key].iter_medias():
-                images.append(
-                    f"Image: {media.path}\nSize: {media.size}\nCaption: {media.caption}"
-                )
+        images = [
+            f"Image: {document.find_caption(caption)}\nCaption: {caption}"
+            for caption in self.images
+        ]
         return header, content, images
+
+    def check_retrieve(self, document: Document, sim_bound: float):
+        for sec_key, subsec_keys in list(self.indexs.items()):
+            section = max(
+                document.sections, key=lambda x: edit_distance(x.title, sec_key)
+            )
+            self.indexs[section.title] = self.indexs.pop(sec_key)
+            if edit_distance(section.title, sec_key) < sim_bound:
+                logger.warning(
+                    f"section not found: {sec_key}, available sections: {[section.title for section in self.sections]}.",
+                )
+                raise ValueError(
+                    f"section not found: {sec_key}, available sections: {[section.title for section in self.sections]}."
+                )
+            for idx in range(len(subsec_keys)):
+                subsection = max(
+                    section.subsections,
+                    key=lambda x: edit_distance(x.title, subsec_keys[idx]),
+                )
+                self.indexs[section.title][idx] = subsection.title
+                if edit_distance(subsection.title, subsec_keys[idx]) < sim_bound:
+                    raise ValueError(
+                        f"subsection {subsec_keys[idx]} not found in section {section.title}, available subsections: {[subsection.title for subsection in section.subsections]}."
+                    )
+
+    def check_images(self, document: Document, text_model: LLM, sim_bound: float):
+        doc_images = list(document.iter_medias())
+        image_embeddings = []
+        for idx, image in enumerate(self.images):
+            similar = max(doc_images, key=lambda x: edit_distance(x.caption, image))
+            if edit_distance(similar.caption, image) > sim_bound:
+                self.images[idx] = similar.caption
+                continue
+            if len(image_embeddings) == 0:
+                image_embeddings.extend(
+                    [text_model.get_embedding(image) for image in self.images]
+                )
+
+            embedding = text_model.get_embedding(image)
+            similar = max(
+                range(len(image_embeddings)),
+                key=lambda x: cosine_similarity(embedding, image_embeddings[x]),
+            )
+            if cosine_similarity(embedding, image_embeddings[similar]) > sim_bound:
+                self.images[idx] = doc_images[similar].caption
+            else:
+                logger.warning(
+                    f"image not found: {image}, available images: {[image.caption for image in doc_images]}.",
+                )
+                raise ValueError(
+                    f"image not found: {image}, available images: \n{[image.caption for image in doc_images]}\nPlease ensure the caption is exactly matched."
+                )
+
+    async def check_images_async(
+        self, document: Document, text_model: AsyncLLM, sim_bound: float
+    ):
+        doc_images = list(document.iter_medias())
+        image_embeddings = []
+        for idx, image in enumerate(self.images):
+            similar = max(doc_images, key=lambda x: edit_distance(x.caption, image))
+            if edit_distance(similar.caption, image) > sim_bound:
+                self.images[idx] = similar.caption
+                continue
+            if len(image_embeddings) == 0:
+                image_embeddings = await asyncio.gather(
+                    *[text_model.get_embedding(image) for image in self.images]
+                )
+
+            embedding = await text_model.get_embedding(image)
+            similar = max(
+                range(len(image_embeddings)),
+                key=lambda x: cosine_similarity(embedding, image_embeddings[x]),
+            )
+            if cosine_similarity(embedding, image_embeddings[similar]) > sim_bound:
+                self.images[idx] = doc_images[similar].caption
 
 
 def get_outlines_overview(outlines: list[OutlineItem]):
