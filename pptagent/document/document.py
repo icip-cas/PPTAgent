@@ -463,10 +463,10 @@ class OutlineItem:
             self.indexs[section.title] = self.indexs.pop(sec_key)
             if edit_distance(section.title, sec_key) < sim_bound:
                 logger.warning(
-                    f"section not found: {sec_key}, available sections: {[section.title for section in self.sections]}.",
+                    f"section not found: {sec_key}, available sections: {[section.title for section in document.sections]}.",
                 )
                 raise ValueError(
-                    f"section not found: {sec_key}, available sections: {[section.title for section in self.sections]}."
+                    f"section not found: {sec_key}, available sections: {[section.title for section in document.sections]}."
                 )
             for idx in range(len(subsec_keys)):
                 subsection = max(
@@ -529,17 +529,3 @@ class OutlineItem:
             )
             if cosine_similarity(embedding, image_embeddings[similar]) > sim_bound:
                 self.images[idx] = doc_images[similar].caption
-
-
-def get_outlines_overview(outlines: list[OutlineItem]):
-    overview = ""
-    presection = None
-    for idx, item in enumerate(outlines):
-        if item.section == "Functional":
-            overview += f"slide {idx+1}: {item.purpose}\n"
-            continue
-        if item.section != presection:
-            overview += f"Section: {item.section}\n"
-            presection = item.section
-        overview += f"\tslide {idx+1}: {item.purpose}\n"
-    return overview

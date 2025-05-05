@@ -1,4 +1,4 @@
-from .document import Document, OutlineItem, get_outlines_overview
+from .document import Document, OutlineItem
 from .element import Media, Section, SubSection, Table
 
 __all__ = [
@@ -8,5 +8,4 @@ __all__ = [
     "Section",
     "SubSection",
     "Table",
-    "get_outlines_overview",
 ]

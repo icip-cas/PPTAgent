@@ -471,8 +471,8 @@ def replace_image(slide: SlidePage, doc: Document, img_id: int, image_path: str)
 
     img_size = PIL.Image.open(image_path).size
     r = min(shape.width / img_size[0], shape.height / img_size[1])
-    new_width = int(img_size[0] * r)
-    new_height = int(img_size[1] * r)
+    new_width = img_size[0] * r
+    new_height = img_size[1] * r
     shape.top = Pt(shape.top + (shape.height - new_height) / 2)
     shape.width = Pt(new_width)
     shape.height = Pt(new_height)

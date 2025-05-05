@@ -9,7 +9,7 @@ template: |
 
   For each slide, provide:
     - Slide Purpose: Give an abstract of what the slide is about. Do not include excessive information (e.g. a slide can only present one image) and this should be related to the index and images you have selected.
-    - Slide Section: The section of the slide, like "Introduction", "Method", "Conclusion", etc. You should use the language same as the document overview.
+    - Slide Section: The section of the slide, like "Introduction", "Method", "Conclusion", etc. It must be the same as the document overview, and without numbering (e.g. "Introduction" instead of "1. Introduction").
     - Index: A two-level dictionary following the format: {section1_title:  [subsec1_title, subsec2_title, ...]}}. Use exact section and subsection titles as they appear without any modification or formatting, e.g., "1. Introduction" instead of "Introduction", "2  Method" instead of "2 Method".
     - Images: A list of images that are related to the slide, select the most relevant images from the document overview, each image should be a string exactly matching the caption of the image.
 

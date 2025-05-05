@@ -9,7 +9,7 @@ from typing import Optional
 
 from pptagent.agent import Agent
 from pptagent.apis import API_TYPES, CodeExecutor
-from pptagent.document import Document, OutlineItem, get_outlines_overview
+from pptagent.document import Document, OutlineItem
 from pptagent.llms import LLM, AsyncLLM
 from pptagent.presentation import Layout, Picture, Presentation, SlidePage, StyleArg
 from pptagent.utils import Config, edit_distance, get_logger, tenacity_decorator
@@ -29,7 +29,7 @@ class FunctionalLayouts(Enum):
 
 FunctionalContent = {
     FunctionalLayouts.OPENING.value: "This slide is a presentation opening, presenting available meta information, like title, author, date, etc.",
-    FunctionalLayouts.TOC.value: "This slide is the Table of Contents, outlining the presentation's sections (rather than slides) based on the previously provided outline. Please ensure *all section titles are included and consistently formatted*, for example, by either numbering all section titles uniformly or using no numbering.",
+    FunctionalLayouts.TOC.value: "This slide is the Table of Contents, outlining the presentation's sections. Please use the given Table of Contents, and remove numbering to generate the slide content.",
     FunctionalLayouts.SECTION_OUTLINE.value: "This slide is a section start , briefly presenting the section title, and optionally the section summary.",
     FunctionalLayouts.ENDING.value: "This slide is an *ending slide*, simply express your gratitude like 'Thank you!' or '谢谢' as the main title and *do not* include other meta information if not specified.",
 }
@@ -136,7 +136,12 @@ class PPTGen(ABC):
             self.outline = self.generate_outline(num_slides, source_doc)
         else:
             self.outline = outline
-        self.simple_outline = get_outlines_overview(self.outline)
+        self.simple_outline = "\n".join(
+            [
+                f"Slide {slide_idx+1}: {item.purpose}"
+                for slide_idx, item in enumerate(self.outline)
+            ]
+        )
         generated_slides = []
         code_executors = []
         for slide_idx, outline_item in enumerate(self.outline):
@@ -219,6 +224,12 @@ class PPTGen(ABC):
         """
         Add functional layouts to the outline.
         """
+        toc = []
+        for item in outline:
+            if item.section not in toc and item.section != "Functional":
+                toc.append(item.section)
+        self.toc = "\n".join(toc)
+
         fixed_functional_slides = [
             (FunctionalLayouts.TOC.value, 0),  # toc should be inserted before opening
             (FunctionalLayouts.OPENING.value, 0),
@@ -390,7 +401,12 @@ class PPTGenAsync(PPTGen):
             self.outline = await self.generate_outline(num_slides, source_doc)
         else:
             self.outline = outline
-        self.simple_outline = get_outlines_overview(self.outline)
+        self.simple_outline = "\n".join(
+            [
+                f"Slide {slide_idx+1}: {item.purpose}"
+                for slide_idx, item in enumerate(self.outline)
+            ]
+        )
 
         slide_tasks = []
         for slide_idx, outline_item in enumerate(self.outline):
@@ -541,6 +557,8 @@ class PPTAgent(PPTGen):
                     "Overview of the Document:\n"
                     + self.source_doc.get_overview(include_summary=True)
                 )
+            elif outline_item.purpose == FunctionalLayouts.TOC.value:
+                slide_content = "Table of Contents:\n" + self.toc
             else:
                 slide_content = "This slide is a functional layout, please follow the slide description and content schema to generate the slide content."
             header, _, _ = outline_item.retrieve(slide_idx, self.source_doc)
@@ -771,30 +789,32 @@ class PPTAgentAsync(PPTGenAsync):
         """
         Asynchronously generate a slide from the outline item.
         """
-        try:
-            if outline_item.section == "Functional":
-                layout = self.layouts[
-                    max(
-                        self.functional_layouts,
-                        key=lambda x: edit_distance(x.lower(), outline_item.purpose),
-                    )
-                ]
-                slide_desc = FunctionalContent[outline_item.purpose]
-                if outline_item.purpose == FunctionalLayouts.SECTION_OUTLINE.value:
-                    outline_item.purpose = f"Section Outline of {outline_item.indexs}"
-                    outline_item.indexs = {}
-                    slide_content = (
-                        "Overview of the Document:\n"
-                        + self.source_doc.get_overview(include_summary=True)
-                    )
-                else:
-                    slide_content = "This slide is a functional layout, please follow the slide description and content schema to generate the slide content."
-                header, _, _ = outline_item.retrieve(slide_idx, self.source_doc)
-                header += slide_desc
-            else:
-                layout, header, slide_content = await self._select_layout(
-                    slide_idx, outline_item
+        if outline_item.section == "Functional":
+            layout = self.layouts[
+                max(
+                    self.functional_layouts,
+                    key=lambda x: edit_distance(x.lower(), outline_item.purpose),
                 )
+            ]
+            slide_desc = FunctionalContent[outline_item.purpose]
+            if outline_item.purpose == FunctionalLayouts.SECTION_OUTLINE.value:
+                outline_item.purpose = f"Section Outline of {outline_item.indexs}"
+                outline_item.indexs = {}
+                slide_content = (
+                    "Overview of the Document:\n"
+                    + self.source_doc.get_overview(include_summary=True)
+                )
+            elif outline_item.purpose == FunctionalLayouts.TOC.value:
+                slide_content = "Table of Contents:\n" + self.toc
+            else:
+                slide_content = "This slide is a functional layout, please follow the slide description and content schema to generate the slide content."
+            header, _, _ = outline_item.retrieve(slide_idx, self.source_doc)
+            header += slide_desc
+        else:
+            layout, header, slide_content = await self._select_layout(
+                slide_idx, outline_item
+            )
+        try:
             command_list, template_id = await self._generate_content(
                 layout, slide_content, header
             )
