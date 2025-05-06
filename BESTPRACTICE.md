@@ -6,6 +6,7 @@ However, the complexity of real-world slides may affect its applicability and th
 
 This document details, from three aspects: **[Parsing Limitations](#1-parsing-limitations-)**, **[Reference Slide Design Guidelines](#2-reference-slide-design-guidelines-)**, and **[Parameter Settings](#3-parameter-settings-and-parsing-)**, how to provide high-quality reference slides to maximize PPTAgent's generation effectiveness.
 
+Lastly, we recommend using documents such as academic papers that contain rich images. This is because our rag mechanism is simplistic and does not include retrieval from the network.
 -----
 
 ## 1\. Parsing Limitations 👿

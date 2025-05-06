@@ -11,17 +11,17 @@ Table of Contents
 =================
 - [Table of Contents](#table-of-contents)
   - [Quick Start 🚀](#quick-start-)
-    - [Recommendations and Requirements ⚙️](#recommendations-and-requirements-)
+    - [Recommendations and Requirements 🔬](#recommendations-and-requirements-)
     - [Docker 🐳](#docker-)
-    - [Running Locally 🛠](#running-locally-)
+    - [Running Locally 💻](#running-locally-)
       - [Installation Guide](#installation-guide)
       - [Usage](#usage)
         - [Generate Via WebUI](#generate-via-webui)
         - [Generate Via Code](#generate-via-code)
   - [Project Structure 📂](#project-structure-)
   - [Further Step ☝️](#further-step-️)
-    - [Improving generation quality 💪](#improving-generation-quality-)
-    - [Contributing 🤝](#contributing-)
+    - [Best Practice 💪](#best-practice-)
+    - [Contributing 💛](#contributing-)
     - [Experimental Reproduction 🧪](#experimental-reproduction-)
 
 ## Quick Start 🚀
@@ -31,7 +31,7 @@ For a quick test, use the example in `runs/pdf(pptx)/*/source.pdf(pptx)` to save
 > [!NOTE]
 > When using a remote server, ensure both ports `8088` and `9297` are forwarded.
 
-### Recommendations and Requirements ⚙️
+### Recommendations and Requirements 🔬
 
 <table>
   <thead>
@@ -43,10 +43,13 @@ For a quick test, use the example in `runs/pdf(pptx)/*/source.pdf(pptx)` to save
   <tbody>
     <tr>
       <td rowspan="2"><b>LLM Recommendations</b></td>
-      <td>Language Model: 70B+ non-reasoning model (Qwen2.5-72B-Instruct), for generation tasks.</td>
+      <td>Language Model: 70B+ parameters (Qwen2.5-72B-Instruct, reasoning models are not recommended), for generation tasks.</td>
     </tr>
     <tr>
-      <td>Vision Model: 7B+ parameters (Qwen2-VL-7B-Instruct), for captioning tasks.</td>
+      <td>Vision Model: 7B+ parameters (Qwen2-VL-7B-Instruct), for visual tasks.</td>
+    </tr>
+    <tr>
+      <td>Text Embedding Model: 7B+ parameters (text-embedding-3-small/bge-m3), for text embedding tasks.</td>
     </tr>
     <tr>
       <td rowspan="3"><b>System Requirements</b></td>
@@ -87,7 +90,7 @@ See docker log for more running details:
 docker logs -f pptagent
 ```
 
-### Running Locally 🛠
+### Running Locally 💻
 
 #### Installation Guide
 
@@ -155,10 +158,12 @@ PPTAgent/
 
 ## Further Step ☝️
 
-### Improving generation quality 💪
+### Best Practice 💪
+
 See [BESTPRACTICE.md](BESTPRACTICE.md) for more details.
 
-### Contributing 🤝
+### Contributing 💛
+
 So you want to contribute? Yay!
 
 This project is actively maintained! We welcome:
@@ -167,4 +172,5 @@ This project is actively maintained! We welcome:
 - Discussions: Share your ideas and experiences
 
 ### Experimental Reproduction 🧪
+
 See [experiment](https://github.com/icip-cas/PPTAgent/tree/experiment) branch for reproducing experiments and evaluation results.
