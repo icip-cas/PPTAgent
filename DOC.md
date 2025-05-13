@@ -49,7 +49,7 @@ For a quick test, use the example in `runs/pdf(pptx)/*/source.pdf(pptx)` to save
       <td>Vision Model: 7B+ parameters (Qwen2-VL-7B-Instruct)</td>
     </tr>
     <tr>
-      <td>Text Embedding Model: 7B+ parameters (text-embedding-3-small/bge-m3)</td>
+      <td>Text Embedding Model: text-embedding-3-small/bge-m3 or other models</td>
     </tr>
     <tr>
       <td rowspan="3"><b>System Requirements</b></td>
