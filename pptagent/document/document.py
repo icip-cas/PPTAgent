@@ -496,6 +496,8 @@ class OutlineItem:
         doc_images = list(document.iter_medias())
         image_embeddings = []
         for idx, image in enumerate(self.images):
+            if len(doc_images) == 0:
+                raise ValueError("Document does not contain any images.")
             similar = max(doc_images, key=lambda x: edit_distance(x.caption, image))
             if edit_distance(similar.caption, image) > sim_bound:
                 self.images[idx] = similar.caption
@@ -526,6 +528,8 @@ class OutlineItem:
         doc_images = list(document.iter_medias())
         image_embeddings = []
         for idx, image in enumerate(self.images):
+            if len(doc_images) == 0:
+                raise ValueError("Document does not contain any images.")
             similar = max(doc_images, key=lambda x: edit_distance(x.caption, image))
             if edit_distance(similar.caption, image) > sim_bound:
                 self.images[idx] = similar.caption
