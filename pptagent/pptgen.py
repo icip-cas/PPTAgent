@@ -506,7 +506,6 @@ class PPTAgent(PPTGen):
     roles: list[str] = [
         "editor",
         "coder",
-        "copilot",
         "content_organizer",
         "layout_selector",
     ]
@@ -711,7 +710,6 @@ class PPTAgentAsync(PPTGenAsync):
     roles: list[str] = [
         "editor",
         "coder",
-        "copilot",
         "content_organizer",
         "layout_selector",
     ]
