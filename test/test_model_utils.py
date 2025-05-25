@@ -1,4 +1,5 @@
-from os.path import join as pjoin, isfile
+from os.path import isfile
+from os.path import join as pjoin
 from test.conftest import test_config
 
 import pytest
@@ -19,5 +20,8 @@ def test_prs_dedup():
 
 @pytest.mark.llm
 def test_parse_pdf():
-    parse_pdf(pjoin(test_config.template, "source.pdf"), pjoin(test_config.template, "pdf_out"))
+    parse_pdf(
+        pjoin(test_config.template, "source.pdf"),
+        pjoin(test_config.template, "pdf_out"),
+    )
     assert isfile(pjoin(test_config.template, "pdf_out", "source.md"))

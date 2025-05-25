@@ -20,6 +20,7 @@ from pptagent.utils import get_logger, is_image_path, pjoin
 logger = get_logger(__name__)
 mineru_api = os.environ.get("MINERU_API", None)
 
+
 class ModelManager:
     """
     A class to manage models.
@@ -136,28 +137,25 @@ async def parse_pdf(pdf_path: str, output_path: str):
     os.makedirs(output_path, exist_ok=True)
     async with aiofiles.open(pdf_path, "rb") as f:
         pdf_data = await f.read()
-        
+
     async with aiohttp.ClientSession() as session:
         form_data = aiohttp.FormData()
         form_data.add_field(
             name="pdf",
             value=pdf_data,
             filename=os.path.basename(pdf_path),
-            content_type="application/pdf"
+            content_type="application/pdf",
         )
 
         async with session.post(mineru_api, data=form_data) as response:
             if response.status != 200:
                 raise Exception(f"HTTP Error: {response.status}")
-            
+
             zip_data = await response.read()
-            
+
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(
-        None,
-        lambda: extract_zip(zip_data, output_path)
-    )
-    
+    await loop.run_in_executor(None, lambda: extract_zip(zip_data, output_path))
+
     def extract_zip(zip_content, output_path):
         with zipfile.ZipFile(BytesIO(zip_content)) as zip_ref:
             zip_ref.extractall(output_path)
