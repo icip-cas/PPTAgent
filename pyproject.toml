@@ -57,6 +57,8 @@ dependencies = [
     "timm",
     "transformers<4.50.0",
     "uvicorn",
+    "aiofiles",
+    "aiohttp",
 ]
 
 [project.urls]
