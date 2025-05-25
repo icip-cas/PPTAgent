@@ -1,11 +1,13 @@
+import asyncio
 import os
 import zipfile
 from copy import deepcopy
 from io import BytesIO
 from typing import Optional
 
+import aiofiles
+import aiohttp
 import numpy as np
-import requests
 import torch
 import torchvision.transforms as T
 from PIL import Image
@@ -16,7 +18,7 @@ from pptagent.presentation import Presentation, SlidePage
 from pptagent.utils import get_logger, is_image_path, pjoin
 
 logger = get_logger(__name__)
-
+mineru_api = os.environ.get("MINERU_API", None)
 
 class ModelManager:
     """
@@ -29,7 +31,6 @@ class ModelManager:
         language_model_name: Optional[str] = None,
         vision_model_name: Optional[str] = None,
         text_model_name: Optional[str] = None,
-        mineru_model_api: Optional[str] = None,
     ):
         """Initialize models from environment variables after instance creation"""
         if api_base is None:
@@ -46,11 +47,6 @@ class ModelManager:
         self.language_model = AsyncLLM(language_model_name, api_base)
         self.vision_model = AsyncLLM(vision_model_name, api_base)
         self.text_model = AsyncLLM(text_model_name, api_base)
-        self.mineru_model_api = (
-            mineru_model_api
-            if mineru_model_api
-            else os.environ.get("MINERU_API_BASE", None)
-        )
 
     @property
     def image_model(self):
@@ -71,14 +67,6 @@ class ModelManager:
         except:
             return False
         return True
-
-    async def test_parse_pdf(self) -> bool:
-        try:
-            # only test parse_pdf service is accessible
-            _ = requests.get(self.mineru_model_api, timeout=5)
-            return True
-        except requests.exceptions.RequestException:
-            return False
 
 
 def prs_dedup(
@@ -137,24 +125,42 @@ def get_image_model(device: str = None):
     )
 
 
-def parse_pdf(pdf_path: str, output_path: str, mineru_model_api: str):
+async def parse_pdf(pdf_path: str, output_path: str):
     """
     Parse a PDF file and extract text and images.
 
     Args:
         pdf_path (str): The path to the PDF file.
         output_path (str): The directory to save the extracted content.
-        mineru_model_api (str): MinerU model api url.
-
-    Returns:
-        void: just put parsed file in output_path, need caller self to read
     """
     os.makedirs(output_path, exist_ok=True)
-    with open(pdf_path, "rb") as pdf_file:
-        response = requests.post(f"{mineru_model_api}", files={"pdf": pdf_file})
-    response.raise_for_status()
-    with zipfile.ZipFile(BytesIO(response.content)) as zip_ref:
-        zip_ref.extractall(output_path)
+    async with aiofiles.open(pdf_path, "rb") as f:
+        pdf_data = await f.read()
+        
+    async with aiohttp.ClientSession() as session:
+        form_data = aiohttp.FormData()
+        form_data.add_field(
+            name="pdf",
+            value=pdf_data,
+            filename=os.path.basename(pdf_path),
+            content_type="application/pdf"
+        )
+
+        async with session.post(mineru_api, data=form_data) as response:
+            if response.status != 200:
+                raise Exception(f"HTTP Error: {response.status}")
+            
+            zip_data = await response.read()
+            
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        None,
+        lambda: extract_zip(zip_data, output_path)
+    )
+    
+    def extract_zip(zip_content, output_path):
+        with zipfile.ZipFile(BytesIO(zip_content)) as zip_ref:
+            zip_ref.extractall(output_path)
 
 
 def get_image_embedding(
