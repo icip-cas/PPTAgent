@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/icip-cas-pptagent-badge.png)](https://mseep.ai/app/icip-cas-pptagent)
+
 
 <div align="right">
   <details>
