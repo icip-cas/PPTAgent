@@ -6,14 +6,14 @@ repos:
       -   id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.3
+    rev: v0.14.0
     hooks:
       - id: ruff-check
         args: [ "--select", "I", "--fix" ]
       - id: ruff-format
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.0
     hooks:
       - id: pyupgrade
         args: [--py311-plus]
