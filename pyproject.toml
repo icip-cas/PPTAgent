@@ -72,6 +72,9 @@ full = ["transformers<4.50.0", "fasttext", "einops", "peft", "huggingface_hub", 
 [project.scripts]
 pptagent-mcp = "pptagent.mcp_server:main"
 
+[tool.uv.sources]
+python-pptx = { git = "https://github.com/Force1ess/python-pptx", rev = "219513d7d81a61961fc541578c1857d08b43aa2a" }
+
 [tool.setuptools]
 include-package-data = true
 
