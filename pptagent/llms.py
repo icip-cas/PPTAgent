@@ -374,14 +374,24 @@ class AsyncLLM(LLM):
         """
         try:
             models = await self.client.models.list()
-            return any(model.id == self.model for model in models.data)
+            # Check if the model exists in the list
+            model_found = any(model.id == self.model for model in models.data)
+            if not model_found and models.data:
+                # Log available models for debugging (first 5)
+                available = [m.id for m in models.data[:5]]
+                logger.debug(
+                    "Model '%s' not found. Available models (first 5): %s",
+                    self.model,
+                    available,
+                )
+            return model_found
         except Exception as e:
             logger.warning(
-                "Async connection test failed: %s\nLLM: %s: %s, %s",
-                e,
+                "Async connection test failed: %s\nLLM: %s: %s, API key: %s",
+                str(e),
                 self.model,
                 self.base_url,
-                self.api_key,
+                "SET" if self.api_key else "NOT SET",
             )
             return False
 

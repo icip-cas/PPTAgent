@@ -50,6 +50,7 @@ dependencies = [
     "pillow",
     "pydantic>=2.10.0",
     "PyYAML",
+    "python-dotenv",
     "python-Levenshtein",
     "python-multipart",
     "pptagent-pptx>=0.0.1",

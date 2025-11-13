@@ -8,6 +8,13 @@ import aiofiles
 import aiohttp
 from PIL import Image
 
+# Try to load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from pptagent.llms import AsyncLLM
 from pptagent.utils import (
     Language,
@@ -65,16 +72,46 @@ class ModelManager:
         vision_model_name: str | None = None,
     ):
         """Initialize models from environment variables after instance creation"""
+        # Check for OpenRouter API key
+        openrouter_api_key = os.environ.get("OPEN_ROUTER_API_KEY", None)
+        openai_api_key = os.environ.get("OPENAI_API_KEY", None)
+        
+        # Determine API base URL and key
         if api_base is None:
-            api_base = os.environ.get("API_BASE", None)
+            if openrouter_api_key:
+                # Use OpenRouter if API key is provided
+                api_base = os.environ.get("API_BASE", "https://openrouter.ai/api/v1")
+                api_key = openrouter_api_key
+                logger.info("Using OpenRouter API")
+            else:
+                # Fall back to OpenAI or custom API_BASE
+                api_base = os.environ.get("API_BASE", None)
+                api_key = openai_api_key
+        else:
+            # If api_base is explicitly provided, use it
+            api_key = openrouter_api_key if openrouter_api_key else openai_api_key
+        
         if language_model_name is None:
-            language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4.1")
+            # Default to OpenRouter format if using OpenRouter, otherwise OpenAI format
+            # Note: Must use a model that supports structured outputs (json_schema)
+            # Supported models: gpt-4o, gpt-4-turbo, gpt-3.5-turbo-1106+
+            if openrouter_api_key:
+                language_model_name = os.environ.get("LANGUAGE_MODEL", "openai/gpt-4o")
+            else:
+                language_model_name = os.environ.get("LANGUAGE_MODEL", "gpt-4.1")
         if vision_model_name is None:
-            vision_model_name = os.environ.get("VISION_MODEL", "gpt-4.1")
+            # Default to OpenRouter format if using OpenRouter, otherwise OpenAI format
+            # Vision models are used for analyzing images, slides, and visual content
+            if openrouter_api_key:
+                # Use GPT-4o which has vision capabilities, or fallback to language model
+                vision_model_name = os.environ.get("VISION_MODEL", "openai/gpt-4o")
+            else:
+                vision_model_name = os.environ.get("VISION_MODEL", "gpt-4.1")
         self._image_model = None
 
-        self.language_model = AsyncLLM(language_model_name, api_base)
-        self.vision_model = AsyncLLM(vision_model_name, api_base)
+        # Initialize models with API key
+        self.language_model = AsyncLLM(language_model_name, api_base, api_key)
+        self.vision_model = AsyncLLM(vision_model_name, api_base, api_key)
 
     @property
     def image_model(self):
