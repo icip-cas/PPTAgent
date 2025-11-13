@@ -3,14 +3,16 @@
 PPTAgent uses **vision models** (multimodal LLMs that can understand images) for several critical tasks:
 
 ## 1. **Image Captioning** 📸
+
 - **Purpose**: Generate descriptions of images found in presentations and documents
 - **Location**: `pptagent/multimodal.py`, `pptagent/document/element.py`
-- **What it does**: 
+- **What it does**:
   - Analyzes images in slides and generates captions
   - Classifies images as: Table, Chart, Diagram, Banner, Background, Icon, Logo, or Picture
   - Helps the system understand what visual content is present
 
 ## 2. **Slide Layout Analysis** 🎨
+
 - **Purpose**: Understand the visual structure and layout of presentation slides
 - **Location**: `pptagent/induct.py`
 - **What it does**:
@@ -20,6 +22,7 @@ PPTAgent uses **vision models** (multimodal LLMs that can understand images) for
   - Extracts layout patterns from reference presentations
 
 ## 3. **Presentation Evaluation** ⚖️
+
 - **Purpose**: Evaluate the visual design and style quality of generated presentations
 - **Location**: `pptagent/ppteval.py`
 - **What it does**:
@@ -28,6 +31,7 @@ PPTAgent uses **vision models** (multimodal LLMs that can understand images) for
   - Provides feedback on design consistency
 
 ## 4. **Document Image Processing** 📄
+
 - **Purpose**: Process images found in source documents (PDFs)
 - **Location**: `pptagent/document/element.py`
 - **What it does**:
@@ -37,6 +41,7 @@ PPTAgent uses **vision models** (multimodal LLMs that can understand images) for
 ## Why Separate Vision Models?
 
 While some models (like GPT-4o) can handle both text and vision, using a dedicated vision model can:
+
 - **Better performance**: Specialized vision models may be more accurate for image analysis
 - **Cost optimization**: Some vision models are cheaper for image tasks
 - **Flexibility**: You can use different models optimized for different tasks
@@ -48,7 +53,7 @@ While some models (like GPT-4o) can handle both text and vision, using a dedicat
 - **`google/gemini-pro-vision`** - Google's vision model
 
 You can set a custom vision model in your `.env` file:
+
 ```bash
 VISION_MODEL=openai/gpt-4o
 ```
-
