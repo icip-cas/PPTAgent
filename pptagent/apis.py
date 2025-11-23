@@ -1,3 +1,4 @@
+import ast
 import inspect
 import re
 import traceback
@@ -77,7 +78,145 @@ class CodeExecutor:
         self.code_history = []
         self.retry_times = retry_times
         self.registered_functions = API_TYPES.all_funcs()
-        self.function_regex = re.compile(r"^[a-z]+_[a-z_]+\(.+\)")
+        self.function_regex = re.compile(r"^[a-z]+_[a-z0-9_]*\s*\([^\n]*\)\s*$")
+
+    @staticmethod
+    def _literal_eval_node(node: ast.AST):
+        """Safely evaluate a literal AST node.
+
+        Only literal data structures are supported to avoid arbitrary
+        code execution during action parsing.
+        """
+
+        def _is_safe_literal(value: ast.AST) -> bool:
+            if isinstance(value, ast.Constant):
+                return True
+            if isinstance(value, ast.UnaryOp) and isinstance(
+                value.op, (ast.UAdd, ast.USub)
+            ):
+                return _is_safe_literal(value.operand)
+            if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+                return all(_is_safe_literal(element) for element in value.elts)
+            if isinstance(value, ast.Dict):
+                return all(
+                    _is_safe_literal(key) and _is_safe_literal(val)
+                    for key, val in zip(value.keys, value.values)
+                )
+            return False
+
+        if not _is_safe_literal(node):
+            raise SlideEditError(
+                "Only literal values are supported in API calls to prevent code injection."
+            )
+
+        return ast.literal_eval(node)
+
+    def _parse_action_call(self, line: str) -> tuple[str, list, dict]:
+        """Parse and validate an action call expression.
+
+        Args:
+            line: Raw action string like "replace_paragraph(1, 2, 'text')".
+
+        Returns:
+            A tuple of function name, positional arguments list, and keyword arguments dict.
+
+        Raises:
+            SlideEditError if the expression is unsafe or malformed.
+        """
+
+        try:
+            expression = ast.parse(line, mode="eval")
+        except SyntaxError as exc:  # pragma: no cover - malformed actions
+            raise SlideEditError(f"Invalid action syntax: {line}") from exc
+
+        if not isinstance(expression.body, ast.Call) or not isinstance(
+            expression.body.func, ast.Name
+        ):
+            raise SlideEditError(
+                "Only direct function calls are allowed in action blocks."
+            )
+
+        func_name = expression.body.func.id
+        args = [self._literal_eval_node(arg) for arg in expression.body.args]
+
+        kwargs = {}
+        for kw in expression.body.keywords:
+            if kw.arg is None:
+                raise SlideEditError(
+                    "Keyword argument unpacking is not allowed in API calls."
+                )
+            kwargs[kw.arg] = self._literal_eval_node(kw.value)
+
+        return func_name, args, kwargs
+
+    @staticmethod
+    def _literal_eval_node(node: ast.AST):
+        """Safely evaluate a literal AST node.
+
+        Only literal data structures are supported to avoid arbitrary
+        code execution during action parsing.
+        """
+
+        def _is_safe_literal(value: ast.AST) -> bool:
+            if isinstance(value, ast.Constant):
+                return True
+            if isinstance(value, ast.UnaryOp) and isinstance(
+                value.op, (ast.UAdd, ast.USub)
+            ):
+                return _is_safe_literal(value.operand)
+            if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+                return all(_is_safe_literal(element) for element in value.elts)
+            if isinstance(value, ast.Dict):
+                return all(
+                    _is_safe_literal(key) and _is_safe_literal(val)
+                    for key, val in zip(value.keys, value.values)
+                )
+            return False
+
+        if not _is_safe_literal(node):
+            raise SlideEditError(
+                "Only literal values are supported in API calls to prevent code injection."
+            )
+
+        return ast.literal_eval(node)
+
+    def _parse_action_call(self, line: str) -> tuple[str, list, dict]:
+        """Parse and validate an action call expression.
+
+        Args:
+            line: Raw action string like "replace_paragraph(1, 2, 'text')".
+
+        Returns:
+            A tuple of function name, positional arguments list, and keyword arguments dict.
+
+        Raises:
+            SlideEditError if the expression is unsafe or malformed.
+        """
+
+        try:
+            expression = ast.parse(line, mode="eval")
+        except SyntaxError as exc:  # pragma: no cover - malformed actions
+            raise SlideEditError(f"Invalid action syntax: {line}") from exc
+
+        if not isinstance(expression.body, ast.Call) or not isinstance(
+            expression.body.func, ast.Name
+        ):
+            raise SlideEditError(
+                "Only direct function calls are allowed in action blocks."
+            )
+
+        func_name = expression.body.func.id
+        args = [self._literal_eval_node(arg) for arg in expression.body.args]
+
+        kwargs = {}
+        for kw in expression.body.keywords:
+            if kw.arg is None:
+                raise SlideEditError(
+                    "Keyword argument unpacking is not allowed in API calls."
+                )
+            kwargs[kw.arg] = self._literal_eval_node(kw.value)
+
+        return func_name, args, kwargs
 
     @classmethod
     def get_apis_docs(
@@ -162,7 +301,7 @@ class CodeExecutor:
                 if not self.function_regex.match(line):
                     continue
                 found_code = True
-                func = line.split("(")[0]
+                func, args, kwargs = self._parse_action_call(line)
                 if func not in self.registered_functions:
                     raise SlideEditError(f"The function {func} is not defined.")
                 # only one of clone and del can be used in a row
@@ -182,7 +321,7 @@ class CodeExecutor:
                 partial_func = partial(self.registered_functions[func], edit_slide)
                 if func == "replace_image":
                     partial_func = partial(partial_func, doc)
-                eval(line, {}, {func: partial_func})
+                partial_func(*args, **kwargs)
                 self.code_history[-1][0] = HistoryMark.CODE_RUN_CORRECT
             except Exception as e:
                 if not isinstance(e, SlideEditError):
