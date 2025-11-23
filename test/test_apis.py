@@ -1,9 +1,11 @@
+import pytest
 from bs4 import BeautifulSoup
 from pptagent_pptx import Presentation
 
 from pptagent.apis import (
     API_TYPES,
     CodeExecutor,
+    SlideEditError,
     markdown,
     process_element,
     replace_para,
@@ -15,6 +17,31 @@ def test_api_docs():
     executor = CodeExecutor(3)
     docs = executor.get_apis_docs(API_TYPES.Agent.value)
     assert len(docs) > 0
+
+
+def test_parse_action_allows_only_literals_and_names():
+    executor = CodeExecutor(1)
+    func, args, kwargs = executor._parse_action_call(
+        "replace_paragraph(1, 2, 'text', style='plain')"
+    )
+
+    assert func == "replace_paragraph"
+    assert args == [1, 2, "text"]
+    assert kwargs == {"style": "plain"}
+
+
+def test_parse_action_rejects_attribute_and_calls():
+    executor = CodeExecutor(1)
+
+    with pytest.raises(SlideEditError):
+        executor._parse_action_call("os.system('ls')")
+
+
+def test_parse_action_rejects_non_literal_arguments():
+    executor = CodeExecutor(1)
+
+    with pytest.raises(SlideEditError):
+        executor._parse_action_call("replace_paragraph(1, [x for x in range(2)], 'a')")
 
 
 def test_replace_para():
