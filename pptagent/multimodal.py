@@ -39,7 +39,11 @@ class ImageLabler:
         for slide in self.presentation.slides:
             for shape in slide.shape_filter(Picture):
                 if shape.caption is None:
-                    caption = image_stats[basename(shape.img_path)]["caption"]
+                    name = basename(shape.img_path)
+                    # Skip placeholder or images without stats (e.g., templates with pic_placeholder.png)
+                    if name == "pic_placeholder.png" or name not in image_stats:
+                        continue
+                    caption = image_stats[name]["caption"]
                     shape.caption = max(caption.split("\n"), key=len)
 
     async def caption_images_async(self, vision_model: AsyncLLM):
