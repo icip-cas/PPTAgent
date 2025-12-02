@@ -330,7 +330,9 @@ class PPTGen(ABC):
                     father.shapes.remove(pic)
                     if keep_in_background:
                         template_slide.backgrounds.append(pic)
-                    layout.remove_item(pic.caption)
+                    # Only remove caption if it exists
+                    if pic.caption is not None:
+                        layout.remove_item(pic.caption)
 
             if len(list(template_slide.shape_filter(Picture))) == 0:
                 logger.debug(

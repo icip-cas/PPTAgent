@@ -189,7 +189,7 @@ class SlideInducter:
             slide: SlidePage = self.prs.slides[cluster["template_id"] - 1]
 
             contents = [para.text for para in slide.iter_paragraphs()] + [
-                shape.caption for shape in slide.shape_filter(Picture)
+                shape.caption for shape in slide.shape_filter(Picture) if shape.caption is not None
             ]
             partial_funcs.append(
                 partial(

@@ -970,19 +970,14 @@ class Picture(ShapeElement):
 
         Returns:
             str: The HTML representation of the picture.
-
-        Raises:
-            ValueError: If the caption is not found.
         """
         if not style_args.show_image:
             return ""
-        if self.caption is None:
-            raise ValueError(
-                f"Caption not found for picture {self.shape_idx} of slide {self.slide_idx}"
-            )
+        # Use a default caption if none is set (e.g., for template images without captions)
+        caption = self.caption if self.caption is not None else "Image"
         return (
             self.indent
-            + f"<img {self.get_inline_style(style_args)} alt='{self.caption}'/>"
+            + f"<img {self.get_inline_style(style_args)} alt='{caption}'/>"
         )
 
 

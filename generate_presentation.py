@@ -27,6 +27,13 @@ import os
 from glob import glob
 from os.path import join
 
+# Load .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from pptagent.document import Document
 from pptagent.induct import SlideInducter
 from pptagent.multimodal import ImageLabler
@@ -37,7 +44,7 @@ from pptagent.utils import Config, ppt_to_images_async
 
 
 # Number of slides to generate in the final presentation
-NUM_SLIDES = 1
+NUM_SLIDES = 7
 
 
 async def main():
@@ -45,16 +52,24 @@ async def main():
     print("🚀 Starting PPTAgent test presentation generation...")
     
     # Check for required environment variables
-    if not os.environ.get("OPEN_ROUTER_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
+    openrouter_key = os.environ.get("OPEN_ROUTER_API_KEY")
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    
+    if not openrouter_key and not openai_key:
         print("⚠️  Warning: No API key found!")
         print("   Please set either:")
         print("   - OPEN_ROUTER_API_KEY (recommended, supports many models)")
         print("   - OPENAI_API_KEY (fallback)")
         print("   You can set these in a .env file in the project root.")
-    elif os.environ.get("OPEN_ROUTER_API_KEY"):
+        print(f"   Current working directory: {os.getcwd()}")
+        print(f"   .env file exists: {os.path.exists('.env')}")
+        return
+    elif openrouter_key:
         print("✅ Using OpenRouter API")
+        print(f"   API key loaded: {openrouter_key[:20]}... (length: {len(openrouter_key)})")
     else:
         print("✅ Using OpenAI API")
+        print(f"   API key loaded: {openai_key[:20]}... (length: {len(openai_key)})")
     
     # Initialize models
     print("\n📦 Initializing models...")
@@ -74,8 +89,8 @@ async def main():
     print("✅ Model connections successful!")
     
     # Use pre-processed data from runs directory
-    template_dir = join("runs", "pru", "template")
-    document_dir = join("runs", "pru", "pdf")
+    template_dir = join("runs", "t3n", "template")
+    document_dir = join("runs", "t3n", "pdf")
     
     # Check if directories exist
     if not os.path.exists(template_dir):

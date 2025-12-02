@@ -1,4 +1,5 @@
 import base64
+import os
 import re
 import threading
 from dataclasses import dataclass
@@ -13,6 +14,10 @@ from pptagent.utils import get_json_from_response, get_logger, tenacity_decorato
 
 logger = get_logger(__name__)
 MAX_CONTEXT_SIZE = 32768
+# Default max_tokens for API calls (can be overridden via MAX_TOKENS env var)
+# Set to a reasonable default to avoid OpenRouter credit limit issues
+# Lower this if you hit OpenRouter credit limits (e.g., 8192 or 4096)
+DEFAULT_MAX_TOKENS = int(os.environ.get("MAX_TOKENS", "16384"))
 
 
 class ThinkMode(Enum):
@@ -80,6 +85,9 @@ class LLM:
             content, think_mode, images, system_message
         )
         try:
+            # Set max_tokens if not already specified in client_kwargs
+            if "max_tokens" not in client_kwargs:
+                client_kwargs["max_tokens"] = DEFAULT_MAX_TOKENS
             if response_format is not None:
                 completion: ChatCompletion = self.client.chat.completions.parse(
                     model=self.model,
@@ -309,6 +317,9 @@ class AsyncLLM(LLM):
             content, think_mode, images, system_message
         )
         try:
+            # Set max_tokens if not already specified in client_kwargs
+            if "max_tokens" not in client_kwargs:
+                client_kwargs["max_tokens"] = DEFAULT_MAX_TOKENS
             if self.use_batch:
                 await self.batch.add(
                     "chat.completions.create",
