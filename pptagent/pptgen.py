@@ -508,22 +508,35 @@ class PPTAgent(PPTGen):
 
         for error_idx in range(self.retry_times):
             edit_slide: SlidePage = deepcopy(self.presentation.slides[template_id - 1])
+            logger.debug(
+                f"Slide {edit_slide.slide_idx}: Attempt {error_idx + 1}/{self.retry_times} to generate slide"
+            )
             feedback = code_executor.execute_actions(
                 edit_actions, edit_slide, self.source_doc
             )
             if feedback is None:
+                logger.debug(
+                    f"Slide {edit_slide.slide_idx}: Successfully generated on attempt {error_idx + 1}"
+                )
                 break
             logger.warning(
-                "Failed to generate slide, tried %d/%d times, error: %s\n%s",
+                "Failed to generate slide %d, tried %d/%d times, error: %s\n%s",
+                edit_slide.slide_idx,
                 error_idx + 1,
                 self.retry_times,
                 str(feedback[1]),
                 edit_actions,
             )
-            if error_idx == self.retry_times:
+            logger.debug(
+                f"Slide {edit_slide.slide_idx}: Error details - {feedback[1]}"
+            )
+            if error_idx == self.retry_times - 1:  # Fixed: should be retry_times - 1, not retry_times
                 raise Exception(
                     f"Failed to generate slide, tried too many times at editing\ntraceback: {feedback[1]}"
                 )
+            logger.debug(
+                f"Slide {edit_slide.slide_idx}: Retrying with feedback..."
+            )
             edit_actions = await self.staffs["coder"].retry(
                 feedback[0], feedback[1], turn_id, error_idx + 1
             )

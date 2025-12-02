@@ -146,6 +146,18 @@ class CodeExecutor:
         self.api_history.append(
             [HistoryMark.API_CALL_ERROR, edit_slide.slide_idx, actions]
         )
+        
+        # Debug: Log available elements before executing commands
+        available_ids = [shape.shape_idx for shape in edit_slide]
+        available_pictures = [
+            shape.shape_idx for shape in edit_slide if isinstance(shape, Picture)
+        ]
+        logger.debug(
+            f"Slide {edit_slide.slide_idx}: Executing {len(api_calls)} API calls. "
+            f"Available element IDs: {sorted(available_ids)}. "
+            f"Available picture IDs: {sorted(available_pictures)}"
+        )
+        
         for line_idx, line in enumerate(api_calls):
             try:
                 if line_idx == len(api_calls) - 1 and not found_code:
@@ -187,8 +199,16 @@ class CodeExecutor:
             except Exception as e:
                 if not isinstance(e, SlideEditError):
                     logger.warning(f"Encountered unknown error: {e}")
+                
+                # Log error details at debug level
+                logger.debug(
+                    f"Slide {edit_slide.slide_idx}: Error executing line {line_idx + 1}: {line}\n"
+                    f"Error: {type(e).__name__}: {e}"
+                )
 
                 trace_msg = traceback.format_exc()
+                logger.debug(f"Slide {edit_slide.slide_idx}: Full traceback:\n{trace_msg}")
+                
                 if len(self.code_history) != 0:
                     self.code_history[-1][-1] = trace_msg
                 api_lines = (
@@ -223,8 +243,20 @@ def element_index(slide: SlidePage, element_id: int) -> ShapeElement:
     for shape in slide:
         if shape.shape_idx == element_id:
             return shape
+    
+    # Debug: Log available element IDs when element is not found
+    available_ids = [shape.shape_idx for shape in slide]
+    available_pictures = [
+        shape.shape_idx for shape in slide if isinstance(shape, Picture)
+    ]
+    logger.debug(
+        f"Slide {slide.slide_idx}: Cannot find element {element_id}. "
+        f"Available element IDs: {sorted(available_ids)}. "
+        f"Available picture IDs: {sorted(available_pictures)}"
+    )
     raise SlideEditError(
-        f"Cannot find element {element_id}, is it deleted or not exist?"
+        f"Cannot find element {element_id}, is it deleted or not exist? "
+        f"Available element IDs: {sorted(available_ids)}"
     )
 
 
@@ -391,11 +423,25 @@ def del_image(slide: SlidePage, figure_id: int):
         slide (SlidePage): The slide containing the image.
         figure_id (int): The ID of the image to delete.
     """
-    shape = element_index(slide, figure_id)
+    try:
+        shape = element_index(slide, figure_id)
+    except SlideEditError as e:
+        # If element doesn't exist, log and skip (don't fail the whole slide)
+        logger.warning(
+            f"Slide {slide.slide_idx}: Cannot delete image {figure_id} - {e}. "
+            f"Skipping deletion."
+        )
+        logger.debug(
+            f"Slide {slide.slide_idx}: del_image({figure_id}) failed - element not found. "
+            f"This is being skipped gracefully to allow slide generation to continue."
+        )
+        return  # Gracefully skip if element doesn't exist
+    
     if not isinstance(shape, Picture):
         raise SlideEditError(
             f"The element {shape.shape_idx} of slide {slide.slide_idx} is not a Picture."
         )
+    logger.debug(f"Slide {slide.slide_idx}: Successfully deleting image with ID {figure_id}")
     slide.shapes.remove(shape)
 
 
@@ -447,11 +493,25 @@ def replace_image(slide: SlidePage, doc: Document | None, img_id: int, image_pat
         image_path (str): The path to the new image.
 
     """
-    shape = element_index(slide, img_id)
+    try:
+        shape = element_index(slide, img_id)
+    except SlideEditError as e:
+        # If element doesn't exist, log and skip (don't fail the whole slide)
+        logger.warning(
+            f"Slide {slide.slide_idx}: Cannot replace image {img_id} - {e}. "
+            f"Skipping replacement."
+        )
+        logger.debug(
+            f"Slide {slide.slide_idx}: replace_image({img_id}, {image_path}) failed - element not found. "
+            f"This is being skipped gracefully to allow slide generation to continue."
+        )
+        return  # Gracefully skip if element doesn't exist
+    
     if not isinstance(shape, Picture):
         raise SlideEditError(
             f"The element {shape.shape_idx} of slide {slide.slide_idx} is not a Picture."
         )
+    logger.debug(f"Slide {slide.slide_idx}: Successfully replacing image {img_id} with {image_path}")
     if doc is not None:
         shape.caption = doc.find_media(path=image_path).caption
         try:
