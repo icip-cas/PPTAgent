@@ -55,13 +55,31 @@ def get_logger(name="pptagent", level=None):
 
     Args:
         name (str): The name of the logger.
-        level (int): The logging level (default: logging.INFO).
+        level (int | str): The logging level (default: logging.INFO).
+                          Can be an int or string like "DEBUG", "INFO", "WARNING", "ERROR".
 
     Returns:
         logging.Logger: A configured logger instance.
     """
     if level is None:
-        level = int(os.environ.get("LOG_LEVEL", logging.INFO))
+        log_level_str = os.environ.get("LOG_LEVEL", "INFO")
+        # Convert string log levels to logging constants
+        level_map = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+            "CRITICAL": logging.CRITICAL,
+        }
+        if log_level_str.upper() in level_map:
+            level = level_map[log_level_str.upper()]
+        else:
+            # Try to convert to int if it's a numeric string
+            try:
+                level = int(log_level_str)
+            except ValueError:
+                # Default to INFO if invalid
+                level = logging.INFO
 
     logger = logging.getLogger(name)
     logger.setLevel(level)
