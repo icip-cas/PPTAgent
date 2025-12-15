@@ -6,6 +6,7 @@ import uuid
 from collections import defaultdict
 from pathlib import Path
 
+from docker.errors import DockerException, NotFound
 from mcp.types import CallToolResult, TextContent
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageFunctionToolCall as ToolCall,
@@ -29,7 +30,6 @@ from deeppresenter.utils.log import (
 )
 from deeppresenter.utils.mcp_client import MCPClient
 from deeppresenter.utils.typings import MCPServer, Role
-from docker.errors import DockerException, NotFound
 
 
 class AgentEnv:
