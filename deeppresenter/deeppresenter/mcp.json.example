@@ -3,7 +3,7 @@
     "name": "deeppresenter",
     "description": "DeepPresenter Tools",
     "command": "uv",
-    "args": ["run", "deeppresenter/tools/server.py", "$WORKSPACE"],
+    "args": ["run", "deeppresenter/deeppresenter/tools/server.py", "$WORKSPACE"],
     "env": {
       "MINERU_API_URL": "your_deployed_mineru_url_for_offline_mode",
       "MINERU_API_KEY": "your_mineru_api_key_for_online_mode",
