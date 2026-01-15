@@ -51,6 +51,7 @@ dependencies = [
     "semanticscholar>=0.11.0",
     "tavily-python>=0.7.14",
     "trafilatura>=2.0.0",
+    "python-pptx>=0.6.21",
 ]
 
 [project.urls]
