@@ -108,8 +108,8 @@ async def download_file(url: str, output_path: str) -> str:
             with Image.open(output_path) as img:
                 width, height = img.size
                 # Convert WEBP to PNG
-                if img.format == 'WEBP':
-                    png_path = str(Path(output_path).with_suffix('.png'))
+                if img.format == "WEBP":
+                    png_path = str(Path(output_path).with_suffix(".png"))
                     img.save(png_path, format="PNG")
                     Path(output_path).unlink()
                     output_path = png_path
