@@ -102,11 +102,18 @@ async def download_file(url: str, output_path: str) -> str:
     else:
         return f"Failed to download file from {url}"
 
-    result = f"File downloaded to {output_path}"
+    result = f"File downloaded to {output_path},from {url}"
     if output_path.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")):
         try:
             with Image.open(output_path) as img:
                 width, height = img.size
+                # Convert WEBP to PNG
+                if img.format == 'WEBP':
+                    png_path = str(Path(output_path).with_suffix('.png'))
+                    img.save(png_path, format="PNG")
+                    Path(output_path).unlink()
+                    output_path = png_path
+                    result += f"\nFile re-downloaded to {output_path}"
                 result += f" (resolution: {width}x{height})"
         except Exception as e:
             return f"The provided URL does not point to a valid image file: {e}"
