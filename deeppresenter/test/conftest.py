@@ -19,7 +19,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from deeppresenter.agents.env import AgentEnv
 from deeppresenter.utils.config import GLOBAL_CONFIG
 
-
 # Output directory for test results (permanent storage)
 TEST_OUTPUT_DIR = Path(__file__).parent / "test_outputs"
 
@@ -256,6 +255,7 @@ def create_tool_call(tool_name: str, arguments: dict, call_id: str = None) -> To
     """Helper function to create a ToolCall object."""
     if call_id is None:
         import uuid
+
         call_id = f"call_{uuid.uuid4().hex[:8]}"
 
     return ToolCall(

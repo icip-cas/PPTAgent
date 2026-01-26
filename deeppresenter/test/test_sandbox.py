@@ -29,14 +29,14 @@ Usage:
 """
 
 # Import all test classes from individual test files
-from test_matplotlib_advanced import TestMatplotlibAdvanced
-from test_mermaid_advanced import TestMermaidAdvanced
-from test_mcp_tools_workflow import TestMCPToolsWorkflow
 from test_data_science_pipeline import TestDataSciencePipeline
-from test_image_processing_advanced import TestImageProcessingAdvanced
 from test_document_generation import TestDocumentGeneration
-from test_system_tools_advanced import TestSystemToolsAdvanced
+from test_image_processing_advanced import TestImageProcessingAdvanced
 from test_integration import TestIntegration
+from test_matplotlib_advanced import TestMatplotlibAdvanced
+from test_mcp_tools_workflow import TestMCPToolsWorkflow
+from test_mermaid_advanced import TestMermaidAdvanced
+from test_system_tools_advanced import TestSystemToolsAdvanced
 
 # Re-export all test classes so pytest can discover them
 __all__ = [

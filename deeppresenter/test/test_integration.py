@@ -27,12 +27,18 @@ class TestIntegration:
 
         for category, tools in required_tools.items():
             for tool in tools:
-                assert tool in available_tools, f"Required tool '{tool}' not available in {category}"
+                assert tool in available_tools, (
+                    f"Required tool '{tool}' not available in {category}"
+                )
 
-        print(f"\n✓ All {sum(len(v) for v in required_tools.values())} required tools available")
+        print(
+            f"\n✓ All {sum(len(v) for v in required_tools.values())} required tools available"
+        )
 
     @pytest.mark.asyncio
-    async def test_environment_capabilities(self, agent_env, workspace, tool_call_helper):
+    async def test_environment_capabilities(
+        self, agent_env, workspace, tool_call_helper
+    ):
         """Test that all key libraries and tools are working."""
         test_script = """
 import sys
@@ -90,10 +96,12 @@ print("\\n✓ All libraries loaded successfully")
             result = await agent_env.tool_execute(tool_call)
             # Assert that critical tools are available
             tool_name = cmd.split()[0]
-            assert not (result.is_error and "not found" in result.text), \
+            assert not (result.is_error and "not found" in result.text), (
                 f"Critical system tool '{tool_name}' not available in sandbox"
+            )
 
             # Verify expected output if specified
             if expected and not result.is_error:
-                assert expected in result.text, \
+                assert expected in result.text, (
                     f"Tool '{tool_name}' found but output unexpected: {result.text[:100]}"
+                )

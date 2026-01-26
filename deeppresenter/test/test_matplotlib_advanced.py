@@ -28,7 +28,9 @@ class TestMatplotlibAdvanced:
         )
         exec_result = await agent_env.tool_execute(exec_call)
         assert not exec_result.is_error, f"Script execution failed: {exec_result.text}"
-        assert "SUCCESS" in exec_result.text, f"Script did not report success: {exec_result.text}"
+        assert "SUCCESS" in exec_result.text, (
+            f"Script did not report success: {exec_result.text}"
+        )
 
         # Verify the output file exists
         list_call = tool_call_helper(

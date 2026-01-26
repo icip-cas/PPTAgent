@@ -20,7 +20,9 @@ class TestMermaidAdvanced:
             {"path": str(diagram_path), "content": mermaid_sequence_diagram},
         )
         write_result = await agent_env.tool_execute(write_call)
-        assert not write_result.is_error, f"Failed to write diagram: {write_result.text}"
+        assert not write_result.is_error, (
+            f"Failed to write diagram: {write_result.text}"
+        )
 
         # Create Puppeteer config to allow running Chromium as root
         puppeteer_config_path = workspace / ".puppeteerrc.json"
@@ -30,17 +32,23 @@ class TestMermaidAdvanced:
             {"path": str(puppeteer_config_path), "content": puppeteer_config},
         )
         config_result = await agent_env.tool_execute(config_call)
-        assert not config_result.is_error, f"Failed to write Puppeteer config: {config_result.text}"
+        assert not config_result.is_error, (
+            f"Failed to write Puppeteer config: {config_result.text}"
+        )
 
         # Generate PNG using mmdc with Puppeteer config
         output_path = workspace / "sequence_diagram.png"
         exec_call = tool_call_helper(
             "execute_command",
-            {"command": f"mmdc -i {diagram_path} -o {output_path} -p {puppeteer_config_path}"},
+            {
+                "command": f"mmdc -i {diagram_path} -o {output_path} -p {puppeteer_config_path}"
+            },
         )
         exec_result = await agent_env.tool_execute(exec_call)
         assert not exec_result.is_error, f"mmdc execution failed: {exec_result.text}"
-        assert "Error:" not in exec_result.text, f"mmdc reported error: {exec_result.text}"
+        assert "Error:" not in exec_result.text, (
+            f"mmdc reported error: {exec_result.text}"
+        )
 
         # Verify the output file exists
         list_call = tool_call_helper(
