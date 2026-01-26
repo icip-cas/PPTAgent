@@ -1,6 +1,6 @@
-// ? this is copy from anthropic/skills
 /**
  * html2pptx - Convert HTML slide to pptxgenjs slide with positioned elements
+ * Originally based on Anthropic Skills, modified and enhanced by PPTAgent team
  *
  * USAGE:
  *   const pptx = new pptxgen();
@@ -32,11 +32,15 @@ const os = require('node:os');
 const path = require('path');
 const sharp = require('sharp');
 
-const PT_PER_PX = 0.75;
-const PX_PER_IN = 96;
-const EMU_PER_IN = 914400;
+// Conversion constants
+const PT_PER_PX = 0.75;  // Points per pixel
+const PX_PER_IN = 96;    // Pixels per inch (standard screen DPI)
+const EMU_PER_IN = 914400;  // English Metric Units per inch (PowerPoint internal unit)
 
-// Helper: Get body dimensions and check for overflow
+/**
+ * Get body dimensions and check for content overflow
+ * @returns {Object} Body dimensions with width, height, scrollWidth, scrollHeight, and any overflow errors
+ */
 async function getBodyDimensions(page) {
   const bodyDimensions = await page.evaluate(() => {
     const body = document.body;
@@ -68,7 +72,10 @@ async function getBodyDimensions(page) {
   return { ...bodyDimensions, errors };
 }
 
-// Helper: Validate dimensions match presentation layout
+/**
+ * Validate that HTML dimensions match the presentation layout
+ * @returns {Array<string>} Array of validation error messages
+ */
 function validateDimensions(bodyDimensions, pres) {
   const errors = [];
   const widthInches = bodyDimensions.width / PX_PER_IN;
@@ -88,6 +95,10 @@ function validateDimensions(bodyDimensions, pres) {
   return errors;
 }
 
+/**
+ * Validate text box positions to ensure proper bottom margin
+ * PowerPoint requires 0.5" margin from bottom edge for proper rendering
+ */
 function validateTextBoxPosition(slideData, bodyDimensions) {
   const errors = [];
   const slideHeightInches = bodyDimensions.height / PX_PER_IN;
@@ -120,7 +131,9 @@ function validateTextBoxPosition(slideData, bodyDimensions) {
   return errors;
 }
 
-// Helper: Add background to slide
+/**
+ * Add background (image or color) to the slide
+ */
 async function addBackground(slideData, targetSlide, tmpDir) {
   if (slideData.background.type === 'image' && slideData.background.path) {
     let imagePath = slideData.background.path.startsWith('file://')
@@ -132,6 +145,11 @@ async function addBackground(slideData, targetSlide, tmpDir) {
   }
 }
 
+/**
+ * Rasterize CSS gradients, shadows, and complex styles to images
+ * PowerPoint doesn't natively support CSS gradients and some advanced styling,
+ * so we render them in browser and capture as PNG images
+ */
 async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
   const outDir = tmpDir || process.env.TMPDIR || '/tmp';
   fs.mkdirSync(outDir, { recursive: true });
@@ -147,7 +165,10 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
     document.body.innerHTML = '';
   });
 
-  // Parse CSS box-shadow to extract dimensions for expanding screenshot area
+  /**
+   * Calculate shadow extent for screenshot area expansion
+   * Shadow extends by blur+spread radius in all directions, offset by shadow position
+   */
   const parseShadowExtent = (boxShadow) => {
     if (!boxShadow || boxShadow === 'none') return { left: 0, right: 0, top: 0, bottom: 0 };
 
@@ -170,6 +191,10 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
     };
   };
 
+  /**
+   * Calculate text shadow extent for multiple shadows
+   * Handles comma-separated shadow values and returns maximum extent
+   */
   const parseTextShadowExtent = (textShadow) => {
     if (!textShadow || textShadow === 'none' || textShadow === 'normal') {
       return { left: 0, right: 0, top: 0, bottom: 0 };
@@ -194,12 +219,15 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
     return extents;
   };
 
+  /**
+   * Render a background element with CSS styles as a PNG image
+   * Handles gradients, colors, shadows, and border-radius
+   */
   const renderBackground = async (style, widthPx, heightPx, leftPx = 0, topPx = 0) => {
     const id = makeId();
     const shadowExtent = parseShadowExtent(style.boxShadow);
     const hasSignificantShadow = shadowExtent.left + shadowExtent.right + shadowExtent.top + shadowExtent.bottom > 0;
 
-    // Expand dimensions to include shadow
     const expandedWidth = widthPx + shadowExtent.left + shadowExtent.right;
     const expandedHeight = heightPx + shadowExtent.top + shadowExtent.bottom;
     const expandedLeft = leftPx - shadowExtent.left;
@@ -209,7 +237,6 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
       const el = document.createElement('div');
       el.id = id;
       el.style.position = 'fixed';
-      // Position element within the expanded area, leaving room for shadow
       el.style.left = `${expandedLeft + shadowExtent.left}px`;
       el.style.top = `${expandedTop + shadowExtent.top}px`;
       el.style.width = `${widthPx}px`;
@@ -228,7 +255,6 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
 
     const filePath = makePath();
     if (hasSignificantShadow) {
-      // Use page screenshot with clip to capture shadow outside element bounds
       await page.screenshot({
         path: filePath,
         omitBackground: true,
@@ -250,12 +276,14 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
     return { filePath, shadowExtent, hasSignificantShadow };
   };
 
+  /**
+   * Render an image element with applied CSS styles (object-fit, filters, shadows) as PNG
+   */
   const renderImage = async (src, style, widthPx, heightPx, leftPx = 0, topPx = 0) => {
     const id = makeId();
     const shadowExtent = parseShadowExtent(style.boxShadow);
     const hasSignificantShadow = shadowExtent.left + shadowExtent.right + shadowExtent.top + shadowExtent.bottom > 0;
 
-    // Expand dimensions to include shadow
     const expandedLeft = leftPx - shadowExtent.left;
     const expandedTop = topPx - shadowExtent.top;
     const expandedWidth = widthPx + shadowExtent.left + shadowExtent.right;
@@ -288,7 +316,6 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
 
     const filePath = makePath();
     if (hasSignificantShadow) {
-      // Use page screenshot with clip to capture shadow outside element bounds
       await page.screenshot({
         path: filePath,
         omitBackground: true,
@@ -310,6 +337,10 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
     return { filePath, shadowExtent, hasSignificantShadow };
   };
 
+  /**
+   * Render text with CSS text-shadow effects as PNG image
+   * Handles both simple strings and arrays of formatted text runs
+   */
   const renderText = async (text, style, widthPx, heightPx, leftPx = 0, topPx = 0) => {
     const id = makeId();
     const shadowExtent = parseTextShadowExtent(style.textShadow);
@@ -447,6 +478,10 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
     return { filePath, shadowExtent, hasSignificantShadow };
   };
 
+  /**
+   * Render SVG markup as PNG image
+   * PowerPoint doesn't natively support inline SVG
+   */
   const renderSvg = async (svgMarkup, widthPx, heightPx, leftPx = 0, topPx = 0) => {
     const id = makeId();
     await page.evaluate(({ id, svgMarkup, widthPx, heightPx, leftPx, topPx }) => {
@@ -482,6 +517,7 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
     return filePath;
   };
 
+  // Process slide background (convert gradients/CSS to images)
   if (slideData.background && slideData.background.type === 'css') {
     const { filePath } = await renderBackground(
       slideData.background.style || {},
@@ -507,6 +543,7 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
 
   for (const el of slideData.elements) {
     if (el.type === 'bgImage') {
+      // Render background DIVs with gradients/shadows as images
       const widthPx = Math.round(el.position.w * PX_PER_IN);
       const heightPx = Math.round(el.position.h * PX_PER_IN);
       const leftPx = Math.round(el.position.x * PX_PER_IN);
@@ -514,7 +551,6 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
       const { filePath, shadowExtent, hasSignificantShadow } = await renderBackground(el.style || {}, widthPx, heightPx, leftPx, topPx);
       el.type = 'image';
       el.src = filePath;
-      // Adjust position to account for shadow extent (image now includes shadow)
       if (hasSignificantShadow) {
         el.position.x -= shadowExtent.left / PX_PER_IN;
         el.position.y -= shadowExtent.top / PX_PER_IN;
@@ -523,6 +559,7 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
       }
       delete el.style;
     } else if (el.type === 'image' && el.style) {
+      // Check if image needs rasterization (SVG, object-fit, border-radius, filters, shadows)
       const isSvgImage = typeof el.src === 'string'
         && (el.src.toLowerCase().endsWith('.svg') || el.src.startsWith('data:image/svg'));
       const objectFit = el.style.objectFit || 'fill';
@@ -544,7 +581,6 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
         const topPx = Math.round(el.position.y * PX_PER_IN);
         const { filePath, shadowExtent, hasSignificantShadow } = await renderImage(el.src, el.style, widthPx, heightPx, leftPx, topPx);
         el.src = filePath;
-        // Adjust position to account for shadow extent
         if (hasSignificantShadow) {
           el.position.x -= shadowExtent.left / PX_PER_IN;
           el.position.y -= shadowExtent.top / PX_PER_IN;
@@ -558,6 +594,7 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
       && el.style.textShadow
       && el.style.textShadow !== 'none'
       && el.style.textShadow !== 'normal') {
+      // Render text with text-shadow as image (PowerPoint doesn't support CSS text-shadow)
       const widthPx = Math.round(el.position.w * PX_PER_IN);
       const heightPx = Math.round(el.position.h * PX_PER_IN);
       const leftPx = Math.round(el.position.x * PX_PER_IN);
@@ -581,6 +618,7 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
         el.position.h += (shadowExtent.top + shadowExtent.bottom) / PX_PER_IN;
       }
     } else if (el.type === 'svg') {
+      // Render inline SVG as PNG image
       const widthPx = Math.round(el.position.w * PX_PER_IN);
       const heightPx = Math.round(el.position.h * PX_PER_IN);
       const leftPx = Math.round(el.position.x * PX_PER_IN);
@@ -590,6 +628,7 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
       el.src = filePath;
       delete el.svg;
     } else if (el.type === 'gradient') {
+      // Render CSS gradient background as PNG image
       const widthPx = Math.round(el.position.w * PX_PER_IN);
       const heightPx = Math.round(el.position.h * PX_PER_IN);
       const leftPx = Math.round(el.position.x * PX_PER_IN);
@@ -612,7 +651,9 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
   }
 }
 
-// Helper: Add elements to slide
+/**
+ * Add all extracted elements (images, text, shapes, tables, lists) to the PowerPoint slide
+ */
 function addElements(slideData, targetSlide, pres) {
   for (const el of slideData.elements) {
     if (el.type === 'image') {
@@ -622,7 +663,8 @@ function addElements(slideData, targetSlide, pres) {
         x: el.position.x,
         y: el.position.y,
         w: el.position.w,
-        h: el.position.h
+        h: el.position.h,
+        transparency: el.imageProps?.transparency || 0
       });
     } else if (el.type === 'line') {
       targetSlide.addShape(pres.ShapeType.line, {
@@ -685,28 +727,24 @@ function addElements(slideData, targetSlide, pres) {
       }
       targetSlide.addTable(el.rows, tableOptions);
     } else {
-      // Check if text is single-line (height suggests one line)
       const lineHeight = el.style.lineSpacing || el.style.fontSize * 1.2;
       const isSingleLine = el.position.h <= lineHeight * 1.5;
 
       let adjustedX = el.position.x;
       let adjustedW = el.position.w;
 
-      // Make single-line text 2% wider to account for underestimate
+      // Single-line text needs 2% width compensation for PowerPoint rendering accuracy
       if (isSingleLine) {
         const widthIncrease = el.position.w * 0.02;
         const align = el.style.align;
 
         if (align === 'center') {
-          // Center: expand both sides
           adjustedX = el.position.x - (widthIncrease / 2);
           adjustedW = el.position.w + widthIncrease;
         } else if (align === 'right') {
-          // Right: expand to the left
           adjustedX = el.position.x - widthIncrease;
           adjustedW = el.position.w + widthIncrease;
         } else {
-          // Left (default): expand to the right
           adjustedW = el.position.w + widthIncrease;
         }
       }
@@ -739,7 +777,11 @@ function addElements(slideData, targetSlide, pres) {
   }
 }
 
-// Helper: Extract slide data from HTML page
+/**
+ * Extract slide data from HTML page using browser DOM
+ * Processes all elements and converts them to PowerPoint-compatible format
+ * @returns {Object} { background, elements, placeholders, errors }
+ */
 async function extractSlideData(page) {
   return await page.evaluate(() => {
     const PT_PER_PX = 0.75;
@@ -749,18 +791,15 @@ async function extractSlideData(page) {
     // (applying bold causes PowerPoint to use faux bold which makes text wider)
     const SINGLE_WEIGHT_FONTS = ['impact'];
 
-    // Helper: Check if a font should skip bold formatting
     const shouldSkipBold = (fontFamily) => {
       if (!fontFamily) return false;
       const normalizedFont = fontFamily.toLowerCase().replace(/['"]/g, '').split(',')[0].trim();
       return SINGLE_WEIGHT_FONTS.includes(normalizedFont);
     };
 
-    // Unit conversion helpers
     const pxToInch = (px) => px / PX_PER_IN;
     const pxToPoints = (pxStr) => parseFloat(pxStr) * PT_PER_PX;
     const rgbToHex = (rgbStr) => {
-      // Handle transparent backgrounds by defaulting to white
       if (rgbStr === 'rgba(0, 0, 0, 0)' || rgbStr === 'transparent') return 'FFFFFF';
 
       const match = rgbStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -788,25 +827,19 @@ async function extractSlideData(page) {
     const getRotation = (transform, writingMode) => {
       let angle = 0;
 
-      // Handle writing-mode first
       // PowerPoint: 90° = text rotated 90° clockwise (reads top to bottom, letters upright)
       // PowerPoint: 270° = text rotated 270° clockwise (reads bottom to top, letters upright)
       if (writingMode === 'vertical-rl') {
-        // vertical-rl alone = text reads top to bottom = 90° in PowerPoint
         angle = 90;
       } else if (writingMode === 'vertical-lr') {
-        // vertical-lr alone = text reads bottom to top = 270° in PowerPoint
         angle = 270;
       }
 
-      // Then add any transform rotation
       if (transform && transform !== 'none') {
-        // Try to match rotate() function
         const rotateMatch = transform.match(/rotate\((-?\d+(?:\.\d+)?)deg\)/);
         if (rotateMatch) {
           angle += parseFloat(rotateMatch[1]);
         } else {
-          // Browser may compute as matrix - extract rotation from matrix
           const matrixMatch = transform.match(/matrix\(([^)]+)\)/);
           if (matrixMatch) {
             const values = matrixMatch[1].split(',').map(parseFloat);
@@ -817,27 +850,27 @@ async function extractSlideData(page) {
         }
       }
 
-      // Normalize to 0-359 range
       angle = angle % 360;
       if (angle < 0) angle += 360;
 
       return angle === 0 ? null : angle;
     };
 
-    // Get position/dimensions accounting for rotation
+    /**
+     * Calculate element position and size accounting for rotation
+     * For 90°/270° rotations, dimensions must be swapped because PowerPoint
+     * applies rotation to the original (unrotated) box
+     */
     const getPositionAndSize = (el, rect, rotation) => {
       if (rotation === null) {
         return { x: rect.left, y: rect.top, w: rect.width, h: rect.height };
       }
 
-      // For 90° or 270° rotations, swap width and height
-      // because PowerPoint applies rotation to the original (unrotated) box
       const isVertical = rotation === 90 || rotation === 270;
 
       if (isVertical) {
-        // The browser shows us the rotated dimensions (tall box for vertical text)
-        // But PowerPoint needs the pre-rotation dimensions (wide box that will be rotated)
-        // So we swap: browser's height becomes PPT's width, browser's width becomes PPT's height
+        // Browser shows rotated dimensions (tall box), but PowerPoint needs pre-rotation dimensions (wide box)
+        // Swap: browser's height → PPT width, browser's width → PPT height
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
 
@@ -849,7 +882,6 @@ async function extractSlideData(page) {
         };
       }
 
-      // For other rotations, use element's offset dimensions
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       return {
@@ -860,23 +892,17 @@ async function extractSlideData(page) {
       };
     };
 
-    // Parse CSS box-shadow into PptxGenJS shadow properties
+    /**
+     * Parse CSS box-shadow into PowerPoint shadow properties
+     * Note: PptxGenJS/PowerPoint doesn't support inset shadows - only outer shadows
+     */
     const parseBoxShadow = (boxShadow) => {
       if (!boxShadow || boxShadow === 'none') return null;
 
-      // Browser computed style format: "rgba(0, 0, 0, 0.3) 2px 2px 8px 0px [inset]"
-      // CSS format: "[inset] 2px 2px 8px 0px rgba(0, 0, 0, 0.3)"
-
       const insetMatch = boxShadow.match(/inset/);
-
-      // IMPORTANT: PptxGenJS/PowerPoint doesn't properly support inset shadows
-      // Only process outer shadows to avoid file corruption
       if (insetMatch) return null;
 
-      // Extract color first (rgba or rgb at start)
       const colorMatch = boxShadow.match(/rgba?\([^)]+\)/);
-
-      // Extract numeric values (handles both px and pt units)
       const parts = boxShadow.match(/([-\d.]+)(px|pt)/g);
 
       if (!parts || parts.length < 2) return null;
@@ -885,17 +911,14 @@ async function extractSlideData(page) {
       const offsetY = parseFloat(parts[1]);
       const blur = parts.length > 2 ? parseFloat(parts[2]) : 0;
 
-      // Calculate angle from offsets (in degrees, 0 = right, 90 = down)
       let angle = 0;
       if (offsetX !== 0 || offsetY !== 0) {
         angle = Math.atan2(offsetY, offsetX) * (180 / Math.PI);
         if (angle < 0) angle += 360;
       }
 
-      // Calculate offset distance (hypotenuse)
       const offset = Math.sqrt(offsetX * offsetX + offsetY * offsetY) * PT_PER_PX;
 
-      // Extract opacity from rgba
       let opacity = 0.5;
       if (colorMatch) {
         const opacityMatch = colorMatch[0].match(/[\d.]+\)$/);
@@ -914,7 +937,10 @@ async function extractSlideData(page) {
       };
     };
 
-    // Parse inline formatting tags (<b>, <i>, <u>, <strong>, <em>, <span>) into text runs
+    /**
+     * Parse inline formatting tags (<b>, <i>, <u>, <strong>, <em>, <span>, etc.) into text runs
+     * Flattens nested formatting elements and preserves styling options
+     */
     const parseInlineFormatting = (
       element,
       baseOptions = {},
@@ -950,7 +976,6 @@ async function extractSlideData(page) {
           const options = { ...baseOptions };
           const computed = window.getComputedStyle(node);
 
-          // Handle inline elements with computed styles
           const isInlineTag = node.tagName === 'SPAN'
             || node.tagName === 'B'
             || node.tagName === 'STRONG'
@@ -959,10 +984,16 @@ async function extractSlideData(page) {
             || node.tagName === 'U'
             || node.tagName === 'CODE';
           const display = computed.display;
+          // Never add line breaks for materialized pseudo-elements
+          const isPseudoElement = node.className && (
+            node.className.includes('__pseudo_before__') ||
+            node.className.includes('__pseudo_after__')
+          );
           const allowInlineBreak = allowBlock
             && display
             && !display.startsWith('inline')
-            && display !== 'contents';
+            && display !== 'contents'
+            && !isPseudoElement;
           const isLayoutContainer = display === 'grid'
             || display === 'inline-grid'
             || display === 'flex'
@@ -979,23 +1010,19 @@ async function extractSlideData(page) {
             }
             if (computed.fontSize) options.fontSize = pxToPoints(computed.fontSize);
 
-            // Apply text-transform on the span element itself
             if (computed.textTransform && computed.textTransform !== 'none') {
               const transformStr = computed.textTransform;
               textTransform = (text) => applyTextTransform(text, transformStr);
             }
 
-            // Validate: Check for margins on inline elements
             if (computed.marginLeft && parseFloat(computed.marginLeft) > 0) {
               errors.push(`Inline element <${node.tagName.toLowerCase()}> has margin-left which is not supported in PowerPoint. Remove margin from inline elements.`);
             }
             if (computed.marginRight && parseFloat(computed.marginRight) > 0) {
               errors.push(`Inline element <${node.tagName.toLowerCase()}> has margin-right which is not supported in PowerPoint. Remove margin from inline elements.`);
             }
-            // Inline elements don't meaningfully support vertical margins in PPT or HTML; ignore margin-top/bottom.
 
             const beforeLen = runs.length;
-            // Recursively process the child node. This will flatten nested spans into multiple runs.
             parseInlineFormatting(node, options, runs, textTransform, allowBlock);
             if (allowInlineBreak && hasFollowingText(node) && runs.length > beforeLen) {
               runs[runs.length - 1].options.breakLine = true;
@@ -1015,7 +1042,6 @@ async function extractSlideData(page) {
         prevNodeIsText = isText;
       });
 
-      // Trim leading space from first run and trailing space from last run
       if (runs.length > 0) {
         runs[0].text = runs[0].text.replace(/^\s+/, '');
         runs[runs.length - 1].text = runs[runs.length - 1].text.replace(/\s+$/, '');
@@ -1024,6 +1050,10 @@ async function extractSlideData(page) {
       return runs.filter(r => r.text.length > 0);
     };
 
+    /**
+     * Calculate table column widths and row heights from HTML table element
+     * Accounts for colspan and normalizes dimensions to match table rect
+     */
     const buildTableDimensions = (tableEl, tableRect) => {
       const colWidthsPx = [];
       const rowHeightsPx = [];
@@ -1056,13 +1086,11 @@ async function extractSlideData(page) {
       };
     };
 
-    // Extract background from body (image or color)
     const body = document.body;
     const bodyStyle = window.getComputedStyle(body);
     const bgImage = bodyStyle.backgroundImage;
     const bgColor = bodyStyle.backgroundColor;
 
-    // Collect validation errors
     const errors = [];
 
     let background;
@@ -1084,7 +1112,6 @@ async function extractSlideData(page) {
       };
     }
 
-    // Process all elements
     const elements = [];
     const placeholders = [];
     const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI'];
@@ -1102,6 +1129,11 @@ async function extractSlideData(page) {
       || display === 'inline-grid'
       || display === 'flex'
       || display === 'inline-flex';
+
+    /**
+     * Build a PowerPoint text element from an inline HTML element (DIV, SPAN)
+     * Handles flex/grid alignment and converts CSS properties to PowerPoint format
+     */
     const buildInlineTextElement = (el, rect, computed) => {
       const rotation = getRotation(computed.transform, computed.writingMode);
       const { x, y, w, h } = getPositionAndSize(el, rect, rotation);
@@ -1173,24 +1205,76 @@ async function extractSlideData(page) {
       };
     };
 
+    // First pass: materialize pseudo-elements as real DOM elements
     document.querySelectorAll('*').forEach((el) => {
-      if (processed.has(el)) return;
-
-      // Validate: Pseudo-elements are not supported by PowerPoint extraction
       const beforeStyle = window.getComputedStyle(el, '::before');
       const afterStyle = window.getComputedStyle(el, '::after');
       const hasBefore = beforeStyle && beforeStyle.content && beforeStyle.content !== 'none' && beforeStyle.content !== 'normal';
       const hasAfter = afterStyle && afterStyle.content && afterStyle.content !== 'none' && afterStyle.content !== 'normal';
-      if (hasBefore || hasAfter) {
-        const pseudoParts = [];
-        if (hasBefore) pseudoParts.push('::before');
-        if (hasAfter) pseudoParts.push('::after');
-        errors.push(
-          `Element <${el.tagName.toLowerCase()}> uses ${pseudoParts.join(' and ')} which is not supported. ` +
-          'Move pseudo-element content into real DOM nodes.'
-        );
-        return;
+
+      if (hasBefore) {
+        const content = beforeStyle.content.replace(/^["']|["']$/g, '');
+        if (content && beforeStyle.display !== 'none') {
+          const span = document.createElement('span');
+          span.className = '__pseudo_before__';
+          span.textContent = content;
+
+          // Preserve original positioning to maintain layout
+          // Key: preserve position:absolute to keep element out of document flow
+          span.style.cssText = `
+            display: ${beforeStyle.display};
+            position: ${beforeStyle.position};
+            left: ${beforeStyle.left};
+            right: ${beforeStyle.right};
+            top: ${beforeStyle.top};
+            bottom: ${beforeStyle.bottom};
+            font-size: ${beforeStyle.fontSize};
+            font-family: ${beforeStyle.fontFamily};
+            font-weight: ${beforeStyle.fontWeight};
+            font-style: ${beforeStyle.fontStyle};
+            color: ${beforeStyle.color};
+            text-decoration: ${beforeStyle.textDecoration};
+            line-height: ${beforeStyle.lineHeight};
+          `;
+          el.insertBefore(span, el.firstChild);
+        }
       }
+
+      if (hasAfter) {
+        const content = afterStyle.content.replace(/^["']|["']$/g, '');
+        if (content && afterStyle.display !== 'none') {
+          const span = document.createElement('span');
+          span.className = '__pseudo_after__';
+          span.textContent = content;
+
+          // Preserve original positioning to maintain layout
+          span.style.cssText = `
+            display: ${afterStyle.display};
+            position: ${afterStyle.position};
+            left: ${afterStyle.left};
+            right: ${afterStyle.right};
+            top: ${afterStyle.top};
+            bottom: ${afterStyle.bottom};
+            font-size: ${afterStyle.fontSize};
+            font-family: ${afterStyle.fontFamily};
+            font-weight: ${afterStyle.fontWeight};
+            font-style: ${afterStyle.fontStyle};
+            color: ${afterStyle.color};
+            text-decoration: ${afterStyle.textDecoration};
+            line-height: ${afterStyle.lineHeight};
+          `;
+          el.appendChild(span);
+        }
+      }
+    });
+
+    /**
+     * Main extraction loop: Process all DOM elements and convert to PowerPoint format
+     * Elements are processed in order: placeholders, images, SVG, tables, lists, text, shapes
+     * Uses 'processed' set to track already-handled elements and avoid duplication
+     */
+    document.querySelectorAll('*').forEach((el) => {
+      if (processed.has(el)) return;
 
       // Validate text elements don't have backgrounds, borders, or shadows
       if (textTags.includes(el.tagName)) {
@@ -1198,10 +1282,10 @@ async function extractSlideData(page) {
         const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
         const hasBgImage = computed.backgroundImage && computed.backgroundImage !== 'none';
         const hasBorder = (computed.borderWidth && parseFloat(computed.borderWidth) > 0) ||
-                          (computed.borderTopWidth && parseFloat(computed.borderTopWidth) > 0) ||
-                          (computed.borderRightWidth && parseFloat(computed.borderRightWidth) > 0) ||
-                          (computed.borderBottomWidth && parseFloat(computed.borderBottomWidth) > 0) ||
-                          (computed.borderLeftWidth && parseFloat(computed.borderLeftWidth) > 0);
+          (computed.borderTopWidth && parseFloat(computed.borderTopWidth) > 0) ||
+          (computed.borderRightWidth && parseFloat(computed.borderRightWidth) > 0) ||
+          (computed.borderBottomWidth && parseFloat(computed.borderBottomWidth) > 0) ||
+          (computed.borderLeftWidth && parseFloat(computed.borderLeftWidth) > 0);
         const hasShadow = computed.boxShadow && computed.boxShadow !== 'none';
 
         if (hasBg || hasBgImage || hasBorder || hasShadow) {
@@ -1213,7 +1297,6 @@ async function extractSlideData(page) {
         }
       }
 
-      // Extract placeholder elements (for charts, etc.)
       if (el.className && el.className.includes('placeholder') && el.tagName !== 'TABLE') {
         const rect = el.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) {
@@ -1233,7 +1316,6 @@ async function extractSlideData(page) {
         return;
       }
 
-      // Extract images
       if (el.tagName === 'IMG') {
         const computed = window.getComputedStyle(el);
         const rect = el.getBoundingClientRect();
@@ -1253,6 +1335,9 @@ async function extractSlideData(page) {
               borderRadius: computed.borderRadius,
               filter: computed.filter,
               boxShadow: computed.boxShadow
+            },
+            imageProps: {
+              transparency: computed.opacity ? Math.round((1 - parseFloat(computed.opacity)) * 100) : 0
             }
           });
           processed.add(el);
@@ -1260,7 +1345,6 @@ async function extractSlideData(page) {
         }
       }
 
-      // Extract inline SVG as rasterized image
       if (el.tagName === 'SVG') {
         const rect = el.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
@@ -1281,7 +1365,6 @@ async function extractSlideData(page) {
         }
       }
 
-      // Extract flex/grid child spans as independent text elements
       if (el.tagName === 'SPAN') {
         const parent = el.parentElement;
         if (parent) {
@@ -1301,7 +1384,6 @@ async function extractSlideData(page) {
         }
       }
 
-      // Extract tables
       if (el.tagName === 'TABLE') {
         const rect = el.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) {
@@ -1405,10 +1487,9 @@ async function extractSlideData(page) {
         return;
       }
 
-      // Extract inline text-only DIVs
       if (el.tagName === 'DIV') {
-        // Skip if inside a text ancestor (will be handled as part of the text element)
-        const textAncestor = el.closest('p,h1,h2,h3,h4,h5,h6,li,ul,ol');
+        // Allow DIVs inside LI (may be part of complex lists like checklist cards)
+        const textAncestor = el.closest('p,h1,h2,h3,h4,h5,h6');
         if (textAncestor) return;
 
         const computed = window.getComputedStyle(el);
@@ -1416,10 +1497,10 @@ async function extractSlideData(page) {
         const bgImage = computed.backgroundImage;
         const hasBgImage = bgImage && bgImage !== 'none';
         const hasBorder = (computed.borderWidth && parseFloat(computed.borderWidth) > 0) ||
-                          (computed.borderTopWidth && parseFloat(computed.borderTopWidth) > 0) ||
-                          (computed.borderRightWidth && parseFloat(computed.borderRightWidth) > 0) ||
-                          (computed.borderBottomWidth && parseFloat(computed.borderBottomWidth) > 0) ||
-                          (computed.borderLeftWidth && parseFloat(computed.borderLeftWidth) > 0);
+          (computed.borderTopWidth && parseFloat(computed.borderTopWidth) > 0) ||
+          (computed.borderRightWidth && parseFloat(computed.borderRightWidth) > 0) ||
+          (computed.borderBottomWidth && parseFloat(computed.borderBottomWidth) > 0) ||
+          (computed.borderLeftWidth && parseFloat(computed.borderLeftWidth) > 0);
         const hasShadow = computed.boxShadow && computed.boxShadow !== 'none';
         const hasOnlyInlineChildren = Array.from(el.children)
           .every((child) => INLINE_TEXT_TAGS.has(child.tagName));
@@ -1437,13 +1518,11 @@ async function extractSlideData(page) {
         }
       }
 
-      // Extract DIVs with backgrounds/borders as shapes
       const isContainer = el.tagName === 'DIV' && !textTags.includes(el.tagName);
       if (isContainer) {
         const computed = window.getComputedStyle(el);
         const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
 
-        // Validate: Check for unwrapped text content in DIV
         for (const node of el.childNodes) {
           if (node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent.trim();
@@ -1456,11 +1535,9 @@ async function extractSlideData(page) {
           }
         }
 
-        // Check for background images on shapes
         const bgImage = computed.backgroundImage;
         const hasBgImage = bgImage && bgImage !== 'none';
 
-        // Check for borders - both uniform and partial
         const borderTop = computed.borderTopWidth;
         const borderRight = computed.borderRightWidth;
         const borderBottom = computed.borderBottomWidth;
@@ -1469,18 +1546,21 @@ async function extractSlideData(page) {
         const hasBorder = borders.some(b => b > 0);
         const hasUniformBorder = hasBorder && borders.every(b => b === borders[0]);
         const borderLines = [];
+        // Non-uniform borders or borders with background images must be rendered as separate line elements
         const useBorderLines = hasBorder && (hasBgImage || !hasUniformBorder);
         if (useBorderLines) {
           const rect = el.getBoundingClientRect();
+          const actualWidth = el.offsetWidth || rect.width;
+          const actualHeight = el.offsetHeight || rect.height;
           const x = pxToInch(rect.left);
           const y = pxToInch(rect.top);
-          const w = pxToInch(rect.width);
-          const h = pxToInch(rect.height);
+          const w = pxToInch(actualWidth);
+          const h = pxToInch(actualHeight);
 
-          // Collect lines to add after background/image (inset by half the line width to center on edge)
+          // Create border lines with inset positioning (half line width) to center on edge
           if (parseFloat(borderTop) > 0) {
             const widthPt = pxToPoints(borderTop);
-            const inset = (widthPt / 72) / 2; // Convert points to inches, then half
+            const inset = (widthPt / 72) / 2;
             borderLines.push({
               type: 'line',
               x1: x, y1: y + inset, x2: x + w, y2: y + inset,
@@ -1525,7 +1605,9 @@ async function extractSlideData(page) {
           if (rect.width > 0 && rect.height > 0) {
             const shadow = parseBoxShadow(computed.boxShadow);
 
-            // Only add shape if there's background or uniform border without image
+            const actualWidth = rect.width;
+            const actualHeight = rect.height;
+
             if (!hasBgImage && (hasBg || hasUniformBorder)) {
               elements.push({
                 type: 'shape',
@@ -1533,8 +1615,8 @@ async function extractSlideData(page) {
                 position: {
                   x: pxToInch(rect.left),
                   y: pxToInch(rect.top),
-                  w: pxToInch(rect.width),
-                  h: pxToInch(rect.height)
+                  w: pxToInch(actualWidth),
+                  h: pxToInch(actualHeight)
                 },
                 shape: {
                   fill: hasBg ? rgbToHex(computed.backgroundColor) : null,
@@ -1543,10 +1625,7 @@ async function extractSlideData(page) {
                     color: rgbToHex(computed.borderColor),
                     width: pxToPoints(computed.borderWidth)
                   } : null,
-                  // Convert border-radius to rectRadius (in inches)
-                  // % values: 50%+ = circle (1), <50% = percentage of min dimension
-                  // pt values: divide by 72 (72pt = 1 inch)
-                  // px values: divide by 96 (96px = 1 inch)
+                  // Convert border-radius: 50%+ = circle, <50% = % of min dimension, px/pt = convert to inches
                   rectRadius: (() => {
                     const radius = computed.borderRadius;
                     const radiusValue = parseFloat(radius);
@@ -1554,8 +1633,7 @@ async function extractSlideData(page) {
 
                     if (radius.includes('%')) {
                       if (radiusValue >= 50) return 1;
-                      // Calculate percentage of smaller dimension
-                      const minDim = Math.min(rect.width, rect.height);
+                      const minDim = Math.min(actualWidth, actualHeight);
                       return (radiusValue / 100) * pxToInch(minDim);
                     }
 
@@ -1573,8 +1651,8 @@ async function extractSlideData(page) {
                 position: {
                   x: pxToInch(rect.left),
                   y: pxToInch(rect.top),
-                  w: pxToInch(rect.width),
-                  h: pxToInch(rect.height)
+                  w: pxToInch(actualWidth),
+                  h: pxToInch(actualHeight)
                 },
                 style: {
                   backgroundImage: bgImage,
@@ -1588,7 +1666,6 @@ async function extractSlideData(page) {
               });
             }
 
-            // Add border lines
             elements.push(...borderLines);
 
             const hasOnlyInlineChildren = Array.from(el.children)
@@ -1607,57 +1684,258 @@ async function extractSlideData(page) {
         }
       }
 
-      // Extract bullet lists as single text block
       if (el.tagName === 'UL' || el.tagName === 'OL') {
         const ulComputed = window.getComputedStyle(el);
         if (isLayoutDisplay(ulComputed.display)) {
           processed.add(el);
           return;
         }
-        // Skip if any LI uses flex/grid layout - let children be extracted independently
         const liElements = Array.from(el.children).filter((child) => child.tagName === 'LI');
         const hasLayoutLi = liElements.some((li) => isLayoutDisplay(window.getComputedStyle(li).display));
         if (hasLayoutLi) {
           processed.add(el);
           return;
         }
+
+        // Complex styled lists (e.g., checklists with cards/borders) should be extracted as individual shapes
+        const firstLiForCheck = liElements[0];
+        const firstLiStyle = firstLiForCheck ? window.getComputedStyle(firstLiForCheck) : null;
+        const listStyleForCheck = firstLiStyle ? (firstLiStyle.listStyleType || ulComputed.listStyleType) : ulComputed.listStyleType;
+        const isChecklistClass = el.className && (
+          el.className.includes('checklist') ||
+          el.className.includes('check-list') ||
+          el.className.includes('task-list')
+        );
+        const isStyledList = listStyleForCheck === 'none' || isChecklistClass;
+
+        if (isStyledList) {
+          const hasComplexLayout = liElements.some((li) => {
+            const divs = li.querySelectorAll('div');
+            return Array.from(divs).some((div) => {
+              const computed = window.getComputedStyle(div);
+              const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
+              const hasBorder = parseFloat(computed.borderWidth) > 0 ||
+                               parseFloat(computed.borderTopWidth) > 0 ||
+                               parseFloat(computed.borderRightWidth) > 0 ||
+                               parseFloat(computed.borderBottomWidth) > 0 ||
+                               parseFloat(computed.borderLeftWidth) > 0;
+              const isLayout = isLayoutDisplay(computed.display);
+              return hasBg || hasBorder || isLayout;
+            });
+          });
+
+          if (hasComplexLayout) {
+            processed.add(el);
+            return;
+          }
+        }
         const rect = el.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return;
         const items = [];
         const ulPaddingLeftPt = pxToPoints(ulComputed.paddingLeft);
-        const listStyleType = ulComputed.listStyleType;
-        const useBullet = listStyleType !== 'none';
+
         const firstLi = liElements[0] || el;
         const liComputed = window.getComputedStyle(firstLi);
+        const listStyleType = liComputed.listStyleType || ulComputed.listStyleType;
+
+        const hasPseudoBullet = firstLi.querySelector('.__pseudo_before__') !== null;
+        const useBullet = listStyleType !== 'none' || hasPseudoBullet;
+
         const liPaddingLeftPt = pxToPoints(liComputed.paddingLeft);
+        const liPaddingRightPt = pxToPoints(liComputed.paddingRight);
+        const liPaddingTopPt = pxToPoints(liComputed.paddingTop);
+        const liPaddingBottomPt = pxToPoints(liComputed.paddingBottom);
 
-        // Split: margin-left for bullet position, indent for text position
-        // margin-left + indent = ul padding-left
-        const marginLeft = useBullet ? ulPaddingLeftPt * 0.5 : liPaddingLeftPt;
-        const textIndent = useBullet ? ulPaddingLeftPt * 0.5 : 0;
+        // Check if LI has absolute-positioned pseudo-elements at left:0
+        // If so, padding-left is for the pseudo-element space, not text margin
+        let hasAbsolutePseudoAtLeftZero = false;
+        const pseudoElements = firstLi.querySelectorAll('.__pseudo_before__, .__pseudo_after__');
+        if (pseudoElements.length > 0) {
+          const beforeStyle = window.getComputedStyle(firstLi, '::before');
+          const afterStyle = window.getComputedStyle(firstLi, '::after');
 
-        liElements.forEach((li, idx) => {
-          const isLast = idx === liElements.length - 1;
-          // Only use block-level direct children as source; inline elements like span should be
-          // processed as part of the li's mixed content, not as standalone sources
-          const directBlockEl = li.querySelector(':scope > p, :scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6, :scope > div');
-          const sourceEl = directBlockEl || li;
-          const runs = parseInlineFormatting(sourceEl, { breakLine: false }, [], (x) => x, true);
-          // Clean manual bullets from first run
-          if (runs.length > 0) {
-            runs[0].text = runs[0].text.replace(/^[•\-\*▪▸]\s*/, '');
-            if (useBullet) {
-              runs[0].options.bullet = { indent: textIndent };
+          const checkPseudo = (style) => {
+            if (!style || !style.content || style.content === 'none') return false;
+            return style.position === 'absolute' &&
+                   (style.left === '0px' || style.left === '0');
+          };
+
+          hasAbsolutePseudoAtLeftZero = checkPseudo(beforeStyle) || checkPseudo(afterStyle);
+        }
+
+        // Determine text margin: if pseudo-element at left:0, padding-left is for pseudo (margin=0)
+        // Otherwise, use LI's padding as margin
+        let textMargin;
+        if (hasAbsolutePseudoAtLeftZero) {
+          textMargin = [0, liPaddingRightPt, liPaddingBottomPt, liPaddingTopPt];
+        } else {
+          textMargin = [liPaddingLeftPt, liPaddingRightPt, liPaddingBottomPt, liPaddingTopPt];
+        }
+
+        const textIndent = useBullet ? ulPaddingLeftPt : 0;
+
+        const bullet_code_map = { 1: "2022", 2: "25E6", 3: "25AA" };
+
+        /**
+         * Extract text with formatting from any element, including layout containers
+         * Used as fallback when parseInlineFormatting fails
+         */
+        const extractTextFromAnyElement = (element) => {
+          const runs = [];
+
+          const walkNode = (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent.replace(/\s+/g, ' ');
+              if (text) {
+                runs.push({ text, options: {} });
+              }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+              const computed = window.getComputedStyle(node);
+              const tagName = node.tagName;
+
+              if (tagName === 'UL' || tagName === 'OL') return;
+
+              const options = {};
+              const isBold = computed.fontWeight === 'bold' || parseInt(computed.fontWeight) >= 600;
+              if (isBold) options.bold = true;
+              if (computed.fontStyle === 'italic') options.italic = true;
+              if (computed.textDecoration && computed.textDecoration.includes('underline')) options.underline = true;
+              if (computed.color && computed.color !== 'rgb(0, 0, 0)') {
+                options.color = rgbToHex(computed.color);
+              }
+              if (computed.fontSize) {
+                options.fontSize = pxToPoints(computed.fontSize);
+              }
+
+              const beforeLen = runs.length;
+              node.childNodes.forEach(child => walkNode(child));
+
+              if (Object.keys(options).length > 0) {
+                for (let i = beforeLen; i < runs.length; i++) {
+                  runs[i].options = { ...options, ...runs[i].options };
+                }
+              }
+            }
+          };
+
+          walkNode(element);
+
+          const merged = [];
+          for (const run of runs) {
+            const last = merged[merged.length - 1];
+            if (last && JSON.stringify(last.options) === JSON.stringify(run.options)) {
+              last.text += run.text;
+            } else {
+              merged.push(run);
             }
           }
-          // Set breakLine on last run
-          if (runs.length > 0 && !isLast) {
-            runs[runs.length - 1].options.breakLine = true;
+
+          return merged.map(r => ({ ...r, text: r.text.trim() })).filter(r => r.text);
+        };
+
+        /**
+         * Extract Unicode code point from a character (for bullet symbols)
+         */
+        const getUnicodeCode = (char) => {
+          if (!char || char.length === 0) return null;
+          return char.codePointAt(0).toString(16).toUpperCase();
+        };
+
+        /**
+         * Extract text runs from a list item, handling nested lists and pseudo-element bullets
+         */
+        const extractLiOwnRuns = (liEl, level) => {
+          const clone = liEl.cloneNode(true);
+          clone.querySelectorAll('ul,ol').forEach((n) => n.remove());
+
+          const holder = document.createElement('div');
+          holder.style.position = 'fixed';
+          holder.style.left = '-100000px';
+          holder.style.top = '0';
+          holder.style.visibility = 'hidden';
+          holder.style.pointerEvents = 'none';
+          holder.appendChild(clone);
+          document.body.appendChild(holder);
+
+          const pseudoBefore = clone.querySelector('.__pseudo_before__');
+          let customBulletCode = null;
+
+          if (pseudoBefore) {
+            const bulletText = pseudoBefore.textContent;
+            if (bulletText) {
+              const firstChar = bulletText.trim()[0];
+              if (firstChar && /[•\-\*▪▸○●◆◇■□✓✗➤➢→←↑↓◀▶▲▼✔✖]/.test(firstChar)) {
+                customBulletCode = getUnicodeCode(firstChar);
+                pseudoBefore.remove();
+              }
+            }
           }
-          items.push(...runs);
-        });
+
+          let runs = parseInlineFormatting(clone, { breakLine: false }, [], (x) => x, true);
+
+          if (runs.length === 0 && clone.textContent.trim()) {
+            runs = extractTextFromAnyElement(clone);
+          }
+
+          document.body.removeChild(holder);
+
+          if (runs.length > 0) {
+            runs[0].text = runs[0].text.replace(/^[•\-\*▪▸○●◆◇■□✓✗➤➢→←↑↓◀▶▲▼✔✖]\s*/, '');
+            runs[0].text = runs[0].text.replace(/^\s+/, '');
+          }
+
+          const nonEmpty = runs.filter(r => r && typeof r.text === 'string' && r.text.trim().length > 0);
+          if (nonEmpty.length === 0) return [];
+
+          if (useBullet) {
+            nonEmpty[0].options = nonEmpty[0].options || {};
+            const bulletCode = customBulletCode || bullet_code_map[level % 3 + 1];
+            nonEmpty[0].options.bullet = { "indent": textIndent, "code": bulletCode };
+            nonEmpty[0].options.indentLevel = level;
+          }
+
+          return nonEmpty;
+        };
+
+        /**
+         * Recursively walk list structure and extract text runs with proper indentation
+         */
+        const walkList = (listEl, level) => {
+          const lis = Array.from(listEl.children).filter((c) => c.tagName === 'LI');
+          lis.forEach((li, idx) => {
+            const ownRuns = extractLiOwnRuns(li, level);
+            if (ownRuns.length > 0) {
+              const hasSiblingAfter = idx < lis.length - 1;
+              const nested = li.querySelector(':scope > ul, :scope > ol');
+              const hasNested = !!nested;
+
+              if (hasSiblingAfter || hasNested) {
+                ownRuns[ownRuns.length - 1].options = ownRuns[ownRuns.length - 1].options || {};
+                ownRuns[ownRuns.length - 1].options.breakLine = true;
+              }
+              items.push(...ownRuns);
+            }
+
+            const nested = li.querySelector(':scope > ul, :scope > ol');
+            if (nested) {
+              walkList(nested, level + 1);
+              if (idx < lis.length - 1 && items.length > 0) {
+                const last = items[items.length - 1];
+                last.options = last.options || {};
+                last.options.breakLine = true;
+              }
+            }
+          });
+        };
+
+        walkList(el, 0);
 
         const computed = window.getComputedStyle(liElements[0] || el);
+
+        let lineSpacing = null;
+        if (computed.lineHeight && computed.lineHeight !== 'normal') {
+          lineSpacing = pxToPoints(computed.lineHeight);
+        }
 
         elements.push({
           type: 'list',
@@ -1666,7 +1944,7 @@ async function extractSlideData(page) {
             x: pxToInch(rect.left),
             y: pxToInch(rect.top),
             w: pxToInch(rect.width),
-            h: pxToInch(rect.height)
+            h: pxToInch(rect.height)  // Use rect.height directly - matches html2pptx_old.js
           },
           style: {
             fontSize: pxToPoints(computed.fontSize),
@@ -1674,11 +1952,11 @@ async function extractSlideData(page) {
             color: rgbToHex(computed.color),
             transparency: extractAlpha(computed.color),
             align: computed.textAlign === 'start' ? 'left' : computed.textAlign,
-            lineSpacing: computed.lineHeight && computed.lineHeight !== 'normal' ? pxToPoints(computed.lineHeight) : null,
+            lineSpacing: lineSpacing,
             paraSpaceBefore: 0,
             paraSpaceAfter: pxToPoints(computed.marginBottom),
-            // PptxGenJS margin array is [left, right, bottom, top]
-            margin: [marginLeft, 0, 0, 0]
+            // PptxGenJS margin format: [left, right, bottom, top]
+            margin: textMargin
           }
         });
 
@@ -1686,10 +1964,8 @@ async function extractSlideData(page) {
         return;
       }
 
-      // Extract text elements (P, H1, H2, etc.)
       if (!textTags.includes(el.tagName)) return;
 
-      // Skip if nested inside another text element (invalid HTML like <h2><p>...</p></h2>)
       const textParent = el.parentElement?.closest('p,h1,h2,h3,h4,h5,h6');
       if (textParent) return;
 
@@ -1699,7 +1975,6 @@ async function extractSlideData(page) {
       const text = el.textContent.trim();
       if (rect.width === 0 || rect.height === 0 || !text) return;
 
-      // Validate: Check for manual bullet symbols in text elements (not in lists)
       if (el.tagName !== 'LI' && /^[•\-\*▪▸○●◆◇■□]\s/.test(text.trimStart())) {
         errors.push(
           `Text element <${el.tagName.toLowerCase()}> starts with bullet symbol "${text.substring(0, 20)}...". ` +
@@ -1723,7 +1998,7 @@ async function extractSlideData(page) {
         paraSpaceAfter: pxToPoints(computed.marginBottom),
         letterSpacing: computed.letterSpacing,
         textShadow: computed.textShadow,
-        // PptxGenJS margin array is [left, right, bottom, top] (not [top, right, bottom, left] as documented)
+        // PptxGenJS margin format: [left, right, bottom, top]
         margin: [
           pxToPoints(computed.paddingLeft),
           pxToPoints(computed.paddingRight),
@@ -1740,11 +2015,9 @@ async function extractSlideData(page) {
       const hasFormatting = el.querySelector('b, i, u, strong, em, span, br');
 
       if (hasFormatting) {
-        // Text with inline formatting
         const transformStr = computed.textTransform;
         const runs = parseInlineFormatting(el, {}, [], (str) => applyTextTransform(str, transformStr), false);
 
-        // Adjust lineSpacing based on largest fontSize in runs
         const adjustedStyle = { ...baseStyle };
         if (adjustedStyle.lineSpacing) {
           const maxFontSize = Math.max(
@@ -1764,7 +2037,6 @@ async function extractSlideData(page) {
           style: adjustedStyle
         });
       } else {
-        // Plain text - inherit CSS formatting
         const textTransform = computed.textTransform;
         const transformedText = applyTextTransform(text, textTransform);
 
@@ -1790,12 +2062,18 @@ async function extractSlideData(page) {
   });
 }
 
+/**
+ * Main function: Convert HTML file to PowerPoint slide
+ * @param {string} htmlFile - Path to HTML file
+ * @param {Object} pres - PptxGenJS presentation instance
+ * @param {Object} options - Optional configuration { slide, tmpDir }
+ * @returns {Promise<{slide, placeholders}>} Slide object and array of placeholder positions
+ */
 async function html2pptx(htmlFile, pres, options = {}) {
   const { slide = null } = options;
   const tmpDir = options.tmpDir || fs.mkdtempSync(path.join(os.tmpdir(), 'html2pptx-'));
 
   try {
-    // Use Chrome on macOS, default Chromium on Unix
     const launchOptions = { env: { TMPDIR: tmpDir } };
     if (process.platform === 'darwin') {
       launchOptions.channel = 'chrome';
@@ -1812,7 +2090,6 @@ async function html2pptx(htmlFile, pres, options = {}) {
     try {
       const page = await browser.newPage();
       page.on('console', (msg) => {
-        // Log the message text to your test runner's console
         console.log(`Browser console: ${msg.text()}`);
       });
 
@@ -1840,7 +2117,6 @@ async function html2pptx(htmlFile, pres, options = {}) {
       return path.join(path.dirname(filePath), src);
     };
 
-    // Collect all validation errors
     if (bodyDimensions.errors && bodyDimensions.errors.length > 0) {
       validationErrors.push(...bodyDimensions.errors);
     }
@@ -1874,7 +2150,6 @@ async function html2pptx(htmlFile, pres, options = {}) {
       }
     }
 
-    // Throw all errors at once if any exist
     if (validationErrors.length > 0) {
       const errorMessage = validationErrors.length === 1
         ? validationErrors[0]
