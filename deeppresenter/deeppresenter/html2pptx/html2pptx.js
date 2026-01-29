@@ -563,6 +563,26 @@ function addElements(slideData, targetSlide, pres) {
       if (el.shape.rectRadius > 0) shapeOptions.rectRadius = el.shape.rectRadius;
       if (el.shape.shadow) shapeOptions.shadow = el.shape.shadow;
 
+      if (el.style) {
+        if (el.style.fontSize) shapeOptions.fontSize = el.style.fontSize;
+        if (el.style.fontFace) shapeOptions.fontFace = el.style.fontFace;
+        if (el.style.color) shapeOptions.color = el.style.color;
+        if (el.style.bold) shapeOptions.bold = el.style.bold;
+        if (el.style.italic) shapeOptions.italic = el.style.italic;
+        if (el.style.underline) shapeOptions.underline = el.style.underline;
+        if (el.style.align) shapeOptions.align = el.style.align;
+        if (el.style.valign) shapeOptions.valign = el.style.valign;
+        if (el.style.lineSpacing) shapeOptions.lineSpacing = el.style.lineSpacing;
+        if (el.style.paraSpaceBefore != null) shapeOptions.paraSpaceBefore = el.style.paraSpaceBefore;
+        if (el.style.paraSpaceAfter != null) shapeOptions.paraSpaceAfter = el.style.paraSpaceAfter;
+        if (el.style.margin) shapeOptions.margin = el.style.margin;
+        if (el.style.rotate !== undefined) shapeOptions.rotate = el.style.rotate;
+        if (el.style.transparency !== null && el.style.transparency !== undefined) {
+          shapeOptions.transparency = el.style.transparency;
+        }
+        if (el.style.shadow) shapeOptions.shadow = el.style.shadow;
+      }
+
       targetSlide.addText(el.text || '', shapeOptions);
     } else if (el.type === 'list') {
       const listOptions = {
@@ -1225,6 +1245,113 @@ async function extractSlideData(page) {
       };
     };
 
+    const buildInlineShapeTextElement = (el, rect, computed) => {
+      const rotation = getRotation(computed.transform, computed.writingMode);
+      const { x, y, w, h } = getPositionAndSize(el, rect, rotation);
+      const isFlex = computed.display === 'flex' || computed.display === 'inline-flex';
+      const justifyCenter = isFlex && computed.justifyContent === 'center';
+      const alignCenter = isFlex && computed.alignItems === 'center';
+      const baseStyle = {
+        fontSize: pxToPoints(computed.fontSize),
+        fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
+        fontWeight: computed.fontWeight,
+        color: rgbToHex(computed.color),
+        align: justifyCenter ? 'center' : (computed.textAlign === 'start' ? 'left' : computed.textAlign),
+        lineSpacing: calculateLineSpacing(computed.lineHeight, computed.fontSize),
+        paraSpaceBefore: pxToPoints(computed.marginTop),
+        paraSpaceAfter: pxToPoints(computed.marginBottom),
+        letterSpacing: computed.letterSpacing,
+        shadow: parseTextShadowForPptx(computed.textShadow),
+        // PptxGenJS margin array is [left, right, bottom, top]
+        margin: [
+          pxToPoints(computed.paddingLeft),
+          pxToPoints(computed.paddingRight),
+          pxToPoints(computed.paddingBottom),
+          pxToPoints(computed.paddingTop)
+        ],
+        valign: alignCenter ? 'middle' : null
+      };
+
+      const textTransparency = getEffectiveTransparency(el, computed.color);
+      if (textTransparency !== null) baseStyle.transparency = textTransparency;
+
+      if (rotation !== null) baseStyle.rotate = rotation;
+
+      const hasFormatting = el.querySelector('b, i, u, strong, em, span, br, code, sup, sub');
+      const transformStr = computed.textTransform;
+      let text = '';
+      if (hasFormatting) {
+        const runs = parseInlineFormatting(el, {}, [], (str) => applyTextTransform(str, transformStr), true);
+        if (runs.length === 0) return null;
+        if (baseStyle.lineSpacing) {
+          const maxFontSize = Math.max(
+            baseStyle.fontSize,
+            ...runs.map(r => r.options?.fontSize || 0)
+          );
+          if (maxFontSize > baseStyle.fontSize) {
+            const lineHeightMultiplier = baseStyle.lineSpacing / baseStyle.fontSize;
+            baseStyle.lineSpacing = maxFontSize * lineHeightMultiplier;
+          }
+        }
+        text = runs;
+      } else {
+        const transformedText = applyTextTransform(el.textContent.trim(), transformStr);
+        if (!transformedText) return null;
+        const isBold = computed.fontWeight === 'bold' || parseInt(computed.fontWeight) >= 600;
+        text = transformedText;
+        baseStyle.bold = isBold && !shouldSkipBold(computed.fontFamily);
+        baseStyle.italic = computed.fontStyle === 'italic';
+        baseStyle.underline = computed.textDecoration.includes('underline');
+      }
+
+      const bgColor = computed.backgroundColor;
+      const hasBg = bgColor && bgColor !== 'rgba(0, 0, 0, 0)';
+      const fillColor = hasBg ? rgbToHex(bgColor) : null;
+      const fillTransparency = hasBg ? getEffectiveTransparency(el, bgColor) : null;
+      const borderWidth = parseFloat(computed.borderWidth) || 0;
+      const borderTopWidth = parseFloat(computed.borderTopWidth) || 0;
+      const borderRightWidth = parseFloat(computed.borderRightWidth) || 0;
+      const borderBottomWidth = parseFloat(computed.borderBottomWidth) || 0;
+      const borderLeftWidth = parseFloat(computed.borderLeftWidth) || 0;
+      const hasBorder = borderWidth > 0 || borderTopWidth > 0 || borderRightWidth > 0 || borderBottomWidth > 0 || borderLeftWidth > 0;
+      const borders = [borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth].map(b => b || 0);
+      const hasUniformBorder = hasBorder && borders.every(b => b === borders[0]);
+      const shadow = parseBoxShadow(computed.boxShadow);
+
+      const actualWidth = rect.width;
+      const actualHeight = rect.height;
+      const rectRadius = (() => {
+        const radius = computed.borderRadius;
+        const radiusValue = parseFloat(radius);
+        if (!radiusValue) return 0;
+        if (radius.includes('%')) {
+          if (radiusValue >= 50) return 1;
+          const minDim = Math.min(actualWidth, actualHeight);
+          return (radiusValue / 100) * pxToInch(minDim);
+        }
+        if (radius.includes('pt')) return radiusValue / 72;
+        return radiusValue / PX_PER_IN;
+      })();
+
+      return {
+        type: 'shape',
+        text: text,
+        position: { x: pxToInch(x), y: pxToInch(y), w: pxToInch(w), h: pxToInch(h) },
+        style: baseStyle,
+        shape: {
+          fill: fillColor,
+          transparency: fillTransparency,
+          line: hasUniformBorder && borderWidth > 0 ? {
+            color: rgbToHex(computed.borderColor),
+            width: pxToPoints(computed.borderWidth),
+            dashType: mapBorderStyleToDashType(computed.borderStyle)
+          } : null,
+          rectRadius: rectRadius,
+          shadow: shadow
+        }
+      };
+    };
+
     // First pass: materialize pseudo-elements as real DOM elements
     document.querySelectorAll('*').forEach((el) => {
       const beforeStyle = window.getComputedStyle(el, '::before');
@@ -1456,6 +1583,20 @@ async function extractSlideData(page) {
             const rect = el.getBoundingClientRect();
             if (rect.width > 0 && rect.height > 0 && el.textContent.trim()) {
               const computed = window.getComputedStyle(el);
+              const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
+              const hasBgImage = computed.backgroundImage && computed.backgroundImage !== 'none';
+              const hasBorder = (computed.borderWidth && parseFloat(computed.borderWidth) > 0) ||
+                (computed.borderTopWidth && parseFloat(computed.borderTopWidth) > 0) ||
+                (computed.borderRightWidth && parseFloat(computed.borderRightWidth) > 0) ||
+                (computed.borderBottomWidth && parseFloat(computed.borderBottomWidth) > 0) ||
+                (computed.borderLeftWidth && parseFloat(computed.borderLeftWidth) > 0);
+              const hasShadow = computed.boxShadow && computed.boxShadow !== 'none';
+              if (hasBg || hasBgImage || hasBorder || hasShadow) {
+                const shapeTextElement = buildInlineShapeTextElement(el, rect, computed);
+                if (shapeTextElement) elements.push(shapeTextElement);
+                processed.add(el);
+                return;
+              }
               const textElement = buildInlineTextElement(el, rect, computed);
               if (textElement) elements.push(textElement);
               processed.add(el);
@@ -2184,6 +2325,20 @@ async function extractSlideData(page) {
         if (textParent && !isBlock) return;
 
         if (isBlock && rect.width > 0 && rect.height > 0 && el.textContent.trim()) {
+          const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
+          const hasBgImage = computed.backgroundImage && computed.backgroundImage !== 'none';
+          const hasBorder = (computed.borderWidth && parseFloat(computed.borderWidth) > 0) ||
+            (computed.borderTopWidth && parseFloat(computed.borderTopWidth) > 0) ||
+            (computed.borderRightWidth && parseFloat(computed.borderRightWidth) > 0) ||
+            (computed.borderBottomWidth && parseFloat(computed.borderBottomWidth) > 0) ||
+            (computed.borderLeftWidth && parseFloat(computed.borderLeftWidth) > 0);
+          const hasShadow = computed.boxShadow && computed.boxShadow !== 'none';
+          if (hasBg || hasBgImage || hasBorder || hasShadow) {
+            const shapeTextElement = buildInlineShapeTextElement(el, rect, computed);
+            if (shapeTextElement) elements.push(shapeTextElement);
+            processed.add(el);
+            return;
+          }
           const rotation = getRotation(computed.transform, computed.writingMode);
           const { x, y, w, h } = getPositionAndSize(el, rect, rotation);
 
