@@ -684,6 +684,16 @@ async function extractSlideData(page) {
       const num = parseFloat(raw);
       return Number.isFinite(num) ? num : null;
     };
+    const BULLET_CHAR_REGEX = /[•\-\*▪▸○●◆◇■□✓✗➤➢→←↑↓◀▶▲▼✔✖]/;
+    const isBulletMarker = (el, computedStyle = null) => {
+      if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
+      const text = (el.textContent || '').trim();
+      if (!text || !BULLET_CHAR_REGEX.test(text[0])) return false;
+      const className = typeof el.className === 'string' ? el.className : '';
+      if (className.includes('bullet')) return true;
+      const computed = computedStyle || window.getComputedStyle(el);
+      return computed.position === 'absolute';
+    };
     const getLineInsets = (computed, rect) => {
       const width = rect.width || (rect.right - rect.left);
       const height = rect.height || (rect.bottom - rect.top);
@@ -987,7 +997,9 @@ async function extractSlideData(page) {
             || node.tagName === 'I'
             || node.tagName === 'EM'
             || node.tagName === 'U'
-            || node.tagName === 'CODE';
+            || node.tagName === 'CODE'
+            || node.tagName === 'SUP'
+            || node.tagName === 'SUB';
           const display = computed.display;
           // Never add line breaks for materialized pseudo-elements
           const isPseudoElement = node.className && (
@@ -1014,6 +1026,8 @@ async function extractSlideData(page) {
               if (transparency !== null) options.transparency = transparency;
             }
             if (computed.fontSize) options.fontSize = pxToPoints(computed.fontSize);
+            if (node.tagName === 'SUP') options.superscript = true;
+            if (node.tagName === 'SUB') options.subscript = true;
 
             if (computed.textTransform && computed.textTransform !== 'none') {
               const transformStr = computed.textTransform;
@@ -1172,7 +1186,7 @@ async function extractSlideData(page) {
 
       if (rotation !== null) baseStyle.rotate = rotation;
 
-      const hasFormatting = el.querySelector('b, i, u, strong, em, span, br, code');
+      const hasFormatting = el.querySelector('b, i, u, strong, em, span, br, code, sup, sub');
       const transformStr = computed.textTransform;
       if (hasFormatting) {
         const runs = parseInlineFormatting(el, {}, [], (str) => applyTextTransform(str, transformStr), true);
@@ -1466,7 +1480,7 @@ async function extractSlideData(page) {
             const computed = window.getComputedStyle(cell);
             const isBold = computed.fontWeight === 'bold' || parseInt(computed.fontWeight) >= 600;
             const textTransform = computed.textTransform;
-            const hasFormatting = cell.querySelector('b, i, u, strong, em, span, br');
+            const hasFormatting = cell.querySelector('b, i, u, strong, em, span, br, sup, sub');
             const cellText = hasFormatting
               ? parseInlineFormatting(cell, {}, [], (str) => applyTextTransform(str, textTransform), true)
               : applyTextTransform(cell.innerText || '', textTransform);
@@ -1791,6 +1805,7 @@ async function extractSlideData(page) {
         // This includes p, h1-h6, and inline elements with display:block (like strong, span)
         // Allow simple block-level spans/strong (no layout/background/border) to stay in list processing
         const isComplexBlockInline = (el, computed) => {
+          if (isBulletMarker(el, computed)) return false;
           if (computed.position && computed.position !== 'static') return true;
           const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
           const hasBorder = parseFloat(computed.borderWidth) > 0 ||
@@ -1814,6 +1829,7 @@ async function extractSlideData(page) {
               el.className.includes('__pseudo_after__')
             )) return false;
             const computed = window.getComputedStyle(el);
+            if (isBulletMarker(el, computed)) return false;
             const display = computed.display;
             const isBlockInline = display === 'block' || display === 'inline-block';
             return isBlockInline && isComplexBlockInline(el, computed);
@@ -1872,7 +1888,9 @@ async function extractSlideData(page) {
         const listStyleType = liComputed.listStyleType || ulComputed.listStyleType;
 
         const hasPseudoBullet = firstLi.querySelector('.__pseudo_before__') !== null;
-        const useBullet = listStyleType !== 'none' || hasPseudoBullet;
+        const inlineBulletNodes = Array.from(firstLi.querySelectorAll('span, b, strong, i, em, u, code, small, sup, sub, a'));
+        const hasInlineBullet = inlineBulletNodes.some((node) => isBulletMarker(node));
+        const useBullet = listStyleType !== 'none' || hasPseudoBullet || hasInlineBullet;
 
         const liPaddingLeftPt = pxToPoints(liComputed.paddingLeft);
         const liPaddingRightPt = pxToPoints(liComputed.paddingRight);
@@ -1895,11 +1913,16 @@ async function extractSlideData(page) {
 
           hasAbsolutePseudoAtLeftZero = checkPseudo(beforeStyle) || checkPseudo(afterStyle);
         }
+        const hasAbsoluteInlineBulletAtLeftZero = inlineBulletNodes.some((node) => {
+          if (!isBulletMarker(node)) return false;
+          const style = window.getComputedStyle(node);
+          return style.position === 'absolute' && (style.left === '0px' || style.left === '0');
+        });
 
         // Determine text margin and indent
         let textMargin;
         let textIndent = useBullet ? ulPaddingLeftPt : 0;
-        if (hasAbsolutePseudoAtLeftZero) {
+        if (hasAbsolutePseudoAtLeftZero || hasAbsoluteInlineBulletAtLeftZero) {
           // Bullet sits at left:0; keep LI padding as hanging indent
           textMargin = [0, liPaddingRightPt, liPaddingBottomPt, liPaddingTopPt];
           textIndent = liPaddingLeftPt;
@@ -1933,6 +1956,8 @@ async function extractSlideData(page) {
               if (isBold) options.bold = true;
               if (computed.fontStyle === 'italic') options.italic = true;
               if (computed.textDecoration && computed.textDecoration.includes('underline')) options.underline = true;
+              if (tagName === 'SUP') options.superscript = true;
+              if (tagName === 'SUB') options.subscript = true;
               if (computed.color && computed.color !== 'rgb(0, 0, 0)') {
                 options.color = rgbToHex(computed.color);
               }
@@ -1997,11 +2022,27 @@ async function extractSlideData(page) {
             const bulletText = pseudoBefore.textContent;
             if (bulletText) {
               const firstChar = bulletText.trim()[0];
-              if (firstChar && /[•\-\*▪▸○●◆◇■□✓✗➤➢→←↑↓◀▶▲▼✔✖]/.test(firstChar)) {
+              if (firstChar && BULLET_CHAR_REGEX.test(firstChar)) {
                 customBulletCode = getUnicodeCode(firstChar);
                 pseudoBefore.remove();
               }
             }
+          }
+
+          // Remove inline bullet markers (e.g., <span class="bullet">•</span>)
+          const inlineBulletCandidates = Array.from(
+            clone.querySelectorAll('span, b, strong, i, em, u, code, small, sup, sub, a')
+          );
+          for (const candidate of inlineBulletCandidates) {
+            if (!isBulletMarker(candidate)) continue;
+            const candidateText = (candidate.textContent || '').trim();
+            if (!customBulletCode && candidateText) {
+              const firstChar = candidateText[0];
+              if (firstChar && BULLET_CHAR_REGEX.test(firstChar)) {
+                customBulletCode = getUnicodeCode(firstChar);
+              }
+            }
+            candidate.remove();
           }
 
           let runs = parseInlineFormatting(clone, { breakLine: false }, [], (x) => x, true);
@@ -2258,7 +2299,9 @@ async function extractSlideData(page) {
             child.className.includes('__pseudo_before__') ||
             child.className.includes('__pseudo_after__')
           )) return false;
-          const display = window.getComputedStyle(child).display;
+          const computed = window.getComputedStyle(child);
+          if (isBulletMarker(child, computed)) return false;
+          const display = computed.display;
           return display === 'block' || display === 'inline-block';
         });
         if (hasBlockInline) return;
@@ -2310,7 +2353,7 @@ async function extractSlideData(page) {
 
       if (rotation !== null) baseStyle.rotate = rotation;
 
-      const hasFormatting = el.querySelector('b, i, u, strong, em, span, br');
+      const hasFormatting = el.querySelector('b, i, u, strong, em, span, br, sup, sub');
 
       if (hasFormatting) {
         const transformStr = computed.textTransform;
