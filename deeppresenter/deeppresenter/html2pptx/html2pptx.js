@@ -1699,18 +1699,34 @@ async function extractSlideData(page) {
 
         // Check if LI contains block-level elements that should be processed separately
         // This includes p, h1-h6, and inline elements with display:block (like strong, span)
+        // Allow simple block-level spans/strong (no layout/background/border) to stay in list processing
+        const isComplexBlockInline = (el, computed) => {
+          if (computed.position && computed.position !== 'static') return true;
+          const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
+          const hasBorder = parseFloat(computed.borderWidth) > 0 ||
+            parseFloat(computed.borderTopWidth) > 0 ||
+            parseFloat(computed.borderRightWidth) > 0 ||
+            parseFloat(computed.borderBottomWidth) > 0 ||
+            parseFloat(computed.borderLeftWidth) > 0;
+          const hasShadow = computed.boxShadow && computed.boxShadow !== 'none';
+          const isLayout = isLayoutDisplay(computed.display);
+          return hasBg || hasBorder || hasShadow || isLayout;
+        };
+
         const hasBlockTextElements = liElements.some((li) => {
           // Check for native block elements
           if (li.querySelector('p, h1, h2, h3, h4, h5, h6')) return true;
-          // Check for inline elements with display:block
+          // Check for inline elements with display:block/inline-block that are complex
           const inlineElements = li.querySelectorAll('strong, span, b, i, em');
           return Array.from(inlineElements).some((el) => {
             if (el.className && (
               el.className.includes('__pseudo_before__') ||
               el.className.includes('__pseudo_after__')
             )) return false;
-            const display = window.getComputedStyle(el).display;
-            return display === 'block' || display === 'inline-block';
+            const computed = window.getComputedStyle(el);
+            const display = computed.display;
+            const isBlockInline = display === 'block' || display === 'inline-block';
+            return isBlockInline && isComplexBlockInline(el, computed);
           });
         });
 
@@ -1790,16 +1806,16 @@ async function extractSlideData(page) {
           hasAbsolutePseudoAtLeftZero = checkPseudo(beforeStyle) || checkPseudo(afterStyle);
         }
 
-        // Determine text margin: if pseudo-element at left:0, padding-left is for pseudo (margin=0)
-        // Otherwise, use LI's padding as margin
+        // Determine text margin and indent
         let textMargin;
+        let textIndent = useBullet ? ulPaddingLeftPt : 0;
         if (hasAbsolutePseudoAtLeftZero) {
+          // Bullet sits at left:0; keep LI padding as hanging indent
           textMargin = [0, liPaddingRightPt, liPaddingBottomPt, liPaddingTopPt];
+          textIndent = liPaddingLeftPt;
         } else {
           textMargin = [liPaddingLeftPt, liPaddingRightPt, liPaddingBottomPt, liPaddingTopPt];
         }
-
-        const textIndent = useBullet ? ulPaddingLeftPt : 0;
 
         const bullet_code_map = { 1: "2022", 2: "25E6", 3: "25AA" };
 
@@ -1906,6 +1922,26 @@ async function extractSlideData(page) {
 
           document.body.removeChild(holder);
 
+          // Convert intra-LI hard paragraph breaks into soft line breaks
+          // so bullets/indents are preserved without repeating bullets.
+          for (let i = 0; i < runs.length; i += 1) {
+            const current = runs[i];
+            if (current?.options?.breakLine) {
+              delete current.options.breakLine;
+              // Attach softBreakBefore to the next non-empty run (skip whitespace-only runs)
+              let j = i + 1;
+              while (j < runs.length) {
+                const next = runs[j];
+                const text = typeof next?.text === 'string' ? next.text : '';
+                if (text.trim().length > 0) {
+                  next.options = next.options || {};
+                  next.options.softBreakBefore = true;
+                  break;
+                }
+                j += 1;
+              }
+            }
+          }
           if (runs.length > 0) {
             runs[0].text = runs[0].text.replace(/^[•\-\*▪▸○●◆◇■□✓✗➤➢→←↑↓◀▶▲▼✔✖]\s*/, '');
             runs[0].text = runs[0].text.replace(/^\s+/, '');
