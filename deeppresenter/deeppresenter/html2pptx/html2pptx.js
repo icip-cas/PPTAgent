@@ -37,6 +37,13 @@ const PT_PER_PX = 0.75;  // Points per pixel
 const PX_PER_IN = 96;    // Pixels per inch (standard screen DPI)
 const EMU_PER_IN = 914400;  // English Metric Units per inch (PowerPoint internal unit)
 const TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutes timeout for Playwright operations
+const mapBorderStyleToDashType = (style) => {
+  if (!style || typeof style !== 'string') return null;
+  const normalized = style.toLowerCase();
+  if (normalized === 'dashed') return 'dash';
+  if (normalized === 'dotted') return 'sysDot';
+  return null;
+};
 
 /**
  * Get body dimensions and check for content overflow
@@ -444,30 +451,33 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
           const widthPt = border.width;
           const color = border.color;
           const inset = (widthPt / 72) / 2;
+          const dashType = mapBorderStyleToDashType(
+            border.style || border.top?.style || border.right?.style || border.bottom?.style || border.left?.style
+          );
 
           // Top border
           slideData.elements.push({
             type: 'line',
             x1: x, y1: y + inset, x2: x + w, y2: y + inset,
-            width: widthPt, color: color
+            width: widthPt, color: color, dashType: dashType
           });
           // Right border
           slideData.elements.push({
             type: 'line',
             x1: x + w - inset, y1: y, x2: x + w - inset, y2: y + h,
-            width: widthPt, color: color
+            width: widthPt, color: color, dashType: dashType
           });
           // Bottom border
           slideData.elements.push({
             type: 'line',
             x1: x, y1: y + h - inset, x2: x + w, y2: y + h - inset,
-            width: widthPt, color: color
+            width: widthPt, color: color, dashType: dashType
           });
           // Left border
           slideData.elements.push({
             type: 'line',
             x1: x + inset, y1: y, x2: x + inset, y2: y + h,
-            width: widthPt, color: color
+            width: widthPt, color: color, dashType: dashType
           });
         }
       }
@@ -523,12 +533,14 @@ function addElements(slideData, targetSlide, pres) {
         transparency: el.imageProps?.transparency || 0
       });
     } else if (el.type === 'line') {
+      const lineOptions = { color: el.color, width: el.width };
+      if (el.dashType) lineOptions.dashType = el.dashType;
       targetSlide.addShape(pres.ShapeType.line, {
         x: el.x1,
         y: el.y1,
         w: el.x2 - el.x1,
         h: el.y2 - el.y1,
-        line: { color: el.color, width: el.width }
+        line: lineOptions
       });
     } else if (el.type === 'shape') {
       const shapeOptions = {
@@ -543,7 +555,11 @@ function addElements(slideData, targetSlide, pres) {
         shapeOptions.fill = { color: el.shape.fill };
         if (el.shape.transparency != null) shapeOptions.fill.transparency = el.shape.transparency;
       }
-      if (el.shape.line) shapeOptions.line = el.shape.line;
+      if (el.shape.line) {
+        const line = { ...el.shape.line };
+        if (!line.dashType) delete line.dashType;
+        shapeOptions.line = line;
+      }
       if (el.shape.rectRadius > 0) shapeOptions.rectRadius = el.shape.rectRadius;
       if (el.shape.shadow) shapeOptions.shadow = el.shape.shadow;
 
@@ -657,6 +673,51 @@ async function extractSlideData(page) {
 
     const pxToInch = (px) => px / PX_PER_IN;
     const pxToPoints = (pxStr) => parseFloat(pxStr) * PT_PER_PX;
+    const parseInsetValue = (value, ref) => {
+      if (!value) return null;
+      const raw = value.trim();
+      if (!raw) return null;
+      if (raw.endsWith('%')) {
+        const pct = parseFloat(raw);
+        return Number.isFinite(pct) ? (pct / 100) * ref : null;
+      }
+      const num = parseFloat(raw);
+      return Number.isFinite(num) ? num : null;
+    };
+    const getLineInsets = (computed, rect) => {
+      const width = rect.width || (rect.right - rect.left);
+      const height = rect.height || (rect.bottom - rect.top);
+      const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+      const paddingRight = parseFloat(computed.paddingRight) || 0;
+      const paddingTop = parseFloat(computed.paddingTop) || 0;
+      const paddingBottom = parseFloat(computed.paddingBottom) || 0;
+      const left = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-left'), width);
+      const right = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-right'), width);
+      const top = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-top'), height);
+      const bottom = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-bottom'), height);
+      return {
+        left: left !== null ? left : paddingLeft,
+        right: right !== null ? right : paddingRight,
+        top: top !== null ? top : paddingTop,
+        bottom: bottom !== null ? bottom : paddingBottom
+      };
+    };
+    const getLineRanges = (computed, rect) => {
+      const insets = getLineInsets(computed, rect);
+      return {
+        left: rect.left + insets.left,
+        right: rect.right - insets.right,
+        top: rect.top + insets.top,
+        bottom: rect.bottom - insets.bottom
+      };
+    };
+    const mapBorderStyleToDashType = (style) => {
+      if (!style) return null;
+      const normalized = style.toLowerCase();
+      if (normalized === 'dashed') return 'dash';
+      if (normalized === 'dotted') return 'sysDot';
+      return null;
+    };
 
     /**
      * Calculate lineSpacing for PptxGenJS based on CSS line-height and font-size.
@@ -1059,6 +1120,7 @@ async function extractSlideData(page) {
     const elements = [];
     const placeholders = [];
     const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI'];
+    const CONTAINER_TAGS = new Set(['DIV', 'HEADER', 'FOOTER', 'SECTION', 'ARTICLE', 'MAIN', 'NAV', 'ASIDE']);
     const processed = new Set();
     const markProcessed = (root) => {
       processed.add(root);
@@ -1314,10 +1376,27 @@ async function extractSlideData(page) {
               border: hasBorder ? {
                 width: pxToPoints(computed.borderWidth),
                 color: rgbToHex(computed.borderColor),
-                top: borderTopWidth > 0 ? { width: pxToPoints(computed.borderTopWidth), color: rgbToHex(computed.borderTopColor) } : null,
-                right: borderRightWidth > 0 ? { width: pxToPoints(computed.borderRightWidth), color: rgbToHex(computed.borderRightColor) } : null,
-                bottom: borderBottomWidth > 0 ? { width: pxToPoints(computed.borderBottomWidth), color: rgbToHex(computed.borderBottomColor) } : null,
-                left: borderLeftWidth > 0 ? { width: pxToPoints(computed.borderLeftWidth), color: rgbToHex(computed.borderLeftColor) } : null
+                style: computed.borderStyle,
+                top: borderTopWidth > 0 ? {
+                  width: pxToPoints(computed.borderTopWidth),
+                  color: rgbToHex(computed.borderTopColor),
+                  style: computed.borderTopStyle
+                } : null,
+                right: borderRightWidth > 0 ? {
+                  width: pxToPoints(computed.borderRightWidth),
+                  color: rgbToHex(computed.borderRightColor),
+                  style: computed.borderRightStyle
+                } : null,
+                bottom: borderBottomWidth > 0 ? {
+                  width: pxToPoints(computed.borderBottomWidth),
+                  color: rgbToHex(computed.borderBottomColor),
+                  style: computed.borderBottomStyle
+                } : null,
+                left: borderLeftWidth > 0 ? {
+                  width: pxToPoints(computed.borderLeftWidth),
+                  color: rgbToHex(computed.borderLeftColor),
+                  style: computed.borderLeftStyle
+                } : null
               } : (parentBorderWidth > 0 ? {
                 width: pxToPoints(parentBorderWidth + 'px'),
                 color: rgbToHex(parentBorderColor),
@@ -1476,8 +1555,8 @@ async function extractSlideData(page) {
         return;
       }
 
-      if (el.tagName === 'DIV') {
-        // Allow DIVs inside LI (may be part of complex lists like checklist cards)
+      if (CONTAINER_TAGS.has(el.tagName)) {
+        // Allow container elements inside LI (may be part of complex lists like checklist cards)
         const textAncestor = el.closest('p,h1,h2,h3,h4,h5,h6');
         if (textAncestor) return;
 
@@ -1507,7 +1586,7 @@ async function extractSlideData(page) {
         }
       }
 
-      const isContainer = el.tagName === 'DIV' && !textTags.includes(el.tagName);
+      const isContainer = CONTAINER_TAGS.has(el.tagName) && !textTags.includes(el.tagName);
       if (isContainer) {
         const computed = window.getComputedStyle(el);
         const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
@@ -1545,46 +1624,55 @@ async function extractSlideData(page) {
           const y = pxToInch(rect.top);
           const w = pxToInch(actualWidth);
           const h = pxToInch(actualHeight);
+          const lineRanges = getLineRanges(computed, rect);
+          const leftPx = lineRanges.left;
+          const rightPx = lineRanges.right;
+          const topPx = lineRanges.top;
+          const bottomPx = lineRanges.bottom;
 
           // Create border lines with inset positioning (half line width) to center on edge
-          if (parseFloat(borderTop) > 0) {
+          if (parseFloat(borderTop) > 0 && rightPx > leftPx) {
             const widthPt = pxToPoints(borderTop);
             const inset = (widthPt / 72) / 2;
             borderLines.push({
               type: 'line',
-              x1: x, y1: y + inset, x2: x + w, y2: y + inset,
+              x1: pxToInch(leftPx), y1: y + inset, x2: pxToInch(rightPx), y2: y + inset,
               width: widthPt,
-              color: rgbToHex(computed.borderTopColor)
+              color: rgbToHex(computed.borderTopColor),
+              dashType: mapBorderStyleToDashType(computed.borderTopStyle)
             });
           }
-          if (parseFloat(borderRight) > 0) {
+          if (parseFloat(borderRight) > 0 && bottomPx > topPx) {
             const widthPt = pxToPoints(borderRight);
             const inset = (widthPt / 72) / 2;
             borderLines.push({
               type: 'line',
-              x1: x + w - inset, y1: y, x2: x + w - inset, y2: y + h,
+              x1: x + w - inset, y1: pxToInch(topPx), x2: x + w - inset, y2: pxToInch(bottomPx),
               width: widthPt,
-              color: rgbToHex(computed.borderRightColor)
+              color: rgbToHex(computed.borderRightColor),
+              dashType: mapBorderStyleToDashType(computed.borderRightStyle)
             });
           }
-          if (parseFloat(borderBottom) > 0) {
+          if (parseFloat(borderBottom) > 0 && rightPx > leftPx) {
             const widthPt = pxToPoints(borderBottom);
             const inset = (widthPt / 72) / 2;
             borderLines.push({
               type: 'line',
-              x1: x, y1: y + h - inset, x2: x + w, y2: y + h - inset,
+              x1: pxToInch(leftPx), y1: y + h - inset, x2: pxToInch(rightPx), y2: y + h - inset,
               width: widthPt,
-              color: rgbToHex(computed.borderBottomColor)
+              color: rgbToHex(computed.borderBottomColor),
+              dashType: mapBorderStyleToDashType(computed.borderBottomStyle)
             });
           }
-          if (parseFloat(borderLeft) > 0) {
+          if (parseFloat(borderLeft) > 0 && bottomPx > topPx) {
             const widthPt = pxToPoints(borderLeft);
             const inset = (widthPt / 72) / 2;
             borderLines.push({
               type: 'line',
-              x1: x + inset, y1: y, x2: x + inset, y2: y + h,
+              x1: x + inset, y1: pxToInch(topPx), x2: x + inset, y2: pxToInch(bottomPx),
               width: widthPt,
-              color: rgbToHex(computed.borderLeftColor)
+              color: rgbToHex(computed.borderLeftColor),
+              dashType: mapBorderStyleToDashType(computed.borderLeftStyle)
             });
           }
         }
@@ -1612,7 +1700,8 @@ async function extractSlideData(page) {
                   transparency: hasBg ? getEffectiveTransparency(el, computed.backgroundColor) : null,
                   line: hasUniformBorder && !hasBgImage ? {
                     color: rgbToHex(computed.borderColor),
-                    width: pxToPoints(computed.borderWidth)
+                    width: pxToPoints(computed.borderWidth),
+                    dashType: mapBorderStyleToDashType(computed.borderStyle)
                   } : null,
                   // Convert border-radius: 50%+ = circle, <50% = % of min dimension, px/pt = convert to inches
                   rectRadius: (() => {
@@ -1741,9 +1830,9 @@ async function extractSlideData(page) {
         const hasLiBorders = liElements.some((li) => {
           const liStyle = window.getComputedStyle(li);
           return parseFloat(liStyle.borderTopWidth) > 0 ||
-                 parseFloat(liStyle.borderRightWidth) > 0 ||
-                 parseFloat(liStyle.borderBottomWidth) > 0 ||
-                 parseFloat(liStyle.borderLeftWidth) > 0;
+            parseFloat(liStyle.borderRightWidth) > 0 ||
+            parseFloat(liStyle.borderBottomWidth) > 0 ||
+            parseFloat(liStyle.borderLeftWidth) > 0;
         });
 
         if (hasLiBorders) {
@@ -1759,10 +1848,10 @@ async function extractSlideData(page) {
               const computed = window.getComputedStyle(div);
               const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
               const hasBorder = parseFloat(computed.borderWidth) > 0 ||
-                               parseFloat(computed.borderTopWidth) > 0 ||
-                               parseFloat(computed.borderRightWidth) > 0 ||
-                               parseFloat(computed.borderBottomWidth) > 0 ||
-                               parseFloat(computed.borderLeftWidth) > 0;
+                parseFloat(computed.borderTopWidth) > 0 ||
+                parseFloat(computed.borderRightWidth) > 0 ||
+                parseFloat(computed.borderBottomWidth) > 0 ||
+                parseFloat(computed.borderLeftWidth) > 0;
               const isLayout = isLayoutDisplay(computed.display);
               return hasBg || hasBorder || isLayout;
             });
@@ -1801,7 +1890,7 @@ async function extractSlideData(page) {
           const checkPseudo = (style) => {
             if (!style || !style.content || style.content === 'none') return false;
             return style.position === 'absolute' &&
-                   (style.left === '0px' || style.left === '0');
+              (style.left === '0px' || style.left === '0');
           };
 
           hasAbsolutePseudoAtLeftZero = checkPseudo(beforeStyle) || checkPseudo(afterStyle);
@@ -2043,6 +2132,11 @@ async function extractSlideData(page) {
         const computed = window.getComputedStyle(el);
         const isBlock = computed.display === 'block' || computed.display === 'inline-block';
         const rect = el.getBoundingClientRect();
+        const lineRanges = getLineRanges(computed, rect);
+        const leftPx = lineRanges.left;
+        const rightPx = lineRanges.right;
+        const topPx = lineRanges.top;
+        const bottomPx = lineRanges.bottom;
 
         // Skip if inside a text element that will handle it
         const textParent = el.parentElement?.closest('p,h1,h2,h3,h4,h5,h6');
@@ -2059,56 +2153,60 @@ async function extractSlideData(page) {
           const borderRight = parseFloat(computed.borderRightWidth) || 0;
 
           // Add border lines if present
-          if (borderBottom > 0) {
+          if (borderBottom > 0 && rightPx > leftPx) {
             const widthPt = pxToPoints(computed.borderBottomWidth);
             const inset = (widthPt / 72) / 2;
             elements.push({
               type: 'line',
-              x1: pxToInch(rect.left),
+              x1: pxToInch(leftPx),
               y1: pxToInch(rect.bottom) - inset,
-              x2: pxToInch(rect.right),
+              x2: pxToInch(rightPx),
               y2: pxToInch(rect.bottom) - inset,
               width: widthPt,
-              color: rgbToHex(computed.borderBottomColor)
+              color: rgbToHex(computed.borderBottomColor),
+              dashType: mapBorderStyleToDashType(computed.borderBottomStyle)
             });
           }
-          if (borderTop > 0) {
+          if (borderTop > 0 && rightPx > leftPx) {
             const widthPt = pxToPoints(computed.borderTopWidth);
             const inset = (widthPt / 72) / 2;
             elements.push({
               type: 'line',
-              x1: pxToInch(rect.left),
+              x1: pxToInch(leftPx),
               y1: pxToInch(rect.top) + inset,
-              x2: pxToInch(rect.right),
+              x2: pxToInch(rightPx),
               y2: pxToInch(rect.top) + inset,
               width: widthPt,
-              color: rgbToHex(computed.borderTopColor)
+              color: rgbToHex(computed.borderTopColor),
+              dashType: mapBorderStyleToDashType(computed.borderTopStyle)
             });
           }
-          if (borderLeft > 0) {
+          if (borderLeft > 0 && bottomPx > topPx) {
             const widthPt = pxToPoints(computed.borderLeftWidth);
             const inset = (widthPt / 72) / 2;
             elements.push({
               type: 'line',
               x1: pxToInch(rect.left) + inset,
-              y1: pxToInch(rect.top),
+              y1: pxToInch(topPx),
               x2: pxToInch(rect.left) + inset,
-              y2: pxToInch(rect.bottom),
+              y2: pxToInch(bottomPx),
               width: widthPt,
-              color: rgbToHex(computed.borderLeftColor)
+              color: rgbToHex(computed.borderLeftColor),
+              dashType: mapBorderStyleToDashType(computed.borderLeftStyle)
             });
           }
-          if (borderRight > 0) {
+          if (borderRight > 0 && bottomPx > topPx) {
             const widthPt = pxToPoints(computed.borderRightWidth);
             const inset = (widthPt / 72) / 2;
             elements.push({
               type: 'line',
               x1: pxToInch(rect.right) - inset,
-              y1: pxToInch(rect.top),
+              y1: pxToInch(topPx),
               x2: pxToInch(rect.right) - inset,
-              y2: pxToInch(rect.bottom),
+              y2: pxToInch(bottomPx),
               width: widthPt,
-              color: rgbToHex(computed.borderRightColor)
+              color: rgbToHex(computed.borderRightColor),
+              dashType: mapBorderStyleToDashType(computed.borderRightStyle)
             });
           }
 
@@ -2181,6 +2279,11 @@ async function extractSlideData(page) {
       const computed = window.getComputedStyle(el);
       const rotation = getRotation(computed.transform, computed.writingMode);
       const { x, y, w, h } = getPositionAndSize(el, rect, rotation);
+      const lineRanges = getLineRanges(computed, rect);
+      const leftPx = lineRanges.left;
+      const rightPx = lineRanges.right;
+      const topPx = lineRanges.top;
+      const bottomPx = lineRanges.bottom;
 
       const baseStyle = {
         fontSize: pxToPoints(computed.fontSize),
@@ -2256,44 +2359,48 @@ async function extractSlideData(page) {
       const borderBottom = parseFloat(computed.borderBottomWidth) || 0;
       const borderLeft = parseFloat(computed.borderLeftWidth) || 0;
 
-      if (borderTop > 0) {
+      if (borderTop > 0 && rightPx > leftPx) {
         const widthPt = pxToPoints(computed.borderTopWidth);
         const inset = (widthPt / 72) / 2;
         elements.push({
           type: 'line',
-          x1: pxToInch(rect.left), y1: pxToInch(rect.top) + inset,
-          x2: pxToInch(rect.right), y2: pxToInch(rect.top) + inset,
-          width: widthPt, color: rgbToHex(computed.borderTopColor)
+          x1: pxToInch(leftPx), y1: pxToInch(rect.top) + inset,
+          x2: pxToInch(rightPx), y2: pxToInch(rect.top) + inset,
+          width: widthPt, color: rgbToHex(computed.borderTopColor),
+          dashType: mapBorderStyleToDashType(computed.borderTopStyle)
         });
       }
-      if (borderRight > 0) {
+      if (borderRight > 0 && bottomPx > topPx) {
         const widthPt = pxToPoints(computed.borderRightWidth);
         const inset = (widthPt / 72) / 2;
         elements.push({
           type: 'line',
-          x1: pxToInch(rect.right) - inset, y1: pxToInch(rect.top),
-          x2: pxToInch(rect.right) - inset, y2: pxToInch(rect.bottom),
-          width: widthPt, color: rgbToHex(computed.borderRightColor)
+          x1: pxToInch(rect.right) - inset, y1: pxToInch(topPx),
+          x2: pxToInch(rect.right) - inset, y2: pxToInch(bottomPx),
+          width: widthPt, color: rgbToHex(computed.borderRightColor),
+          dashType: mapBorderStyleToDashType(computed.borderRightStyle)
         });
       }
-      if (borderBottom > 0) {
+      if (borderBottom > 0 && rightPx > leftPx) {
         const widthPt = pxToPoints(computed.borderBottomWidth);
         const inset = (widthPt / 72) / 2;
         elements.push({
           type: 'line',
-          x1: pxToInch(rect.left), y1: pxToInch(rect.bottom) - inset,
-          x2: pxToInch(rect.right), y2: pxToInch(rect.bottom) - inset,
-          width: widthPt, color: rgbToHex(computed.borderBottomColor)
+          x1: pxToInch(leftPx), y1: pxToInch(rect.bottom) - inset,
+          x2: pxToInch(rightPx), y2: pxToInch(rect.bottom) - inset,
+          width: widthPt, color: rgbToHex(computed.borderBottomColor),
+          dashType: mapBorderStyleToDashType(computed.borderBottomStyle)
         });
       }
-      if (borderLeft > 0) {
+      if (borderLeft > 0 && bottomPx > topPx) {
         const widthPt = pxToPoints(computed.borderLeftWidth);
         const inset = (widthPt / 72) / 2;
         elements.push({
           type: 'line',
-          x1: pxToInch(rect.left) + inset, y1: pxToInch(rect.top),
-          x2: pxToInch(rect.left) + inset, y2: pxToInch(rect.bottom),
-          width: widthPt, color: rgbToHex(computed.borderLeftColor)
+          x1: pxToInch(rect.left) + inset, y1: pxToInch(topPx),
+          x2: pxToInch(rect.left) + inset, y2: pxToInch(bottomPx),
+          width: widthPt, color: rgbToHex(computed.borderLeftColor),
+          dashType: mapBorderStyleToDashType(computed.borderLeftStyle)
         });
       }
 
