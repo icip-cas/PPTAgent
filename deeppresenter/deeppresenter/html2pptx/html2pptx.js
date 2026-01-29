@@ -1577,8 +1577,13 @@ async function extractSlideData(page) {
         if (parent) {
           const parentDisplay = window.getComputedStyle(parent).display;
           if (isLayoutDisplay(parentDisplay)) {
-            const textAncestor = el.closest('p,h1,h2,h3,h4,h5,h6,li,ul,ol');
+            const textAncestor = el.closest('p,h1,h2,h3,h4,h5,h6');
             if (textAncestor) return;
+            const listAncestor = el.closest('li,ul,ol');
+            if (listAncestor) {
+              const listDisplay = window.getComputedStyle(listAncestor).display;
+              if (!isLayoutDisplay(listDisplay)) return;
+            }
             const rect = el.getBoundingClientRect();
             if (rect.width > 0 && rect.height > 0 && el.textContent.trim()) {
               const computed = window.getComputedStyle(el);
