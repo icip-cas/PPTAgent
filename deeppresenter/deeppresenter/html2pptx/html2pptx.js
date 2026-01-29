@@ -221,6 +221,7 @@ async function rasterizeGradients(page, slideData, bodyDimensions, tmpDir) {
       el.style.backgroundPosition = style.backgroundPosition || '0% 0%';
       if (style.borderRadius) el.style.borderRadius = style.borderRadius;
       if (style.boxShadow && style.boxShadow !== 'none') el.style.boxShadow = style.boxShadow;
+      if (style.opacity !== undefined && style.opacity !== null) el.style.opacity = String(style.opacity);
       el.style.pointerEvents = 'none';
       el.style.zIndex = '2147483647';
       document.body.appendChild(el);
@@ -679,11 +680,36 @@ async function extractSlideData(page) {
       return match.slice(1).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
     };
 
-    const extractAlpha = (rgbStr) => {
+    const getColorAlpha = (rgbStr) => {
+      if (!rgbStr) return 1;
+      if (rgbStr === 'transparent') return 0;
       const match = rgbStr.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
-      if (!match || !match[4]) return null;
+      if (!match || !match[4]) return 1;
       const alpha = parseFloat(match[4]);
-      return Math.round((1 - alpha) * 100);
+      return Math.max(0, Math.min(1, alpha));
+    };
+
+    const getEffectiveOpacity = (el) => {
+      let opacity = 1;
+      let node = el;
+      while (node && node.nodeType === Node.ELEMENT_NODE) {
+        const value = parseFloat(window.getComputedStyle(node).opacity);
+        if (!isNaN(value)) opacity *= value;
+        node = node.parentElement;
+      }
+      return opacity;
+    };
+
+    const getEffectiveTransparency = (el, colorStr) => {
+      const colorAlpha = getColorAlpha(colorStr);
+      const effectiveOpacity = getEffectiveOpacity(el);
+      const effectiveAlpha = colorAlpha * effectiveOpacity;
+      return effectiveAlpha < 1 ? Math.round((1 - effectiveAlpha) * 100) : null;
+    };
+
+    const getElementTransparency = (el) => {
+      const effectiveOpacity = getEffectiveOpacity(el);
+      return effectiveOpacity < 1 ? Math.round((1 - effectiveOpacity) * 100) : null;
     };
 
     const applyTextTransform = (text, textTransform) => {
@@ -923,7 +949,7 @@ async function extractSlideData(page) {
             if (computed.textDecoration && computed.textDecoration.includes('underline')) options.underline = true;
             if (computed.color && computed.color !== 'rgb(0, 0, 0)') {
               options.color = rgbToHex(computed.color);
-              const transparency = extractAlpha(computed.color);
+              const transparency = getEffectiveTransparency(node, computed.color);
               if (transparency !== null) options.transparency = transparency;
             }
             if (computed.fontSize) options.fontSize = pxToPoints(computed.fontSize);
@@ -1079,7 +1105,7 @@ async function extractSlideData(page) {
         valign: alignCenter ? 'middle' : null
       };
 
-      const transparency = extractAlpha(computed.color);
+      const transparency = getEffectiveTransparency(el, computed.color);
       if (transparency !== null) baseStyle.transparency = transparency;
 
       if (rotation !== null) baseStyle.rotate = rotation;
@@ -1299,7 +1325,7 @@ async function extractSlideData(page) {
               } : null)
             },
             imageProps: {
-              transparency: computed.opacity ? Math.round((1 - parseFloat(computed.opacity)) * 100) : 0
+              transparency: getElementTransparency(el) ?? 0
             }
           });
           processed.add(el);
@@ -1377,7 +1403,7 @@ async function extractSlideData(page) {
               rowspan: Number(cell.getAttribute('rowspan')) || null
             };
 
-            const textTransparency = extractAlpha(computed.color);
+            const textTransparency = getEffectiveTransparency(cell, computed.color);
             if (textTransparency !== null) cellOptions.transparency = textTransparency;
 
             const align = computed.textAlign === 'start' ? 'left' : computed.textAlign === 'end' ? 'right' : computed.textAlign;
@@ -1400,7 +1426,7 @@ async function extractSlideData(page) {
             }
 
             const bgColor = rgbToHex(computed.backgroundColor);
-            const bgTransparency = extractAlpha(computed.backgroundColor);
+            const bgTransparency = getEffectiveTransparency(cell, computed.backgroundColor);
             if (bgColor) {
               cellOptions.fill = { color: bgColor };
               if (bgTransparency !== null) cellOptions.fill.transparency = bgTransparency;
@@ -1583,7 +1609,7 @@ async function extractSlideData(page) {
                 },
                 shape: {
                   fill: hasBg ? rgbToHex(computed.backgroundColor) : null,
-                  transparency: hasBg ? extractAlpha(computed.backgroundColor) : null,
+                  transparency: hasBg ? getEffectiveTransparency(el, computed.backgroundColor) : null,
                   line: hasUniformBorder && !hasBgImage ? {
                     color: rgbToHex(computed.borderColor),
                     width: pxToPoints(computed.borderWidth)
@@ -1624,7 +1650,8 @@ async function extractSlideData(page) {
                   backgroundPosition: computed.backgroundPosition,
                   backgroundColor: computed.backgroundColor,
                   borderRadius: computed.borderRadius,
-                  boxShadow: computed.boxShadow
+                  boxShadow: computed.boxShadow,
+                  opacity: getEffectiveOpacity(el)
                 }
               });
             }
@@ -1955,7 +1982,7 @@ async function extractSlideData(page) {
             fontSize: pxToPoints(computed.fontSize),
             fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
             color: rgbToHex(computed.color),
-            transparency: extractAlpha(computed.color),
+            transparency: getEffectiveTransparency(liElements[0] || el, computed.color),
             align: computed.textAlign === 'start' ? 'left' : computed.textAlign,
             lineSpacing: lineSpacing,
             paraSpaceBefore: 0,
@@ -2139,7 +2166,7 @@ async function extractSlideData(page) {
         ]
       };
 
-      const transparency = extractAlpha(computed.color);
+      const transparency = getEffectiveTransparency(el, computed.color);
       if (transparency !== null) baseStyle.transparency = transparency;
 
       if (rotation !== null) baseStyle.rotate = rotation;
