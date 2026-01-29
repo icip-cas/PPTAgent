@@ -716,19 +716,15 @@ async function extractSlideData(page) {
     const getLineInsets = (computed, rect) => {
       const width = rect.width || (rect.right - rect.left);
       const height = rect.height || (rect.bottom - rect.top);
-      const paddingLeft = parseFloat(computed.paddingLeft) || 0;
-      const paddingRight = parseFloat(computed.paddingRight) || 0;
-      const paddingTop = parseFloat(computed.paddingTop) || 0;
-      const paddingBottom = parseFloat(computed.paddingBottom) || 0;
       const left = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-left'), width);
       const right = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-right'), width);
       const top = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-top'), height);
       const bottom = parseInsetValue(computed.getPropertyValue('--pptx-line-inset-bottom'), height);
       return {
-        left: left !== null ? left : paddingLeft,
-        right: right !== null ? right : paddingRight,
-        top: top !== null ? top : paddingTop,
-        bottom: bottom !== null ? bottom : paddingBottom
+        left: left !== null ? left : 0,
+        right: right !== null ? right : 0,
+        top: top !== null ? top : 0,
+        bottom: bottom !== null ? bottom : 0
       };
     };
     const getLineRanges = (computed, rect) => {
