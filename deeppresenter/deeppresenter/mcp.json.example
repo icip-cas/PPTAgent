@@ -2,62 +2,62 @@
     {
         "name": "any2markdown",
         "description": "File conversion tools",
-        "command": "uv",
-        "args": ["run", "deeppresenter/deeppresenter/tools/any2markdown.py", "$WORKSPACE"],
+        "command": "/opt/.venv/bin/python",
+        "args": ["deeppresenter/deeppresenter/tools/any2markdown.py", "$WORKSPACE"],
         "env": {
-            "FASTMCP_LOG_LEVEL": "$DEEPPRESENTER_LOG_LEVEL",
+            "FASTMCP_LOG_LEVEL": "INFO",
             "MINERU_API_URL": "your_deployed_mineru_url_for_offline_mode",
-            "MINERU_API_KEY": "your_mineru_api_key_for_online_mode"
+            "MINERU_API_KEY": "YOUR_MINERU_API_KEY_HERE"
         }
     },
     {
         "name": "task",
         "description": "Task management tools",
-        "command": "uv",
-        "args": ["run", "deeppresenter/deeppresenter/tools/task.py", "$WORKSPACE"],
+        "command": "/opt/.venv/bin/python",
+        "args": ["deeppresenter/deeppresenter/tools/task.py", "$WORKSPACE"],
         "env": {
-            "FASTMCP_LOG_LEVEL": "$DEEPPRESENTER_LOG_LEVEL",
+            "FASTMCP_LOG_LEVEL": "INFO",
             "CONFIG_FILE": "$CONFIG_FILE"
         }
     },
     {
         "name": "tool_agents",
         "description": "LLM-powered tool agents",
-        "command": "uv",
-        "args": ["run", "deeppresenter/deeppresenter/tools/tool_agents.py", "$WORKSPACE"],
+        "command": "/opt/.venv/bin/python",
+        "args": ["deeppresenter/deeppresenter/tools/tool_agents.py", "$WORKSPACE"],
         "env": {
-            "FASTMCP_LOG_LEVEL": "$DEEPPRESENTER_LOG_LEVEL",
+            "FASTMCP_LOG_LEVEL": "INFO",
             "CONFIG_FILE": "$CONFIG_FILE"
         }
     },
     {
         "name": "research",
         "description": "Academic paper search tools",
-        "command": "uv",
-        "args": ["run", "deeppresenter/deeppresenter/tools/research.py", "$WORKSPACE"],
+        "command": "/opt/.venv/bin/python",
+        "args": ["deeppresenter/deeppresenter/tools/research.py", "$WORKSPACE"],
         "env": {
-            "FASTMCP_LOG_LEVEL": "$DEEPPRESENTER_LOG_LEVEL"
+            "FASTMCP_LOG_LEVEL": "INFO"
         }
     },
     {
         "name": "search",
         "description": "Web search tools",
-        "command": "uv",
-        "args": ["run", "deeppresenter/deeppresenter/tools/search.py", "$WORKSPACE"],
+        "command": "/opt/.venv/bin/python",
+        "args": ["deeppresenter/deeppresenter/tools/search.py", "$WORKSPACE"],
         "env": {
-            "FASTMCP_LOG_LEVEL": "$DEEPPRESENTER_LOG_LEVEL",
-            "TAVILY_API_KEY": "your_key"
+            "FASTMCP_LOG_LEVEL": "INFO",
+            "TAVILY_API_KEY": "YOUR_TAVILY_API_KEY_HERE"
         }
     },
     {
         "name": "pptagent",
         "description": "https://github.com/icip-cas/PPTAgent",
-        "command": "uv",
-        "args": ["run", "pptagent-mcp"],
+        "command": "/opt/.venv/bin/python",
+        "args": ["-m", "pptagent.mcp_server"],
         "env": {
-            "PPTAGENT_MODEL": "glm-4.6",
-            "PPTAGENT_API_KEY": "your_key",
-            "PPTAGENT_API_BASE": "https://open.bigmodel.cn/api/paas/v4/"
+            "PPTAGENT_MODEL": "gemini-2.5-flash-lite",
+            "PPTAGENT_API_KEY": "YOUR_GOOGLE_API_KEY_HERE",
+            "PPTAGENT_API_BASE": "https://generativelanguage.googleapis.com/v1beta/openai/"
         }
     },
     {
