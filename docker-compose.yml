@@ -26,10 +26,13 @@ services:
     environment:
       DEEPPRESENTER_HOST_WORKSPACE_BASE: ${PWD}/workspace
       DEEPPRESENTER_WORKSPACE_BASE: /opt/workspace
-      DEEPPRESENTER_LOG_LEVEL: 0 # 0: debug, 10: info, 20: warning
+      DEEPPRESENTER_LOG_LEVEL: 10 # 0: debug, 10: info, 20: warning
+      FASTMCP_LOG_LEVEL: INFO
     volumes:
       - ./workspace:/opt/workspace
-      - ./deeppresenter:/usr/src/pptagent/deeppresenter
+      # - ./deeppresenter:/usr/src/pptagent/deeppresenter
+      - ./deeppresenter/deeppresenter/config.yaml:/usr/src/pptagent/deeppresenter/deeppresenter/config.yaml
+      - ./deeppresenter/deeppresenter/mcp.json:/usr/src/pptagent/deeppresenter/deeppresenter/mcp.json
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
