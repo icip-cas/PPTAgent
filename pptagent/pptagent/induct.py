@@ -143,12 +143,11 @@ class SlideInducter:
                             join(self.ppt_image_folder, f"slide_{template_id:04d}.jpg"),
                         )
                     ).add_done_callback(
-                        lambda f,
-                        tid=template_id,
-                        sidxs=slide_indexs,
-                        ctype=content_type: layout_induction[
-                            f.result() + ":" + ctype
-                        ].update({"template_id": tid, "slides": sidxs})
+                        lambda f, tid=template_id, sidxs=slide_indexs, ctype=content_type: (
+                            layout_induction[f.result() + ":" + ctype].update(
+                                {"template_id": tid, "slides": sidxs}
+                            )
+                        )
                     )
 
     async def layout_induct(self):

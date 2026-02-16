@@ -97,9 +97,11 @@ class PlaywrightConverter:
             )
             page.on(
                 "console",
-                lambda msg: error_sink.append(f"Console error: {msg.text}")
-                if msg.type == "error"
-                else None,
+                lambda msg: (
+                    error_sink.append(f"Console error: {msg.text}")
+                    if msg.type == "error"
+                    else None
+                ),
             )
         try:
             for html, pdf in zip(sorted(html_files), pdf_files):
