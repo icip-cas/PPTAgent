@@ -43,7 +43,7 @@ def get_json_from_response(response: str) -> dict | list:
     response = response.strip()
     try:
         return json.loads(response)
-    except:
+    except Exception:
         pass
 
     # Try to find JSON by looking for matching braces

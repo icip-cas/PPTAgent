@@ -235,7 +235,7 @@ async def download_file(url: str, output_file: str) -> str:
                 with open(output_path, "wb") as f:
                     f.write(data)
             break
-        except:
+        except Exception:
             pass
     else:
         return f"Failed to download file from {url}"

@@ -83,7 +83,7 @@ async def convert_to_markdown(file_path: str, output_folder: str) -> dict:
         try:
             with Image.open(img_path) as img:
                 images_with_info.append((img_path, *img.size))
-        except:
+        except Exception:
             continue
 
     images_with_info.sort(key=lambda x: int(x[1]), reverse=True)
