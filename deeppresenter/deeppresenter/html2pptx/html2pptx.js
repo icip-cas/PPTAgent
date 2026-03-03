@@ -721,6 +721,28 @@ async function extractSlideData(page) {
       return SINGLE_WEIGHT_FONTS.includes(normalizedFont);
     };
 
+    /**
+     * Extract fontFace from the browser's actual rendered font (via CDP data attribute)
+     * or fall back to CSS fontFamily parsing.
+     * @param {Element} el - The DOM element
+     * @param {string} fontFamily - The CSS computed fontFamily string
+     */
+    const extractFontFace = (el, fontFamily) => {
+      // Prefer the actual font detected by CDP (CSS.getPlatformFontsForNode)
+      const actualFont = el?.getAttribute?.('data-actual-font');
+      if (actualFont) return actualFont;
+
+      // Fallback: parse CSS fontFamily
+      if (!fontFamily) return 'Microsoft YaHei';
+      const fonts = fontFamily.split(',').map(f => f.replace(/['"]/g, '').trim()).filter(f => f);
+      if (fonts.length === 0) return 'Microsoft YaHei';
+
+      // Generic CSS font families that should not be used as fontFace
+      const GENERIC_FAMILIES = new Set(['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded']);
+
+      return fonts.find(f => !GENERIC_FAMILIES.has(f.toLowerCase())) || fonts[0];
+    };
+
     const pxToInch = (px) => px / PX_PER_IN;
     const pxToPoints = (pxStr) => parseFloat(pxStr) * PT_PER_PX;
     const parseInsetValue = (value, ref) => {
@@ -1212,7 +1234,7 @@ async function extractSlideData(page) {
       const alignCenter = isFlex && computed.alignItems === 'center';
       const baseStyle = {
         fontSize: pxToPoints(computed.fontSize),
-        fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
+        fontFace: extractFontFace(el, computed.fontFamily),
         fontWeight: computed.fontWeight,
         color: rgbToHex(computed.color),
         align: justifyCenter ? 'center' : (computed.textAlign === 'start' ? 'left' : computed.textAlign),
@@ -1283,7 +1305,7 @@ async function extractSlideData(page) {
       const alignCenter = isFlex && computed.alignItems === 'center';
       const baseStyle = {
         fontSize: pxToPoints(computed.fontSize),
-        fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
+        fontFace: extractFontFace(el, computed.fontFamily),
         fontWeight: computed.fontWeight,
         color: rgbToHex(computed.color),
         align: justifyCenter ? 'center' : (computed.textAlign === 'start' ? 'left' : computed.textAlign),
@@ -1711,7 +1733,7 @@ async function extractSlideData(page) {
 
             const cellOptions = {
               fontSize: pxToPoints(computed.fontSize),
-              fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
+              fontFace: extractFontFace(cell, computed.fontFamily),
               color: rgbToHex(computed.color),
               bold: isBold && !shouldSkipBold(computed.fontFamily),
               italic: computed.fontStyle === 'italic',
@@ -2376,7 +2398,7 @@ async function extractSlideData(page) {
           },
           style: {
             fontSize: pxToPoints(computed.fontSize),
-            fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
+            fontFace: extractFontFace(liElements[0] || el, computed.fontFamily),
             color: rgbToHex(computed.color),
             transparency: getEffectiveTransparency(liElements[0] || el, computed.color),
             align: computed.textAlign === 'start' ? 'left' : computed.textAlign,
@@ -2611,7 +2633,7 @@ async function extractSlideData(page) {
             position: { x: pxToInch(x), y: pxToInch(y), w: pxToInch(w), h: pxToInch(h) },
             style: {
               fontSize: pxToPoints(computed.fontSize),
-              fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
+              fontFace: extractFontFace(el, computed.fontFamily),
               color: rgbToHex(computed.color),
               bold: isBold && !shouldSkipBold(computed.fontFamily),
               italic: computed.fontStyle === 'italic',
@@ -2680,7 +2702,7 @@ async function extractSlideData(page) {
 
       const baseStyle = {
         fontSize: pxToPoints(computed.fontSize),
-        fontFace: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim(),
+        fontFace: extractFontFace(el, computed.fontFamily),
         fontWeight: computed.fontWeight,
         color: rgbToHex(computed.color),
         align: computed.textAlign === 'start' ? 'left' : computed.textAlign,
@@ -2846,6 +2868,36 @@ async function html2pptx(htmlFile, pres, options = {}) {
       });
 
       await page.goto(`file://${filePath}`, { timeout: TIMEOUT_MS });
+
+      // Use CDP to detect the actual fonts the browser used for rendering each element.
+      // This captures the real fallback fonts (e.g., system CJK fonts) that the browser chose,
+      // so the PPTX can use the same fonts instead of relying on PowerPoint's own fallback.
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('DOM.enable');
+      await cdp.send('CSS.enable');
+      const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+      const { nodeIds } = await cdp.send('DOM.querySelectorAll', {
+        nodeId: root.nodeId,
+        selector: 'body *'
+      });
+      for (const nodeId of nodeIds) {
+        try {
+          const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+          if (fonts && fonts.length > 0) {
+            // Sort by glyph count descending - the font rendering the most characters is primary
+            fonts.sort((a, b) => b.glyphCount - a.glyphCount);
+            const primaryFont = fonts[0].familyName;
+            await cdp.send('DOM.setAttributeValue', {
+              nodeId,
+              name: 'data-actual-font',
+              value: primaryFont
+            });
+          }
+        } catch (_) {
+          // Skip elements that can't be queried (e.g., non-rendered elements)
+        }
+      }
+      await cdp.detach();
 
       bodyDimensions = await getBodyDimensions(page);
 
