@@ -18,7 +18,9 @@ services:
     volumes:
       - ./workspace:/opt/workspace
       - ./deeppresenter:/usr/src/pptagent/deeppresenter
+      - /usr/src/pptagent/deeppresenter/html2pptx/node_modules
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
       - $HOME/.cache/huggingface:/root/.cache/huggingface
 
 volumes:

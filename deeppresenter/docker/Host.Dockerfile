@@ -65,6 +65,9 @@ ENV PATH="/opt/.venv/bin:${PATH}" \
 RUN uv venv --python 3.13 $VIRTUAL_ENV && \
     uv pip install -e .
 
+# Install Python Playwright browser binaries used by deeppresenter runtime.
+RUN /opt/.venv/bin/playwright install chromium
+
 RUN apt install -y poppler-utils
 RUN apt install -y docker.io
 
