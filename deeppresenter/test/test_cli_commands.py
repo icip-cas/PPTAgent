@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-
 COMMANDS_FILE = Path(__file__).parent.parent / "cli" / "commands.py"
 
 
