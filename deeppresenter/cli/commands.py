@@ -17,8 +17,6 @@ from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 
 from deeppresenter.main import AgentLoop, InputRequest
-from deeppresenter.tui.app import DeepPresenterTUI
-from deeppresenter.tui.controller import SessionController
 from deeppresenter.utils.config import DeepPresenterConfig
 
 from .common import (
@@ -405,6 +403,9 @@ def tui(
 
     local_model_pid = None
     try:
+        from deeppresenter.tui.app import DeepPresenterTUI
+        from deeppresenter.tui.controller import SessionController
+
         if uses_local_model(config):
             local_model_pid = setup_inference()
         controller = SessionController(config=config, language=language)
