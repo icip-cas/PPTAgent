@@ -384,44 +384,6 @@ def generate(
             except OSError:
                 pass
 
-
-def tui(
-    language: Annotated[
-        str, typer.Option("--lang", "-l", help="Language (en/zh)")
-    ] = "en",
-):
-    """Launch the full-screen TUI workspace."""
-    ensure_supported_platform()
-    if not is_onboarded():
-        console.print(
-            "[bold red]Error:[/bold red] Please run 'deeppresenter onboard' (or 'pptagent onboard') first"
-        )
-        sys.exit(1)
-
-    config = DeepPresenterConfig.load_from_file(str(CONFIG_FILE))
-    config.mcp_config_file = str(MCP_FILE)
-
-    local_model_pid = None
-    try:
-        from deeppresenter.tui.app import DeepPresenterTUI
-        from deeppresenter.tui.controller import SessionController
-
-        if uses_local_model(config):
-            local_model_pid = setup_inference()
-        controller = SessionController(config=config, language=language)
-        app = DeepPresenterTUI(controller=controller)
-        app.run()
-    except KeyboardInterrupt:
-        console.print("\n[yellow]Interrupted by user[/yellow]")
-        sys.exit(1)
-    finally:
-        if local_model_pid is not None:
-            try:
-                os.kill(local_model_pid, signal.SIGTERM)
-            except OSError:
-                pass
-
-
 def config():
     """Show current configuration."""
     if not is_onboarded():
