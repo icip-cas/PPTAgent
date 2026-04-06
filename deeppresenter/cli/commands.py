@@ -384,6 +384,7 @@ def generate(
             except OSError:
                 pass
 
+
 def config():
     """Show current configuration."""
     if not is_onboarded():
