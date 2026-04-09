@@ -1,5 +1,6 @@
 """Dependency management: system packages, Docker, Node, Playwright, etc."""
 
+import os
 import platform
 import shutil
 import subprocess
@@ -261,6 +262,16 @@ def check_npm_dependencies():
 
 def check_docker_image():
     """Check if deeppresenter-sandbox image exists, pull if not."""
+    if os.getenv("DEEPPRESENTER_SANDBOX_BACKEND", "").lower() in {
+        "kubernetes",
+        "k8s",
+        "kodo",
+    }:
+        console.print(
+            "[green]✓[/green] Kubernetes sandbox backend enabled, skipping local Docker sandbox image check"
+        )
+        return True
+
     console.print("\n[bold cyan]Checking Docker sandbox image...[/bold cyan]")
 
     if shutil.which("docker") is None:

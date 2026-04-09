@@ -31,6 +31,7 @@ from deeppresenter.utils.constants import (
     TOOL_CUTOFF_LEN,
     WORKSPACE_BASE,
 )
+from deeppresenter.utils.k8s_sandbox import KubernetesSandbox
 from deeppresenter.utils.log import (
     debug,
     error,
@@ -90,13 +91,18 @@ class AgentEnv:
         }
         if config.offline_mode:
             envs["OFFLINE_MODE"] = "1"
+        self.runtime_envs = envs
         self.client = MCPClient(envs=envs)
+        self.sandbox_backend = os.getenv(
+            "DEEPPRESENTER_SANDBOX_BACKEND", "docker"
+        ).lower()
         # caching overlong content
         self.timing_dict = defaultdict(ToolTiming)
         self._local_tools: dict[str, Callable] = {}
         self._tools_dict: dict[str, dict] = {}
         self._server_tools = defaultdict(list)
         self._tool_to_server = {}
+        self._k8s_sandboxes: dict[str, KubernetesSandbox] = {}
         self.tool_history: list[tuple[ToolCall, ChatMessage]] = []
         self.tool_history_file = self.workspace / ".history" / "tool_history.jsonl"
 
@@ -226,22 +232,23 @@ class AgentEnv:
         return msg
 
     async def __aenter__(self):
-        try:
-            client = docker.from_env()
-            container = client.containers.get(self.workspace.stem)
-            warning(
-                f"Found duplicated sandbox container id={self.workspace.stem}, killed."
-            )
-            container.remove(force=True)
-        # happend if cannot find the container
-        except NotFound:
-            pass
-        except DockerException as e:
-            error(f"Docker is not accessible: {e}.")
-            sys.exit(1)
-        except Exception as e:
-            error(f"Unexpected error when launching docker containers: {e}.")
-            sys.exit(1)
+        if self.sandbox_backend not in {"kubernetes", "k8s", "kodo"}:
+            try:
+                client = docker.from_env()
+                container = client.containers.get(self.workspace.stem)
+                warning(
+                    f"Found duplicated sandbox container id={self.workspace.stem}, killed."
+                )
+                container.remove(force=True)
+            # happend if cannot find the container
+            except NotFound:
+                pass
+            except DockerException as e:
+                error(f"Docker is not accessible: {e}.")
+                sys.exit(1)
+            except Exception as e:
+                error(f"Unexpected error when launching docker containers: {e}.")
+                sys.exit(1)
 
         with timer("Connecting MCP servers"):
             await asyncio.gather(
@@ -301,6 +308,9 @@ class AgentEnv:
     async def connect_server(self, server: MCPServer):
         """Connect to a single MCP server and register its tools."""
         name = server.name
+        if name == "sandbox" and self.sandbox_backend in {"kubernetes", "k8s", "kodo"}:
+            await self._connect_k8s_sandbox(server)
+            return
         await self.client.connect_server(name, server)
         debug(f"Connected to server {name}")
 
@@ -324,6 +334,36 @@ class AgentEnv:
                 self._server_tools[name].append(tool_name)
                 self._tool_to_server[tool_name] = name
 
+    async def _connect_k8s_sandbox(self, server: MCPServer):
+        image = os.getenv("DEEPPRESENTER_K8S_IMAGE") or server.env.get("IMAGE")
+        if not image and server.args:
+            image = server.args[-1]
+        if not image:
+            raise ValueError(
+                "K8s sandbox backend requires an image. Set DEEPPRESENTER_K8S_IMAGE or keep the sandbox image as the last docker arg."
+            )
+        sandbox = KubernetesSandbox(
+            workspace=self.workspace,
+            runtime_envs=self.runtime_envs,
+            image=image,
+        )
+        await sandbox.start()
+        self._k8s_sandboxes[server.name] = sandbox
+        debug(f"Connected to k8s sandbox using image {image}")
+
+        local_tool_defs = [
+            ("read_file", sandbox.read_file),
+            ("write_file", sandbox.write_file),
+            ("list_directory", sandbox.list_directory),
+            ("create_directory", sandbox.create_directory),
+            ("get_file_info", sandbox.get_file_info),
+            ("execute_command", sandbox.execute_command),
+        ]
+        for tool_name, func in local_tool_defs:
+            self.register_tool(func, name=tool_name)
+            self._server_tools[server.name].append(tool_name)
+            self._tool_to_server[tool_name] = server.name
+
     async def disconnect_server(self, server_name: str):
         """Disconnect a single MCP server and clean up its tools."""
         if server_name not in self._server_tools:
@@ -331,8 +371,13 @@ class AgentEnv:
         for tool_name in self._server_tools[server_name]:
             self._tools_dict.pop(tool_name, None)
             self._tool_to_server.pop(tool_name, None)
+            self._local_tools.pop(tool_name, None)
         del self._server_tools[server_name]
-        await self.client._close_server(server_name)
+        if server_name in self._k8s_sandboxes:
+            await self._k8s_sandboxes[server_name].cleanup()
+            self._k8s_sandboxes.pop(server_name, None)
+        else:
+            await self.client._close_server(server_name)
         debug(f"Disconnected from server {server_name}")
 
     def get_server_tools(self, server_name: str) -> list[dict]:

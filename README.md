@@ -155,6 +155,41 @@ Start the app:
 python webui.py
 ```
 
+Optional: use a Kubernetes-backed sandbox instead of local Docker:
+
+```bash
+export DEEPPRESENTER_SANDBOX_BACKEND=k8s
+export DEEPPRESENTER_K8S_NAMESPACE=default
+export DEEPPRESENTER_K8S_IMAGE=your-registry/deeppresenter-sandbox:0.1.0
+export DEEPPRESENTER_K8S_POD_SPEC_PATCH='{
+  "spec": {
+    "containers": [
+      {
+        "name": "sandbox",
+        "volumeMounts": [
+          {
+            "name": "workspace",
+            "mountPath": "/path/to/shared/workspace"
+          }
+        ]
+      }
+    ],
+    "volumes": [
+      {
+        "name": "workspace",
+        "hostPath": {
+          "path": "/path/to/shared/workspace"
+        }
+      }
+    ]
+  }
+}'
+python webui.py
+```
+
+When `DEEPPRESENTER_SANDBOX_BACKEND` is set to `k8s`, DeepPresenter keeps the same sandbox tool names, but runs `execute_command` inside a Kubernetes pod instead of `docker run`.
+File-oriented sandbox tools still operate on the host workspace, so the workspace path must be visible in both places through a shared mount such as PVC or `hostPath`.
+
 ### 3. Server Deployment: Docker Compose
 
 Use this mode for a stable server environment with explicit dependencies.
