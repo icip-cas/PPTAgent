@@ -38,9 +38,10 @@ def _safe_filename(name: str | None) -> str:
 async def create_job(
     request: GenerateRequest,
     bridge: AgentBridge = Depends(get_bridge),
-    _auth: dict = Depends(require_auth),
+    auth: dict = Depends(require_auth),
 ) -> GenerateJob:
-    job = bridge.start(request)
+    owner_sub = auth.get("sub") if isinstance(auth, dict) else None
+    job = bridge.start(request, owner_sub=owner_sub)
     return GenerateJob(
         job_id=job.job_id,
         status=job.status,  # type: ignore[arg-type]
@@ -55,7 +56,8 @@ async def stream_events(
     bridge: AgentBridge = Depends(get_bridge),
     _auth: dict = Depends(require_auth),
 ) -> EventSourceResponse:
-    job = bridge.get(job_id)
+    # Fall back to Postgres restore so reconnects after a cold-stop still work.
+    job = bridge.get(job_id) or await bridge.restore(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="job not found")
 

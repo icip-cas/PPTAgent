@@ -30,6 +30,7 @@ from typing import Any, AsyncIterator
 
 from ..schemas import GenerateEvent, GenerateRequest
 from ..settings import Settings, get_settings
+from .jobs_repo import JobsRepo
 from .supabase import StorageClient
 
 logger = logging.getLogger("api.bridge")
@@ -133,6 +134,8 @@ class Job:
     finished_at: float | None = None
     # Replay buffer so late subscribers see the whole stream.
     history: list[GenerateEvent] = field(default_factory=list)
+    # Monotonic sequence number for the Postgres job_events table.
+    event_seq: int = 0
 
 
 class BridgeError(RuntimeError):
@@ -183,6 +186,7 @@ class AgentBridge:
         self.settings = settings or get_settings()
         self._jobs: dict[str, Job] = {}
         self._storage = StorageClient(self.settings)
+        self._repo = JobsRepo(self.settings)
         self._sweeper_task: asyncio.Task | None = None
 
     async def start_background_tasks(self) -> None:
@@ -212,17 +216,41 @@ class AgentBridge:
     # Job lifecycle
     # ------------------------------------------------------------------
 
-    def start(self, request: GenerateRequest) -> Job:
+    def start(self, request: GenerateRequest, owner_sub: str | None = None) -> Job:
         job_id = uuid.uuid4().hex
         workspace = self.settings.workspace_base / job_id
         workspace.mkdir(parents=True, exist_ok=True)
         job = Job(job_id=job_id, request=request, workspace=workspace)
         self._jobs[job_id] = job
-        job.task = asyncio.create_task(self._run(job), name=f"agentloop:{job_id}")
+        job.task = asyncio.create_task(
+            self._run(job, owner_sub=owner_sub), name=f"agentloop:{job_id}"
+        )
         return job
 
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
+
+    async def restore(self, job_id: str) -> Job | None:
+        """Hydrate an in-memory Job from Postgres.
+
+        Only useful when a previous machine handled `start()` and this one
+        is handling the SSE reconnect. Events are replayed from the DB.
+        """
+        if job_id in self._jobs:
+            return self._jobs[job_id]
+        rec = await self._repo.load_job(job_id)
+        if rec is None:
+            return None
+        workspace = self.settings.workspace_base / rec.id
+        job = Job(job_id=rec.id, request=rec.request, workspace=workspace)
+        job.status = rec.status
+        past = await self._repo.load_events(rec.id)
+        job.history.extend(past)
+        job.event_seq = len(past)
+        if rec.status in ("succeeded", "failed"):
+            job.finished_at = time.time()
+        self._jobs[job_id] = job
+        return job
 
     # ------------------------------------------------------------------
     # Event streaming with replay
@@ -251,15 +279,37 @@ class AgentBridge:
 
     async def _emit(self, job: Job, ev: GenerateEvent) -> None:
         job.history.append(ev)
+        job.event_seq += 1
         await job.queue.put(ev)
+        # Best-effort persistence - never block the pipeline on a DB hiccup.
+        try:
+            await self._repo.append_event(job.job_id, job.event_seq, ev)
+        except Exception:  # noqa: BLE001
+            logger.exception("failed to persist event seq=%d", job.event_seq)
 
     # ------------------------------------------------------------------
     # Execution
     # ------------------------------------------------------------------
 
-    async def _run(self, job: Job) -> None:
+    async def _run(self, job: Job, owner_sub: str | None = None) -> None:
         try:
+            # Persist the queued row first so the SSE endpoint can find it
+            # even if the machine dies before the first event is emitted.
+            try:
+                await self._repo.insert_job(
+                    job_id=job.job_id,
+                    request=job.request,
+                    workspace=str(job.workspace),
+                    owner_sub=owner_sub,
+                )
+            except Exception:  # noqa: BLE001
+                logger.exception("failed to persist job row")
+
             job.status = "running"
+            try:
+                await self._repo.mark_status(job.job_id, "running")
+            except Exception:  # noqa: BLE001
+                logger.exception("failed to mark job running")
             await self._emit(
                 job,
                 GenerateEvent(job_id=job.job_id, stage="log", message="job queued"),
@@ -351,6 +401,8 @@ class AgentBridge:
             url = await self._storage.signed_url(object_path, expires_in=3600)
 
             job.status = "succeeded"
+            with contextlib.suppress(Exception):
+                await self._repo.mark_status(job.job_id, "succeeded", pptx_url=url)
             await self._emit(
                 job,
                 GenerateEvent(
@@ -364,6 +416,10 @@ class AgentBridge:
         except Exception as exc:  # noqa: BLE001 - surfaced to client
             logger.exception("job %s failed", job.job_id)
             job.status = "failed"
+            with contextlib.suppress(Exception):
+                await self._repo.mark_status(
+                    job.job_id, "failed", error=str(exc)[:500]
+                )
             # Don't leak raw exception text; callers see a generic code, full
             # detail is in the server log above.
             safe_msg = (
