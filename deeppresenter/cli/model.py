@@ -42,35 +42,35 @@ def is_local_model_server_running() -> bool:
         return False
 
 
-def _build_inference_command() -> list[str]:
+def _build_inference_command() -> tuple[list[str], dict[str, str]]:
     system = platform.system().lower()
+    env = os.environ.copy()
     if system == "darwin":
+        env["MODEL_ENDPOINT"] = "https://www.modelscope.cn"
         console.print(
             f"[cyan]Local model service is not running, starting llama-server -hf {LOCAL_MODEL} -c 100000 --port 7811 --log-disable --reasoning-budget 0[/cyan]"
         )
-        return [
-            "llama-server",
-            "-hf",
-            LOCAL_MODEL,
-            "-c",
-            "100000",
-            "--port",
-            "7811",
-            "--log-disable",
-            "--reasoning-budget",
-            "0",
-        ]
+        return (
+            [
+                "llama-server",
+                "-hf",
+                LOCAL_MODEL,
+                "-c",
+                "100000",
+                "--port",
+                "7811",
+                "--log-disable",
+                "--reasoning-budget",
+                "0",
+            ],
+            env,
+        )
     if system == "linux":
         script_path = PACKAGE_DIR / "deeppresenter" / "serve.sh"
-        if not script_path.exists():
-            console.print(
-                f"[bold red]Error:[/bold red] Missing startup script: {script_path}"
-            )
-            return None
         console.print(
             f"[cyan]Local model service is not running, starting {script_path}[/cyan]"
         )
-        return ["bash", str(script_path)]
+        return ["bash", str(script_path)], env
     else:
         raise NotImplementedError(f"Local model service is not supported on {system}.")
 
@@ -80,14 +80,11 @@ def setup_inference() -> int | None:
     if is_local_model_server_running():
         return None
 
-    cmd = _build_inference_command()
-    if cmd is None:
-        raise RuntimeError("Could not build inference command for this platform.")
-
+    cmd, env = _build_inference_command()
     try:
         process = subprocess.Popen(
             cmd,
-            env=os.environ.copy(),
+            env=env,
             text=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
