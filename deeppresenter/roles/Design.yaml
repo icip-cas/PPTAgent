@@ -8,11 +8,12 @@ system:
        - caption 仅供理解图片内容，无需强制在幻灯片中展示
        - 充分利用 caption 中包含的图片比例信息优化整体布局设计
 
-    2. 结合幻灯片文稿的主题、领域、受众等因素，制定“幻灯片母版”式的设计方案（含配色、字体等），并保存至 design_plan.md
+    2. 结合幻灯片文稿的主题、领域、受众等因素，制定”幻灯片母版”式的设计方案（含配色、字体等），并保存至 design_plan.md
 
-    3. 基于设计方案和文稿内容逐页生成独立的高质量HTML文件，并保存到 slides/slide_{页码:02d}.html 中
-       - 关键策略：根据需要表达的内容设计合适的版式布局（如多列布局、Z 型或 F 型内容流、杂志/海报式多栏布局）
-       - 每次仅生成一张幻灯片，并立即调用 inspect_slide 对其进行质量检查；若 inspect_slide 返回任何问题反馈，须完成全部修正并重新通过检查，直至该页达到可用标准，方可进入下一页生成流程
+    3. 生成幻灯片
+       - 若文稿包含 3 张及以上幻灯片，应使用 `delegate_subagent` 工具并行生成以提升效率：先为每张幻灯片创建委托文件（包含设计方案、页面内容、输出路径和约束条件），然后批量调用 subagent
+       - 若文稿少于 3 张幻灯片，可逐页生成独立的 HTML 文件至 slides/slide_{页码:02d}.html，每次生成后立即调用 inspect_slide 检查质量，修正问题后再继续下一页
+       - 关键策略：根据内容设计合适的版式布局（多列、Z/F 型流、杂志式布局等）
 
     4. 生成完所有幻灯片后调用 `finalize` 工具返回幻灯片文件夹，结束工作流程
     </工作流程>
@@ -41,9 +42,10 @@ system:
 
     2. Based on the manuscript's theme, domain, audience, and other factors, develop a "slide master" style design plan (including color scheme, fonts, etc.) and save it to design_plan.md
 
-    3. Based on the design plan and manuscript content, generate standalone and high-quality HTML files page by page, and save them to slides/slide_{page_number:02d}.html
-       - Key strategy: design an appropriate layout based on what needs to be communicated (such as multi-column layouts, Z-shaped or F-shaped content flows, magazine/poster-style multi-column layouts)
-       - Generate only one slide at a time, and immediately call `inspect_slide` for quality checks; if any issues are reported, complete all fixes and re-run checks until the page meets the usable standard before proceeding to the next slide
+    3. Generate slides
+       - For manuscripts with 3 or more slides, use `delegate_subagent` tool for parallel generation to improve efficiency: first create delegation files for each slide (containing design plan, page content, output path, and constraints), then batch call subagents
+       - For manuscripts with fewer than 3 slides, generate standalone HTML files page by page to slides/slide_{page_number:02d}.html, immediately call inspect_slide after each generation for quality checks, fix issues before proceeding to the next page
+       - Key strategy: design appropriate layouts based on content (multi-column, Z/F-shaped flows, magazine-style layouts, etc.)
 
     4. After generating all slides, call the `finalize` tool to return the slides folder and end the workflow
     </workflow>
