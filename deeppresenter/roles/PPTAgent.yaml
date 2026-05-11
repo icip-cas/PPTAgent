@@ -35,8 +35,8 @@ instruction: |
 
 use_model: research_agent
 toolset:
-  include_tool_servers: all
-  exclude_tools:
-    - todo_create
-    - todo_update
-    - todo_list
+  include_tool_servers:
+    - pptagent
+    - sandbox
+  include_tools:
+    - finalize

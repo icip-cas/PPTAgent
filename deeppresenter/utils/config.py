@@ -76,7 +76,7 @@ class Endpoint(BaseModel):
     base_url: str | None = Field(default=None, description="API base URL")
     model: str = Field(description="Model name")
     api_key: str | None = Field(default=None, description="API key")
-    provider: Literal['openai', 'litellm'] = Field(
+    provider: Literal["openai", "litellm"] = Field(
         default="openai",
         description="Backend provider: 'openai' (default) or 'litellm'",
     )

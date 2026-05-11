@@ -56,6 +56,3 @@ toolset:
   exclude_tools:
     - inspect_slide
     - inspect_manuscript
-    - todo_create
-    - todo_update
-    - todo_list

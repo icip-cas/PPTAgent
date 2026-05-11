@@ -46,7 +46,4 @@ toolset:
   exclude_tool_servers:
     - pptagent
   exclude_tools:
-    - todo_create
-    - todo_update
-    - todo_list
     - delegate_subagent

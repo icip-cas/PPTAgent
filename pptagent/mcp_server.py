@@ -63,11 +63,25 @@ class PPTAgentServer(PPTAgent):
         self.slides = []
         self.layout: Layout | None = None
         self.editor_output: EditorOutput | None = None
-        model = AsyncLLM(
-            os.getenv("PPTAGENT_MODEL"),
-            os.getenv("PPTAGENT_API_BASE"),
-            os.getenv("PPTAGENT_API_KEY"),
-        )
+        if os.getenv("PPTAGENT_MODEL") is not None:
+            model = AsyncLLM(
+                os.getenv("PPTAGENT_MODEL"),
+                os.getenv("PPTAGENT_API_BASE"),
+                os.getenv("PPTAGENT_API_KEY"),
+            )
+        elif os.getenv("CONFIG_FILE") is not None:
+            from deeppresenter.utils.config import DeepPresenterConfig
+
+            endpoint = DeepPresenterConfig.load_from_file(
+                os.getenv("CONFIG_FILE")
+            ).research_agent._endpoints[0]
+            model = AsyncLLM(
+                model=endpoint.model,
+                base_url=endpoint.base_url,
+                api_key=endpoint.api_key,
+            )
+        else:
+            raise Exception("Please set the valid endpoint for the model correctly")
         workspace = os.getenv("WORKSPACE", None)
         if workspace is not None:
             os.chdir(workspace)
@@ -119,13 +133,13 @@ class PPTAgentServer(PPTAgent):
         )
 
     @classmethod
-    def list_templates(cls) -> str:
+    def list_templates(cls) -> list:
         templates_dir = Path(package_join("templates"))
         return [p.name for p in templates_dir.iterdir() if p.is_dir()]
 
     def register_tools(self):
         @self.mcp.tool()
-        def markdown_table_to_image(markdown_table: str, path: str, css: str) -> str:
+        def markdown_table_to_image(markdown_table: str, path: str, css: str):
             """
             Convert a markdown table to an image and save it to the specified path.
 
@@ -144,7 +158,7 @@ class PPTAgentServer(PPTAgent):
             return f"Markdown table converted to image and saved to {path}"
 
         @self.mcp.tool()
-        def list_templates() -> list[dict]:
+        def list_templates():
             """List all available templates."""
             return {
                 "message": "Please choose one the following templates by calling `set_template`",
@@ -161,6 +175,10 @@ class PPTAgentServer(PPTAgent):
         def set_template(template_name: str = "default"):
             """Select a PowerPoint template by name.
 
+            This only needs to be called once before creating slides.
+            Calling it multiple times resets the template context and clears all
+            generated slides that have not been saved.
+
             Args:
                 template_name: The name of the template to select
 
@@ -176,6 +194,7 @@ class PPTAgentServer(PPTAgent):
                 slide_induction=template_data["slide_induction"],
                 presentation=template_data["presentation"],
             )
+            self.slides.clear()
 
             return {
                 "message": "Template set successfully, please select layout from given layouts later",

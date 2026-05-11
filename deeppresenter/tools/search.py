@@ -60,8 +60,14 @@ async def _serpapi_request(params: dict[str, Any]) -> dict[str, Any]:
 # ── Tavily helpers ─────────────────────────────────────────────────────────────
 
 
-async def _tavily_request(idx: int, params: dict) -> dict[str, Any]:
-    headers = {"Content-Type": "application/json", "User-Agent": FAKE_UA.random}
+async def _tavily_request(
+    idx: int, api_key: str, params: dict[str, Any]
+) -> dict[str, Any]:
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "User-Agent": FAKE_UA.random,
+    }
     async with aiohttp.ClientSession() as session:
         async with session.post(
             TAVILY_API_URL, headers=headers, json=params
@@ -82,8 +88,7 @@ async def _tavily_search(**kwargs) -> dict[str, Any]:
     last_error = None
     for idx, api_key in enumerate(TAVILY_KEYS, start=1):
         try:
-            params = {**kwargs, "api_key": api_key}
-            return await _tavily_request(idx, params)
+            return await _tavily_request(idx, api_key, kwargs)
         except Exception as e:
             warning(f"TAVILY search error with key {api_key[:16]}...: {e}")
             last_error = e

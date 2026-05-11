@@ -25,8 +25,8 @@ class MCPServer(BaseModel):
     name: str
     description: str
     command: str
-    args: list[str]
     network: bool = False
+    args: list[str] = Field(default_factory=list)
     env: dict[str, str] = Field(default_factory=dict)
     url: str | None = None
     header: dict[str, str] | None = None
@@ -167,7 +167,6 @@ class Cost(BaseModel):
 class ConvertType(StrEnum):
     DEEPPRESENTER = "deeppresenter"
     PPTAGENT = "pptagent"
-    # NANOBANANA = "nanobanana"
 
 
 class PowerPointType(StrEnum):

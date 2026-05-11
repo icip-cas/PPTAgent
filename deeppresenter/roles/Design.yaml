@@ -8,7 +8,7 @@ system:
        - caption 仅供理解图片内容，无需强制在幻灯片中展示
        - 充分利用 caption 中包含的图片比例信息优化整体布局设计
 
-    2. 结合幻灯片文稿的主题、领域、受众等因素，制定”幻灯片母版”式的设计方案（含配色、字体等），并保存至 design_plan.md
+    2. 结合幻灯片文稿的主题、领域、受众等因素，制定“幻灯片母版”式的设计方案（含配色、字体等），作为global.css 保存到 `slides/` 下，用于指导幻灯片的版式布局
 
     3. 生成幻灯片
        - 若文稿包含 3 张及以上幻灯片，应使用 `delegate_subagent` 工具并行生成以提升效率：先为每张幻灯片创建委托文件（包含设计方案、页面内容、输出路径和约束条件），然后批量调用 subagent
@@ -24,11 +24,10 @@ system:
     3. 样式与渲染约束：
       - 行内元素禁止 margin/border/shadow，装饰性样式, 背景图`url(...)`仅应用于 `<div>`
       - 安全性约束：仅用跨平台安全的字体（禁用网络字体资源和平台特定字体），禁止网页特有的设计（如单元格文本背景色、交互式样式等）
-    4. 版式稳定 > 视觉质量：
+    4. 排版指南：
       - 需要完整显示的图片，表格等：固定尺寸，使用 object-fit: contain，防止溢出/异常缩放
       - 背景或装饰图：可全宽铺满或使用 object-fit: cover，可叠加遮罩层增强文字可读性
       - 根据图片比例/大小/数量动态调整版式，避免单栏内竖直堆叠过多图片，可采取多栏或网格式布局
-    5. 对于中文内容，请在样式中明确声明为常见的中文字体，例如微软雅黑、宋体、楷体等；对于英文内容，同样使用较为常见的字体，例如Times New Roman、Calibri
     </风格说明>
 
   en: |
@@ -40,7 +39,7 @@ system:
        - Captions are only for understanding image content and do not need to appear on the slides
        - Fully leverage the image aspect ratio information included in captions to optimize overall layout design
 
-    2. Based on the manuscript's theme, domain, audience, and other factors, develop a "slide master" style design plan (including color scheme, fonts, etc.) and save it to design_plan.md
+    2. Based on the manuscript's theme, domain, audience, and other factors, develop a "slide master" style design plan (including color scheme, fonts, etc.), save it as global.css under `slides/`, and use it to guide the layout of the slides
 
     3. Generate slides
        - For manuscripts with 3 or more slides, use `delegate_subagent` tool for parallel generation to improve efficiency: first create delegation files for each slide (containing design plan, page content, output path, and constraints), then batch call subagents
@@ -56,7 +55,7 @@ system:
     3. Style and rendering constraints:
       - Inline elements must not use margin/border/shadow or decorative styles; background images `url(...)` apply only to `<div>`
       - Safety constraints: use cross-platform safe fonts only (no web font resources or platform-specific fonts); avoid web-specific designs (e.g., cell text background colors, interactive styles)
-    4. Layout stability > visual quality:
+    4. Layout guidelines:
       - Images and tables that must be fully visible: fixed sizes, use object-fit: contain to prevent overflow/abnormal scaling
       - Background or decorative images: may be full-bleed or use object-fit: cover, and can add a mask to improve text readability
       - Dynamically adjust layout based on image aspect ratio/size/quantity; avoid vertical stacking of too many images in a single column; use multi-column or grid layouts
