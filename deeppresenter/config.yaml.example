@@ -17,6 +17,13 @@ long_context_model:
   model: "glm-4.5"
   api_key: "your_key"
 
+# # LiteLLM provider example — pip install pptagent[litellm]
+# # Routes to 100+ providers (Anthropic, Gemini, Bedrock, etc.) without a proxy.
+# research_agent:
+#   provider: "litellm"
+#   model: "anthropic/claude-sonnet-4-6"
+#   api_key: "your_anthropic_key"
+
 # # this is not neccessarily required,
 
 # vision_model:

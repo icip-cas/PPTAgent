@@ -3,7 +3,7 @@ import json
 import random
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import json_repair
 import yaml
@@ -73,23 +73,53 @@ def get_json_from_response(response: str) -> dict | list:
 class Endpoint(BaseModel):
     """LLM Endpoint Configuration"""
 
-    base_url: str = Field(description="API base URL")
+    base_url: str | None = Field(default=None, description="API base URL")
     model: str = Field(description="Model name")
-    api_key: str = Field(description="API key")
+    api_key: str | None = Field(default=None, description="API key")
+    provider: Literal['openai', 'litellm'] = Field(
+        default="openai",
+        description="Backend provider: 'openai' (default) or 'litellm'",
+    )
     client_kwargs: dict[str, Any] = Field(
         default_factory=dict, description="Client parameters"
     )
     sampling_parameters: dict[str, Any] = Field(
         default_factory=dict, description="Sampling parameters"
     )
-    _client: AsyncOpenAI = PrivateAttr()
+    _client: AsyncOpenAI | None = PrivateAttr(default=None)
 
     def model_post_init(self, _) -> None:
-        self._client = AsyncOpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url,
-            **self.client_kwargs,
-        )
+        if self.provider != "litellm":
+            self._client = AsyncOpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                **self.client_kwargs,
+            )
+
+    async def _call_litellm(
+        self,
+        messages: list[dict[str, Any]],
+        response_format: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> ChatCompletion:
+        import litellm
+
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "drop_params": True,
+            **self.sampling_parameters,
+        }
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+        if self.base_url:
+            kwargs["api_base"] = self.base_url
+        if tools is not None:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = "auto"
+        if response_format is not None:
+            kwargs["response_format"] = response_format
+        return await litellm.acompletion(**kwargs)
 
     async def call(
         self,
@@ -99,7 +129,9 @@ class Endpoint(BaseModel):
         tools: list[dict[str, Any]] | None = None,
     ) -> ChatCompletion:
         """Execute a chat or tool call using the endpoint client"""
-        if tools is not None:
+        if self.provider == "litellm":
+            response = await self._call_litellm(messages, response_format, tools)
+        elif tools is not None:
             response = await self._client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -144,6 +176,10 @@ class LLM(BaseModel):
     base_url: str | None = Field(default=None, description="API base URL")
     model: str | None = Field(default=None, description="Model name")
     api_key: str | None = Field(default=None, description="API key")
+    provider: str = Field(
+        default="openai",
+        description="Backend provider: 'openai' (default) or 'litellm'",
+    )
     identifier: str | None = Field(
         default=None,
         description="Optional identifier for the model instance, this will override property `model_name`",
@@ -195,6 +231,7 @@ class LLM(BaseModel):
                     base_url=self.base_url,
                     model=self.model,
                     api_key=self.api_key,
+                    provider=self.provider,
                     client_kwargs=self.client_kwargs,
                     sampling_parameters=self.sampling_parameters,
                 ),
@@ -264,7 +301,7 @@ class LLM(BaseModel):
             ratio = (int(self.min_image_size) / (width * height)) ** 0.5
             width = int(width * ratio)
             height = int(height * ratio)
-        assert (width % PIXEL_MULTIPLE == 0) and (height % PIXEL_MULTIPLE == 0), (
+        assert (width % pixel_multiple == 0) and (height % PIXEL_MULTIPLE == 0), (
             f"Image width and height must be a multiple of {pixel_multiple}"
         )
         async with self._semaphore:
@@ -274,13 +311,35 @@ class LLM(BaseModel):
                 # t2i is stateless
                 endpoint = self._endpoints[retry_idx % len(self._endpoints)]
                 try:
-                    response = await endpoint._client.images.generate(
-                        prompt=prompt,
-                        model=endpoint.model,
-                        size=f"{width}x{height}",
-                        timeout=MCP_CALL_TIMEOUT // 5,
-                        **endpoint.sampling_parameters,
-                    )
+                    if endpoint.provider == "litellm":
+                        import litellm
+
+                        response = await litellm.aimage_generation(
+                            prompt=prompt,
+                            model=endpoint.model,
+                            size=f"{width}x{height}",
+                            timeout=MCP_CALL_TIMEOUT // 5,
+                            drop_params=True,
+                            **(
+                                {"api_key": endpoint.api_key}
+                                if endpoint.api_key
+                                else {}
+                            ),
+                            **(
+                                {"api_base": endpoint.base_url}
+                                if endpoint.base_url
+                                else {}
+                            ),
+                            **endpoint.sampling_parameters,
+                        )
+                    else:
+                        response = await endpoint._client.images.generate(
+                            prompt=prompt,
+                            model=endpoint.model,
+                            size=f"{width}x{height}",
+                            timeout=MCP_CALL_TIMEOUT // 5,
+                            **endpoint.sampling_parameters,
+                        )
                     assert len(response.data) >= 1, (
                         f"Expected at least an image response, got {response}"
                     )
@@ -299,8 +358,24 @@ class LLM(BaseModel):
 
     async def validate(self):
         endpoint = self._endpoints[0]
+        if endpoint.provider == "litellm":
+            import litellm
+
+            try:
+                await litellm.acompletion(
+                    model=endpoint.model,
+                    messages=[{"role": "user", "content": "ping"}],
+                    max_tokens=1,
+                    drop_params=True,
+                    **({"api_key": endpoint.api_key} if endpoint.api_key else {}),
+                    **({"api_base": endpoint.base_url} if endpoint.base_url else {}),
+                )
+            except Exception as e:
+                raise Exception(
+                    f"LiteLLM validation failed for model {endpoint.model}: {e}\n"
+                ) from e
+            return
         models = await endpoint._client.models.list()
-        # ? This for compatibility with google generative ai
         if not any(model.id.endswith(endpoint.model) for model in models.data):
             raise Exception(
                 f"Model {endpoint.model} is not available at {endpoint.base_url}, please check your apikey or {PACKAGE_DIR / 'config.yaml'}\n"
