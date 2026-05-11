@@ -3,7 +3,7 @@ import json
 import random
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import json_repair
 import yaml
@@ -76,7 +76,7 @@ class Endpoint(BaseModel):
     base_url: str | None = Field(default=None, description="API base URL")
     model: str = Field(description="Model name")
     api_key: str | None = Field(default=None, description="API key")
-    provider: str = Field(
+    provider: Literal['openai', 'litellm'] = Field(
         default="openai",
         description="Backend provider: 'openai' (default) or 'litellm'",
     )
@@ -301,7 +301,7 @@ class LLM(BaseModel):
             ratio = (int(self.min_image_size) / (width * height)) ** 0.5
             width = int(width * ratio)
             height = int(height * ratio)
-        assert (width % PIXEL_MULTIPLE == 0) and (height % PIXEL_MULTIPLE == 0), (
+        assert (width % pixel_multiple == 0) and (height % PIXEL_MULTIPLE == 0), (
             f"Image width and height must be a multiple of {pixel_multiple}"
         )
         async with self._semaphore:
