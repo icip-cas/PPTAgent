@@ -152,7 +152,6 @@ if len(GOOGLE_KEYS):
         images = [
             {
                 "url": item["original"],
-                "thumbnail": item.get("thumbnail", ""),
                 "description": item.get("title", query),
             }
             for item in result.get("images_results", [])[:4]
@@ -210,6 +209,9 @@ elif len(TAVILY_KEYS):
         """
         debug(f"search_images via Tavily query={query!r}")
         result = await _tavily_search(
+            query=query,
+            max_results=4,
+            include_images=True,
             include_image_descriptions=True,
         )
         images = [
