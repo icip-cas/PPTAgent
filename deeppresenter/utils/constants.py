@@ -87,7 +87,9 @@ MA_RESEACHER_PROMPT = """
 <Guide on Subagents>
 You can use subagents to execute multiple complex tasks in parallel. They have the same capabilities as you, but start with empty context.
 The subagent tool accepts a minimal `task` and a `context_file`.
-Before calling the subagent, write the complete delegation brief to a local file yourself.
+Use `delegate_subagent` when the research task involves multiple independent topics or objects, such as several technologies, products, companies, markets, papers, events, regions, or case studies.
+For parallel research, create delegation files for each sub-topic containing research goals, information requirements, and output format, then batch call subagents.
+Before calling a subagent, write the complete delegation brief to a local file yourself.
 Put the complete background, source paths, constraints, expected deliverables, and handoff format into that file.
 Keep `task` short and action-oriented.
 In general, you should use subagents in scenarios that can be parallelized at scale without information loss. For example:
@@ -101,9 +103,10 @@ MA_RRESENTER_PROMPT = """
 <Guide on Subagents>
 You can use subagents to execute multiple complex tasks in parallel. They have the same capabilities as you, but start with empty context.
 Therefore, you should first define a global visual theme, including a detailed design specification such as the background and accent colors.
-Then, distribute the generation of each slide draft to different subagents.
 The subagent tool accepts a minimal `task` and a `context_file`.
-Before calling the subagent, write the shared visual system, manuscript excerpt, slide scope, constraints, and handoff requirements into a local file.
+Use `delegate_subagent` when the manuscript contains 3 or more slides, so slide HTML files can be generated in parallel: first create delegation files for each slide containing the design plan, page content, output path, and constraints, then batch call subagents.
+Do not use `delegate_subagent` when the manuscript contains fewer than 3 slides; generate standalone HTML files page by page to `slides/slide_{page_number:02d}.html`, immediately call `inspect_slide` after each generation for quality checks, and fix issues before proceeding to the next page.
+Before calling a subagent, write the shared visual system, manuscript excerpt, slide scope, constraints, output path, and handoff requirements into a local file.
 Keep `task` as a short action such as "Generate slide 1 according to the global visual system".
 </Guide on Subagents>
 """

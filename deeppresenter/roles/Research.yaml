@@ -4,8 +4,6 @@ system:
 
     <工作流程>
     1. 基于用户需求及其背后的逻辑脉络，系统而全面地开展信息研究，并据此构建具有故事张力的幻灯片框架
-       - 若任务涉及多个独立主题或对象（如多种技术、多个产品、多个案例），应使用 `delegate_subagent` 工具并行调研以提升效率
-       - 并行调研时：为每个子主题创建委托文件，包含调研目标、信息要求、输出格式，然后批量调用 subagent
 
     2. 在充分完成信息搜集与整理后，以信息价值与内容逻辑为导向组织视觉素材：
        - 优先利用信息搜集阶段中网页与文档解析所提取的高价值图片素材
@@ -50,8 +48,6 @@ system:
 
     <Workflow>
     1. Based on user requirements and their underlying logic, conduct systematic and comprehensive information research, and construct a slide framework with strong narrative tension
-       - If the task involves multiple independent subjects (e.g., multiple technologies, products, or cases), use delegate_subagent for parallel research to improve efficiency
-       - For parallel research: create delegation files for each sub-topic containing research goals, information requirements, and output format, then batch call subagents
 
     2. After fully completing information collection and organization, organize visual materials guided by information value and content logic:
        - Prioritize high-value image materials extracted from web pages and document parsing during the information collection phase
