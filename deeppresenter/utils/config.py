@@ -1,14 +1,17 @@
 import asyncio
 import json
 import random
+import time
 from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Literal
 
+import httpx
 import json_repair
 import yaml
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
+from openai.types.image import Image
 from openai.types.images_response import ImagesResponse
 from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
@@ -70,15 +73,33 @@ def get_json_from_response(response: str) -> dict | list:
     return json_repair.loads(response)
 
 
+# Native MiniMax image generation. Every region exposes the same operation path,
+# so only the host differs between deployments.
+MINIMAX_IMAGE_PATH = "/v1/image_generation"
+MINIMAX_IMAGE_ENDPOINTS = {
+    "global_en": f"https://api.minimax.io{MINIMAX_IMAGE_PATH}",
+    "cn_zh": f"https://api.minimaxi.com{MINIMAX_IMAGE_PATH}",
+}
+MINIMAX_DEFAULT_IMAGE_REGION = "global_en"
+MINIMAX_DEFAULT_IMAGE_MODEL = "image-01"
+MINIMAX_IMAGE_RESPONSE_FORMATS = ("url", "base64")
+MINIMAX_IMAGE_SIZE_RANGE = (512, 2048)
+MINIMAX_IMAGE_PIXEL_MULTIPLE = 8
+
+
 class Endpoint(BaseModel):
     """LLM Endpoint Configuration"""
 
     base_url: str | None = Field(default=None, description="API base URL")
     model: str = Field(description="Model name")
     api_key: str | None = Field(default=None, description="API key")
-    provider: Literal["openai", "litellm"] = Field(
+    provider: Literal["openai", "litellm", "minimax"] = Field(
         default="openai",
-        description="Backend provider: 'openai' (default) or 'litellm'",
+        description="Backend provider: 'openai' (default), 'litellm' or 'minimax'",
+    )
+    region: str | None = Field(
+        default=None,
+        description="Regional endpoint key for native providers, e.g. 'global_en' or 'cn_zh'. Ignored when `base_url` is set",
     )
     client_kwargs: dict[str, Any] = Field(
         default_factory=dict, description="Client parameters"
@@ -89,7 +110,7 @@ class Endpoint(BaseModel):
     _client: AsyncOpenAI | None = PrivateAttr(default=None)
 
     def model_post_init(self, _) -> None:
-        if self.provider != "litellm":
+        if self.provider == "openai":
             self._client = AsyncOpenAI(
                 api_key=self.api_key,
                 base_url=self.base_url,
@@ -121,6 +142,76 @@ class Endpoint(BaseModel):
             kwargs["response_format"] = response_format
         return await litellm.acompletion(**kwargs)
 
+    def _minimax_image_url(self) -> str:
+        """Resolve the regional image generation URL of the native provider"""
+        if self.base_url:
+            base_url = self.base_url.rstrip("/")
+            if base_url.endswith(MINIMAX_IMAGE_PATH):
+                return base_url
+            return base_url + MINIMAX_IMAGE_PATH
+        region = self.region or MINIMAX_DEFAULT_IMAGE_REGION
+        assert region in MINIMAX_IMAGE_ENDPOINTS, (
+            f"Unknown region {region!r}, expected one of {sorted(MINIMAX_IMAGE_ENDPOINTS)}"
+        )
+        return MINIMAX_IMAGE_ENDPOINTS[region]
+
+    async def _generate_image_minimax(
+        self, prompt: str, width: int, height: int, timeout: int
+    ) -> ImagesResponse:
+        """Generate an image with the native image generation API"""
+        assert all(
+            MINIMAX_IMAGE_SIZE_RANGE[0] <= side <= MINIMAX_IMAGE_SIZE_RANGE[1]
+            and side % MINIMAX_IMAGE_PIXEL_MULTIPLE == 0
+            for side in (width, height)
+        ), (
+            f"Image width and height must be within {MINIMAX_IMAGE_SIZE_RANGE} and a "
+            f"multiple of {MINIMAX_IMAGE_PIXEL_MULTIPLE}, got {width}x{height}"
+        )
+        payload: dict[str, Any] = {
+            "model": self.model or MINIMAX_DEFAULT_IMAGE_MODEL,
+            "prompt": prompt,
+            "width": width,
+            "height": height,
+            "response_format": MINIMAX_IMAGE_RESPONSE_FORMATS[0],
+            **self.sampling_parameters,
+        }
+        # an explicit aspect ratio takes priority over the size on the server side
+        if payload.get("aspect_ratio"):
+            payload.pop("width", None)
+            payload.pop("height", None)
+        response_format = payload["response_format"]
+        assert response_format in MINIMAX_IMAGE_RESPONSE_FORMATS, (
+            f"Unknown response_format {response_format!r}, expected one of "
+            f"{list(MINIMAX_IMAGE_RESPONSE_FORMATS)}"
+        )
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        async with httpx.AsyncClient(timeout=timeout, **self.client_kwargs) as client:
+            http_response = await client.post(
+                self._minimax_image_url(), headers=headers, json=payload
+            )
+        http_response.raise_for_status()
+        body = http_response.json()
+        base_resp = body.get("base_resp") or {}
+        status_code = int(base_resp.get("status_code", 0))
+        assert status_code == 0, (
+            f"Image generation failed with status {status_code}: "
+            f"{base_resp.get('status_msg', '')}"
+        )
+        data = body.get("data") or {}
+        if response_format == "base64":
+            images = [Image(b64_json=item) for item in data.get("image_base64") or []]
+        else:
+            images = [Image(url=item) for item in data.get("image_urls") or []]
+        assert len(images) >= 1, f"Expected at least an image response, got {body}"
+        metadata = body.get("metadata") or {}
+        debug(
+            f"Generated {metadata.get('success_count', len(images))} image(s) with "
+            f"{payload['model']}, {metadata.get('failed_count', 0)} failed"
+        )
+        return ImagesResponse(created=int(time.time()), data=images)
+
     async def call(
         self,
         messages: list[dict[str, Any]],
@@ -129,6 +220,11 @@ class Endpoint(BaseModel):
         tools: list[dict[str, Any]] | None = None,
     ) -> ChatCompletion:
         """Execute a chat or tool call using the endpoint client"""
+        if self.provider == "minimax":
+            raise NotImplementedError(
+                f"Provider '{self.provider}' only supports image generation, "
+                "configure it as `t2i_model`"
+            )
         if self.provider == "litellm":
             response = await self._call_litellm(messages, response_format, tools)
         elif tools is not None:
@@ -178,7 +274,11 @@ class LLM(BaseModel):
     api_key: str | None = Field(default=None, description="API key")
     provider: str = Field(
         default="openai",
-        description="Backend provider: 'openai' (default) or 'litellm'",
+        description="Backend provider: 'openai' (default), 'litellm' or 'minimax'",
+    )
+    region: str | None = Field(
+        default=None,
+        description="Regional endpoint key for native providers, e.g. 'global_en' or 'cn_zh'. Ignored when `base_url` is set",
     )
     identifier: str | None = Field(
         default=None,
@@ -232,6 +332,7 @@ class LLM(BaseModel):
                     model=self.model,
                     api_key=self.api_key,
                     provider=self.provider,
+                    region=self.region,
                     client_kwargs=self.client_kwargs,
                     sampling_parameters=self.sampling_parameters,
                 ),
@@ -332,6 +433,13 @@ class LLM(BaseModel):
                             ),
                             **endpoint.sampling_parameters,
                         )
+                    elif endpoint.provider == "minimax":
+                        response = await endpoint._generate_image_minimax(
+                            prompt=prompt,
+                            width=width,
+                            height=height,
+                            timeout=MCP_CALL_TIMEOUT // 5,
+                        )
                     else:
                         response = await endpoint._client.images.generate(
                             prompt=prompt,
@@ -358,6 +466,13 @@ class LLM(BaseModel):
 
     async def validate(self):
         endpoint = self._endpoints[0]
+        if endpoint.provider == "minimax":
+            # native image generation endpoints expose no model listing operation
+            assert endpoint.api_key, (
+                f"An API key is required for provider '{endpoint.provider}'"
+            )
+            endpoint._minimax_image_url()
+            return
         if endpoint.provider == "litellm":
             import litellm
 

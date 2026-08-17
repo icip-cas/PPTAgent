@@ -39,3 +39,15 @@ long_context_model:
 #   # sampling_parameters:
 #   #   response_format: "b64_json"
 #   #   extra_body: { "watermark": False }
+
+# # Native MiniMax image generation — no extra dependency required.
+# # `region` selects the regional endpoint: "global_en" (default) or "cn_zh".
+# # Set `base_url` instead to point at a custom deployment.
+# t2i_model:
+#   provider: "minimax"
+#   region: "global_en"
+#   model: "image-01"  # or "image-01-live"
+#   api_key: "your_key"
+#   # sampling_parameters:
+#   #   response_format: "base64"
+#   #   prompt_optimizer: true
