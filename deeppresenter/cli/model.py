@@ -166,7 +166,7 @@ def has_complete_model_config(existing_config: dict | None) -> bool:
 def uses_local_model(config: DeepPresenterConfig) -> bool:
     dumped = config.model_dump()
     return any(
-        "127.0.0.1" in str(dumped.get(key, {}).get("base_url", ""))
-        or "localhost" in str(dumped.get(key, {}).get("base_url", ""))
+        str(dumped.get(key, {}).get("base_url", "")).strip().rstrip("/")
+        == LOCAL_BASE_URL.rstrip("/")
         for key in REQUIRED_LLM_KEYS
     )
