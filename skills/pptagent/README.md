@@ -16,6 +16,7 @@
   <p>Your agent authors the slides. PPTAgent renders, exports, and checks the result.</p>
   <p>
     <a href="#quick-start">🚀 Quick Start</a> ·
+    <a href="#try-atria">✨ Try Atria</a> ·
     <a href="#try-it">💬 Try It</a> ·
     <a href="#configuration">⚙️ Configuration</a> ·
     <a href="../../README.md">🏠 Project Home</a>
@@ -73,6 +74,61 @@ uv pip install --python .venv/bin/python -r requirements.txt
 ```
 
 The installer prepares Node dependencies and registers this directory with the selected host. Keep the skill directory in place. Its tools use the local virtual environment, so your host does not need to activate it.
+
+<a id="try-atria"></a>
+
+## Try Atria Dawn Preview ✨
+
+Use **Atria Dawn Preview** as your coding agent's model to develop the content and author slide HTML with PPTAgent Skill.
+
+> [!TIP]
+> **Get a free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/). Create an API key in the [Atria console](https://api.atria-asi.ai/console/keys), then follow the example below. See the [official Atria integration guide](https://api.atria-asi.ai/docs#agents) for current service details.
+
+After installing the skill for your client, set your key in the terminal you will use to launch it:
+
+```bash
+export ATRIA_API_KEY="<your-atria-api-key>"
+```
+
+Choose your client, then launch it in a separate presentation task folder:
+
+<details open>
+<summary><strong>Claude Code · Messages API</strong></summary>
+
+```bash
+ANTHROPIC_BASE_URL=https://api.atria-asi.ai \
+ANTHROPIC_AUTH_TOKEN="$ATRIA_API_KEY" \
+claude --model Atria-Dawn-Preview
+```
+
+The Claude Code base URL has no `/v1` suffix; the client adds `/v1/messages`.
+
+</details>
+
+<details>
+<summary><strong>Codex CLI · Responses API</strong></summary>
+
+Add this provider to `~/.codex/config.toml`, merging it if an `atria` provider already exists:
+
+```toml
+[model_providers.atria]
+name = "Atria"
+base_url = "https://api.atria-asi.ai/v1"
+env_key = "ATRIA_API_KEY"
+wire_api = "responses"
+```
+
+Then start a session with Atria:
+
+```bash
+codex --model Atria-Dawn-Preview -c 'model_provider="atria"'
+```
+
+See [Codex custom model providers](https://developers.openai.com/codex/config-advanced/#custom-model-providers) for provider configuration.
+
+</details>
+
+**Set up visual review before generating the deck.** Atria's published integration guide does not specify image-input support. For this example, configure [text mode](#configuration) with a separate image-capable reviewer. Atria handles authoring through your host; the skill's `visual.*` settings select the reviewer. Then send the [presentation request below](#try-it).
 
 <a id="try-it"></a>
 
