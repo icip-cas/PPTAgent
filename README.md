@@ -47,12 +47,24 @@
   </tr>
 </table>
 
-We **strongly recommend** deploying our fine-tuned model for the best experience with our agent project. According to our experiments, it **significantly outperforms existing open-source models**.
+> [!TIP]
+> **Recommended: PPTAgent Skill for Claude Code & Codex**
+>
+> Create, revise, and visually review editable PowerPoint decks with your coding agent. Start with a brief, refine the slides through conversation, and export your PPTX.
+>
+> **[Explore the Skill & get started →](skills/pptagent/README.md)**
+
+<details>
+<summary><strong>Self-hosted models · DeepPresenter-9B downloads</strong></summary>
+
+For self-hosted deployments, **DeepPresenter-9B** is our fine-tuned model for presentation generation. Choose quantized GGUF or full weights below.
 
 | Format | HuggingFace | ModelScope |
 |--------|-------------|------------|
 | GGUF (Quantized) | [Forceless/DeepPresenter-9B-GGUF](https://huggingface.co/Forceless/DeepPresenter-9B-GGUF) | [forceless/DeepPresenter-9B-GGUF](https://modelscope.cn/models/forceless/DeepPresenter-9B-GGUF) |
 | Full Weights | [Forceless/DeepPresenter-9B](https://huggingface.co/Forceless/DeepPresenter-9B) | [forceless/DeepPresenter-9B](https://modelscope.cn/models/forceless/DeepPresenter-9B) |
+
+</details>
 
 ## 📅 News
 
@@ -72,7 +84,7 @@ We **strongly recommend** deploying our fine-tuned model for the best experience
 > [!IMPORTANT]
 > Windows is not supported. If you are on Windows, please use WSL.
 >
-> We strongly recommend starting with the CLI and minimum task to confirm dependencies and environment is configured correctly.
+> For CLI or server deployments, start with a minimal CLI task to confirm that dependencies and the environment are configured correctly.
 
 ### Configuration
 
