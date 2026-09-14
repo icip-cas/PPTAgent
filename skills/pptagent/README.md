@@ -41,7 +41,7 @@
 </table>
 
 > [!TIP]
-> **Hosts with image input can use the default multimodal mode.** The [Atria text-model example](#try-atria) requires `mode: text` and a separate visual-model API for review.
+> Use the default multimodal mode when your host model can view images. With a text-only model, follow the [text workflow](#visual-review) to let an external visual model review the slides.
 
 <a id="quick-start"></a>
 
@@ -79,10 +79,7 @@ The installer prepares Node dependencies and registers this directory with the s
 
 ## Try Atria Dawn Preview ✨
 
-Use **Atria Dawn Preview** as a **text-model example**: it develops the content and authors slide HTML through Claude Code or Codex.
-
-> [!IMPORTANT]
-> **Use `mode: text` and configure an external visual reviewer for Atria.** Complete the [visual review configuration](#visual-review) before generating a presentation. An Atria API key configures the authoring model; this workflow also requires an image-capable review model and its API key.
+The example below connects **Atria Dawn Preview** to Claude Code or Codex to develop the content and author slide HTML. As a text-only model, Atria uses the [text workflow](#visual-review): set `mode: text` and configure a visual model to review the rendered slides.
 
 > [!TIP]
 > **Get a free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/). Create an API key in the [Atria console](https://api.atria-asi.ai/console/keys), then follow the example below. See the [official Atria integration guide](https://api.atria-asi.ai/docs#agents) for current service details.
@@ -226,7 +223,7 @@ Keep the presentation at 6 slides, then rebuild and review the updated deck.
 
 ## Configuration ⚙️
 
-Hosts with image input can start with the default configuration. **Atria and other text-model setups require text mode and an external visual reviewer.** MinerU and search remain optional services that can improve PDF extraction and source gathering.
+If your host model can view images, start with the default multimodal mode. For text-only models, such as Atria or text models in the GLM family, use `mode: text` and configure an external visual model to review the slides. MinerU and search are optional additions for better PDF extraction and source gathering.
 
 | Capability | When it helps | Where to configure it |
 | --- | --- | --- |
@@ -243,9 +240,9 @@ Your authoring model, such as [Atria](#try-atria), stays in the host's configura
 | Mode | Visual reviewer | Setup |
 | --- | --- | --- |
 | **Multimodal — default** | An image-capable host model using its image viewer | Uses the defaults; no local configuration needed. |
-| **Text — required for Atria** | An external visual model | Set `mode: text` and configure an image-capable OpenAI-compatible endpoint and its API key. |
+| **Text — for text-only models** | An external visual model | Set `mode: text` and configure an image-capable OpenAI-compatible endpoint and its API key. |
 
-Visual review is invoked by the skill CLI over HTTP; it does not require a separate visual MCP server. The optional document and search MCP servers below provide research tools to the host.
+In text mode, the skill sends rendered slides to the visual API and returns review results to your host model. The optional document and search MCP servers below help the host gather source material.
 
 For first-time text-mode setup, run these commands from `skills/pptagent/`. If you already have local configuration files, edit those instead of replacing them:
 
