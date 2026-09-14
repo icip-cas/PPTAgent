@@ -221,12 +221,24 @@ Keep the presentation at 6 slides, then rebuild and review the updated deck.
 
 ## Configuration ⚙️
 
+Start with your host agent and the default configuration. Add the services below when your task benefits from stronger visual review, PDF extraction, or fresh source material.
+
+| Capability | When it helps | Where to configure it |
+| --- | --- | --- |
+| **Visual model** | Detect clipping, overlap, unreadable text, and inconsistent layouts in rendered slides. | The skill's `config.yaml` and `.env`. An external model is optional for a host that can inspect images, and required in text mode. |
+| **MinerU — optional** | Extract text, tables, formulas, and figures from scanned or complex PDFs. | The host's document-conversion MCP server, using `MINERU_API_KEY` or `MINERU_API_URL`. |
+| **Search — optional** | Find recent facts, supporting sources, and images for research-heavy presentations. | The host's existing search tools or a search MCP server, using Tavily or SerpAPI. |
+
+Your authoring model, such as [Atria](#try-atria), stays in the host's configuration. The skill directly configures visual review; document parsing and retrieval are tools your host can call while preparing the slides.
+
+### Visual review
+
 | Mode | Visual reviewer | Setup |
 | --- | --- | --- |
 | **Multimodal — default** | Claude Code or Codex's image viewer | Uses the defaults; no local configuration needed. |
 | **Text** | An external visual model | Configure an OpenAI-compatible endpoint and its API key. |
 
-For text mode, run these commands from the skill directory:
+For first-time text-mode setup, run these commands from `skills/pptagent/`. If you already have local configuration files, edit those instead of replacing them:
 
 ```bash
 cp config.example.yaml config.yaml
@@ -234,7 +246,124 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Set `mode: text`, fill `visual.base_url` (including `/v1` when required) and `visual.model`, then set `VISUAL_API_KEY` in `.env` or the environment. See the [text-mode guide](references/text.md) for details. Search uses the host's available tools.
+Edit `config.yaml`, replacing the endpoint and model placeholders with an image-capable model from your provider:
+
+```yaml
+mode: text
+
+visual:
+  base_url: "https://your-vision-provider.example/v1"
+  model: "<image-capable-model-id>"
+  api_key_env: VISUAL_API_KEY
+  timeout_seconds: 300
+
+delivery:
+  mode: strict
+```
+
+Set the key in the skill's `.env`:
+
+```dotenv
+VISUAL_API_KEY=<your-visual-api-key>
+```
+
+The reviewer must accept image inputs through an OpenAI-compatible Chat Completions API. Set `base_url` to the API prefix, including `/v1` when required; the skill appends `/chat/completions`. `api_key_env` names the environment variable containing the key. Existing environment variables take precedence over `.env`.
+
+Run `.venv/bin/python scripts/pptagent.py doctor` from the skill directory to check local dependencies and required settings. It does not make an API request; the first `review-slides` call checks the actual endpoint. See the [text-mode guide](references/text.md) for the review response format.
+
+### MinerU for source documents · optional
+
+MinerU is useful when a presentation starts from papers, scanned reports, or PDFs with complex tables and equations. It improves the material available to the authoring model. For a short brief or existing Markdown, you can use the host's normal file-reading tools.
+
+The installed `pptagent` package includes the `deeppresenter.tools.any2markdown` MCP server. Its `convert_to_markdown` tool uses MinerU for PDFs when configured:
+
+| Setting | Use |
+| --- | --- |
+| `MINERU_API_KEY` | Hosted MinerU API token; obtain one from [MinerU](https://mineru.net/apiManage/docs). PDF files are uploaded to that service for parsing. |
+| `MINERU_API_URL` | Optional self-hosted parsing endpoint. The adapter posts a multipart `pdf` field and expects a ZIP of parsed files; use an endpoint matching that contract. |
+
+Choose one: the hosted API key takes precedence if both are set. Without either setting, the conversion tool uses its standard MarkItDown fallback. You can also parse a document through MinerU separately and place the resulting Markdown and images in your task folder.
+
+After connecting the tool, ask: “Convert `report.pdf` into an empty `research/report/` folder, then use its Markdown and figures as sources for the presentation.” Copy figures used in slides into the task's `assets/` directory.
+
+### Research and retrieval · optional
+
+Use your host's existing search tools if they already meet your needs. For additional web and image search, the installed package includes `deeppresenter.tools.search`, which exposes `search_web`, `search_images`, `fetch_url`, and `download_file`.
+
+| Provider | Setting | Use |
+| --- | --- | --- |
+| [Tavily](https://www.tavily.com/) | `TAVILY_API_KEY` | Web results and images for gathering presentation sources. |
+| [SerpAPI](https://serpapi.com/) | `SERPAPI_KEY` | Google web and image search. |
+
+Configure one provider. SerpAPI takes precedence if both keys are present; without either key, this server provides URL fetching and downloading but does not register web/image search. Your host model plans queries and synthesizes the results, so there is no separate `search.model` setting in the skill.
+
+For example: “Find recent primary sources for this topic, record their URLs and dates, and use them to support the presentation's claims.” Search access through a custom model provider depends on the host's available tools; configuring Atria alone does not add a search service.
+
+<details>
+<summary><strong>Connect the optional document and search tools · Claude Code / Codex</strong></summary>
+
+These servers use the Python environment installed in [Quick Start](#quick-start). Add only the servers you need. In your presentation task folder, export the workspace and the keys for your chosen services before launching the host:
+
+```bash
+export WORKSPACE="$PWD"
+export MINERU_API_KEY="<your-mineru-api-key>"
+export TAVILY_API_KEY="<your-tavily-api-key>"
+```
+
+Update `WORKSPACE` when switching task folders. These MCP servers read their own environment; putting their keys only in the skill's `.env` does not configure them.
+
+**Claude Code:** merge the following into the task folder's `.mcp.json`. Replace the Python paths with the absolute path to your skill's interpreter. Claude Code expands the `${...}` environment references:
+
+```json
+{
+  "mcpServers": {
+    "pptagent-docs": {
+      "type": "stdio",
+      "command": "/absolute/path/to/PPTAgent/skills/pptagent/.venv/bin/python",
+      "args": ["-m", "deeppresenter.tools.any2markdown"],
+      "env": {
+        "WORKSPACE": "${WORKSPACE}",
+        "MINERU_API_KEY": "${MINERU_API_KEY}"
+      }
+    },
+    "pptagent-search": {
+      "type": "stdio",
+      "command": "/absolute/path/to/PPTAgent/skills/pptagent/.venv/bin/python",
+      "args": ["-m", "deeppresenter.tools.search"],
+      "env": {
+        "WORKSPACE": "${WORKSPACE}",
+        "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+**Codex:** add these server tables to `~/.codex/config.toml`, replacing the Python paths. `env_vars` forwards values from the environment in which you launch Codex:
+
+```toml
+[mcp_servers.pptagent-docs]
+command = "/absolute/path/to/PPTAgent/skills/pptagent/.venv/bin/python"
+args = ["-m", "deeppresenter.tools.any2markdown"]
+env_vars = ["WORKSPACE", "MINERU_API_KEY"]
+startup_timeout_sec = 30
+tool_timeout_sec = 1800
+
+[mcp_servers.pptagent-search]
+command = "/absolute/path/to/PPTAgent/skills/pptagent/.venv/bin/python"
+args = ["-m", "deeppresenter.tools.search"]
+env_vars = ["WORKSPACE", "TAVILY_API_KEY"]
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+```
+
+For self-hosted MinerU or SerpAPI, replace the corresponding key name in both the exports and the MCP configuration with `MINERU_API_URL` or `SERPAPI_KEY`. For large PDFs in Claude Code, you can extend the tool timeout before launch with `export MCP_TOOL_TIMEOUT=1800000` (milliseconds).
+
+Start a new host session and check that the tools appear in `/mcp`. Confirm document conversion on a small file or search on a simple query before using a large source set. See the [Claude Code MCP guide](https://code.claude.com/docs/en/mcp) and [Codex MCP guide](https://developers.openai.com/codex/mcp/) for host configuration details.
+
+</details>
+
+### Delivery checks
 
 Strict delivery is the default: the deck must pass review and match the current sources. If the user explicitly accepts an incomplete draft, `delivery.mode: best-effort` permits delivery with the failed checks disclosed. Source changes still require a fresh build.
 
