@@ -53,6 +53,8 @@
 > Create, revise, and visually review editable PowerPoint decks with your coding agent. Start with a brief, refine the slides through conversation, and export your PPTX.
 >
 > **[Explore the Skill & get started →](skills/pptagent/README.md)**
+>
+> **Using Atria Dawn Preview?** Our text-model example requires **`mode: text` + an external visual reviewer**. [Atria setup](skills/pptagent/README.md#try-atria) · [Visual review configuration](skills/pptagent/README.md#visual-review)
 
 <details>
 <summary><strong>Self-hosted models · DeepPresenter-9B downloads</strong></summary>
@@ -68,7 +70,7 @@ For self-hosted deployments, **DeepPresenter-9B** is our fine-tuned model for pr
 
 ## 📅 News
 
-- **[2026/09]** 🚀 Introducing **Atria Dawn Preview**, a new agentic model jointly released by Shanghai AI Laboratory, Fudan University, the Institute of Software (Chinese Academy of Sciences), Renmin University of China, the Institute of Automation (Chinese Academy of Sciences), and East China Normal University. **Claim a generous free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/).
+- **[2026/09]** 🚀 Introducing **Atria Dawn Preview**, a new text-based agentic model jointly released by Shanghai AI Laboratory, Fudan University, the Institute of Software (Chinese Academy of Sciences), Renmin University of China, the Institute of Automation (Chinese Academy of Sciences), and East China Normal University. **Claim a generous free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/). [Skill example: text mode + visual review →](skills/pptagent/README.md#try-atria)
 - **[2026/09]** 🧩 Released **[PPTAgent Skill](skills/pptagent/README.md)** for **Claude Code & Codex** — create, visually review, and export editable PowerPoint decks with your coding agent. [Get started →](skills/pptagent/README.md#quick-start)
 - **[2026/04]** 🎉 [DeepPresenter](https://arxiv.org/abs/2602.22839) accepted to **ACL 2026**!
 - **[2026/03]** 🤗 We released fine-tuned models and taskset on [Hugging Face](https://huggingface.co/collections/ICIP/deeppresenter).

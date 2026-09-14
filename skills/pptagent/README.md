@@ -41,7 +41,7 @@
 </table>
 
 > [!TIP]
-> **The default mode uses your host agent's image viewer.** It works with your existing host authentication; a separate visual-model API is optional for text-only hosts.
+> **Hosts with image input can use the default multimodal mode.** The [Atria text-model example](#try-atria) requires `mode: text` and a separate visual-model API for review.
 
 <a id="quick-start"></a>
 
@@ -79,7 +79,10 @@ The installer prepares Node dependencies and registers this directory with the s
 
 ## Try Atria Dawn Preview ✨
 
-Use **Atria Dawn Preview** as your coding agent's model to develop the content and author slide HTML with PPTAgent Skill.
+Use **Atria Dawn Preview** as a **text-model example**: it develops the content and authors slide HTML through Claude Code or Codex.
+
+> [!IMPORTANT]
+> **Use `mode: text` and configure an external visual reviewer for Atria.** Complete the [visual review configuration](#visual-review) before generating a presentation. An Atria API key configures the authoring model; this workflow also requires an image-capable review model and its API key.
 
 > [!TIP]
 > **Get a free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/). Create an API key in the [Atria console](https://api.atria-asi.ai/console/keys), then follow the example below. See the [official Atria integration guide](https://api.atria-asi.ai/docs#agents) for current service details.
@@ -183,7 +186,9 @@ The client requests `/v1/responses` and reads the key from `ATRIA_API_KEY`. See 
 
 ### 3. Start a presentation task
 
-**Set up visual review before generating the deck.** Atria's published integration guide does not specify image-input support. For this example, configure [text mode](#configuration) with a separate image-capable reviewer. Atria handles authoring through your host; the skill's `visual.*` settings select the reviewer. Then send the [presentation request below](#try-it).
+**Set up text-mode visual review before generating the deck:** set `mode: text`, `visual.base_url`, and `visual.model` in the skill's `config.yaml`, and `VISUAL_API_KEY` in its `.env` or environment. Follow the [complete configuration example](#visual-review), then send the [presentation request below](#try-it).
+
+The workflow is **Atria authors HTML → the skill renders images → the external visual model reviews them → Atria fixes reported issues**. The skill also renders and reviews the exported PPTX before final delivery. Its CLI calls the visual API directly and returns structured review results to the text model.
 
 In Claude Code, explicitly invoke `/pptagent` with your request; in Codex, use `$pptagent`. If the skill is unavailable, check the registration path above and start a new client session. The skill's `.env` configures its own tools; set the host's Atria key in the launch terminal as shown above.
 
@@ -221,7 +226,7 @@ Keep the presentation at 6 slides, then rebuild and review the updated deck.
 
 ## Configuration ⚙️
 
-Start with your host agent and the default configuration. Add the services below when your task benefits from stronger visual review, PDF extraction, or fresh source material.
+Hosts with image input can start with the default configuration. **Atria and other text-model setups require text mode and an external visual reviewer.** MinerU and search remain optional services that can improve PDF extraction and source gathering.
 
 | Capability | When it helps | Where to configure it |
 | --- | --- | --- |
@@ -231,12 +236,16 @@ Start with your host agent and the default configuration. Add the services below
 
 Your authoring model, such as [Atria](#try-atria), stays in the host's configuration. The skill directly configures visual review; document parsing and retrieval are tools your host can call while preparing the slides.
 
+<a id="visual-review"></a>
+
 ### Visual review
 
 | Mode | Visual reviewer | Setup |
 | --- | --- | --- |
-| **Multimodal — default** | Claude Code or Codex's image viewer | Uses the defaults; no local configuration needed. |
-| **Text** | An external visual model | Configure an OpenAI-compatible endpoint and its API key. |
+| **Multimodal — default** | An image-capable host model using its image viewer | Uses the defaults; no local configuration needed. |
+| **Text — required for Atria** | An external visual model | Set `mode: text` and configure an image-capable OpenAI-compatible endpoint and its API key. |
+
+Visual review is invoked by the skill CLI over HTTP; it does not require a separate visual MCP server. The optional document and search MCP servers below provide research tools to the host.
 
 For first-time text-mode setup, run these commands from `skills/pptagent/`. If you already have local configuration files, edit those instead of replacing them:
 
