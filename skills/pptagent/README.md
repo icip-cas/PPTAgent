@@ -84,33 +84,84 @@ Use **Atria Dawn Preview** as your coding agent's model to develop the content a
 > [!TIP]
 > **Get a free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/). Create an API key in the [Atria console](https://api.atria-asi.ai/console/keys), then follow the example below. See the [official Atria integration guide](https://api.atria-asi.ai/docs#agents) for current service details.
 
-After installing the skill for your client, set your key in the terminal you will use to launch it:
+### 1. Check your Atria API key
+
+Set your key in the terminal you will use to launch your client, then send a minimal request:
 
 ```bash
 export ATRIA_API_KEY="<your-atria-api-key>"
+
+curl -X POST https://api.atria-asi.ai/v1/chat/completions \
+  -H "Authorization: Bearer $ATRIA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Atria-Dawn-Preview",
+    "messages": [{"role": "user", "content": "hi"}]
+  }'
 ```
 
-Choose your client, then launch it in a separate presentation task folder:
+Check that the response contains an assistant reply in `choices[0].message.content`. This checks your key and Chat Completions access; client integration uses the other Atria interfaces below.
+
+### 2. Configure your client and register the skill
+
+Complete [Quick Start](#quick-start) first, then choose your client. Atria supports all three API formats:
+
+| Client | API | Base URL to configure |
+| --- | --- | --- |
+| The `curl` example | Chat Completions | `https://api.atria-asi.ai/v1` |
+| Claude Code | Messages | `https://api.atria-asi.ai` |
+| Codex CLI | Responses | `https://api.atria-asi.ai/v1` |
+
+Use the base URL shown for your client; it appends the API path itself. Keep the model ID exactly `Atria-Dawn-Preview`.
 
 <details open>
 <summary><strong>Claude Code · Messages API</strong></summary>
 
+From the repository's `skills/pptagent/` directory, register the skill with Claude Code:
+
 ```bash
-ANTHROPIC_BASE_URL=https://api.atria-asi.ai \
-ANTHROPIC_AUTH_TOKEN="$ATRIA_API_KEY" \
-claude --model Atria-Dawn-Preview
+.venv/bin/python scripts/install.py --client claude
 ```
 
-The Claude Code base URL has no `/v1` suffix; the client adds `/v1/messages`.
+This creates `~/.claude/skills/pptagent`. Merge the following fields into `~/.claude/settings.json`, preserving your other settings:
+
+```json
+{
+  "model": "Atria-Dawn-Preview",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.atria-asi.ai"
+  }
+}
+```
+
+In the terminal where you set `ATRIA_API_KEY`, map the key to Claude Code's gateway credential and launch a new session:
+
+```bash
+export ANTHROPIC_AUTH_TOKEN="$ATRIA_API_KEY"
+mkdir -p ~/pptagent-demo
+cd ~/pptagent-demo
+claude
+```
+
+The client requests `/v1/messages`. Keep the API key in the launch environment. See [Claude Code settings](https://code.claude.com/docs/en/settings) and [Atria's Claude Code guide](https://api.atria-asi.ai/docs#claude-code).
 
 </details>
 
 <details>
 <summary><strong>Codex CLI · Responses API</strong></summary>
 
-Add this provider to `~/.codex/config.toml`, merging it if an `atria` provider already exists:
+From the repository's `skills/pptagent/` directory, register the skill with Codex if you have not already done so:
+
+```bash
+.venv/bin/python scripts/install.py --client codex
+```
+
+This creates `~/.agents/skills/pptagent`. Merge these settings into `~/.codex/config.toml`. Place `model` and `model_provider` at the top level, before any `[section]` headers; update existing entries instead of duplicating them:
 
 ```toml
+model = "Atria-Dawn-Preview"
+model_provider = "atria"
+
 [model_providers.atria]
 name = "Atria"
 base_url = "https://api.atria-asi.ai/v1"
@@ -118,17 +169,23 @@ env_key = "ATRIA_API_KEY"
 wire_api = "responses"
 ```
 
-Then start a session with Atria:
+In the terminal where you set `ATRIA_API_KEY`, launch a new session:
 
 ```bash
-codex --model Atria-Dawn-Preview -c 'model_provider="atria"'
+mkdir -p ~/pptagent-demo
+cd ~/pptagent-demo
+codex
 ```
 
-See [Codex custom model providers](https://developers.openai.com/codex/config-advanced/#custom-model-providers) for provider configuration.
+The client requests `/v1/responses` and reads the key from `ATRIA_API_KEY`. See [Codex custom model providers](https://developers.openai.com/codex/config-advanced/#custom-model-providers) and [Atria's Codex guide](https://api.atria-asi.ai/docs#codex).
 
 </details>
 
+### 3. Start a presentation task
+
 **Set up visual review before generating the deck.** Atria's published integration guide does not specify image-input support. For this example, configure [text mode](#configuration) with a separate image-capable reviewer. Atria handles authoring through your host; the skill's `visual.*` settings select the reviewer. Then send the [presentation request below](#try-it).
+
+In Claude Code, explicitly invoke `/pptagent` with your request; in Codex, use `$pptagent`. If the skill is unavailable, check the registration path above and start a new client session. The skill's `.env` configures its own tools; set the host's Atria key in the launch terminal as shown above.
 
 <a id="try-it"></a>
 
