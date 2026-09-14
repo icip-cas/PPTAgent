@@ -1,11 +1,10 @@
-
 <div align="right">
   <details>
     <summary >🌐 Language</summary>
     <div>
       <div align="center">
         <a href="https://openaitx.github.io/view.html?user=icip-cas&project=PPTAgent&lang=en">English</a>
-        | <a href="https://openaitx.github.io/view.html?user=icip-cas&project=PPTAgent&lang=zh-CN">简体中文</a> (<a href="https://translate.google.com/translate?sl=en&amp;tl=zh-CN&amp;u=https%3A%2F%2Fgithub.com%2Ficip-cas%2FPPTAgent">备用翻译</a>)
+        | <a href="https://openaitx.github.io/view.html?user=icip-cas&project=PPTAgent&lang=zh-CN">简体中文</a> (<a href="https://translate.google.com/translate?sl=en&tl=zh-CN&u=https%3A%2F%2Fgithub.com%2Ficip-cas%2FPPTAgent">备用翻译</a>)
         | <a href="https://openaitx.github.io/view.html?user=icip-cas&project=PPTAgent&lang=zh-TW">繁體中文</a>
         | <a href="https://openaitx.github.io/view.html?user=icip-cas&project=PPTAgent&lang=ja">日本語</a>
         | <a href="https://openaitx.github.io/view.html?user=icip-cas&project=PPTAgent&lang=ko">한국어</a>
@@ -52,19 +51,21 @@
 >
 > Create, revise, and visually review editable PowerPoint decks with your coding agent. Start with a brief, refine the slides through conversation, and export your PPTX.
 >
-> **[Explore the Skill & get started →](skills/pptagent/README.md)**
+> **[Explore the Skill &amp; get started →](skills/pptagent/README.md)**
 >
-> For text-only models, such as Atria or text models in the GLM family, use the [text workflow](skills/pptagent/README.md#visual-review) (`mode: text`) and connect a visual model to review the slides. [See the Atria example →](skills/pptagent/README.md#try-atria)
+> For multimodal models, use the multimodal workflow (`mode: multimodal`, the default) so your host model can review the rendered slides directly.
+>
+> For text-only models, use the [text workflow](skills/pptagent/README.md#visual-review) (`mode: text`) and connect a visual model to review the slides. [See the Atria example →](skills/pptagent/README.md#try-atria)
 
 <details>
 <summary><strong>Self-hosted models · DeepPresenter-9B downloads</strong></summary>
 
 For self-hosted deployments, **DeepPresenter-9B** is our fine-tuned model for presentation generation. Choose quantized GGUF or full weights below.
 
-| Format | HuggingFace | ModelScope |
-|--------|-------------|------------|
+| Format           | HuggingFace                                                                              | ModelScope                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | GGUF (Quantized) | [Forceless/DeepPresenter-9B-GGUF](https://huggingface.co/Forceless/DeepPresenter-9B-GGUF) | [forceless/DeepPresenter-9B-GGUF](https://modelscope.cn/models/forceless/DeepPresenter-9B-GGUF) |
-| Full Weights | [Forceless/DeepPresenter-9B](https://huggingface.co/Forceless/DeepPresenter-9B) | [forceless/DeepPresenter-9B](https://modelscope.cn/models/forceless/DeepPresenter-9B) |
+| Full Weights     | [Forceless/DeepPresenter-9B](https://huggingface.co/Forceless/DeepPresenter-9B)           | [forceless/DeepPresenter-9B](https://modelscope.cn/models/forceless/DeepPresenter-9B)           |
 
 </details>
 
@@ -105,7 +106,6 @@ The following services can noticeably improve generation quality, especially for
 - **MinerU**: improves PDF parsing quality. You can either apply for an API key at [mineru.net](https://mineru.net/apiManage/docs) and set `MINERU_API_KEY` in [`deeppresenter/mcp.json`](deeppresenter/mcp.json), or deploy MinerU locally and set `MINERU_API_URL` instead.
 - **Text-to-image model**: improves image generation quality. Configure `t2i_model` in [`deeppresenter/config.yaml`](deeppresenter/config.yaml).
 
-
 If you want a fully offline setup, deploy MinerU locally and set `offline_mode: true` in `deeppresenter/config.yaml` to avoid loading network-dependent tools such as web search.
 
 More configurable variables can be found in [constants.py](deeppresenter/utils/constants.py).
@@ -137,8 +137,8 @@ uvx pptagent generate "Q4 Report" \
   -o report.pptx
 ```
 
-| Command             | Description                                       |
-| ------------------- | ------------------------------------------------- |
+| Command               | Description                                       |
+| --------------------- | ------------------------------------------------- |
 | `pptagent onboard`  | Interactive configuration wizard                  |
 | `pptagent generate` | Generate presentations                            |
 | `pptagent config`   | View current configuration                        |
@@ -149,9 +149,9 @@ uvx pptagent generate "Q4 Report" \
 
 DeepPresenter publishes two runtime images:
 
-| Local image name | Purpose | Docker Hub | 1ms.run mirror |
-| --- | --- | --- | --- |
-| `deeppresenter-host` | Host service for the web UI and orchestration runtime | [`forceless/deeppresenter-host`](https://hub.docker.com/r/forceless/deeppresenter-host) | [`docker.1ms.run/forceless/deeppresenter-host`](https://1ms.run/r/forceless/deeppresenter-host) |
+| Local image name          | Purpose                                                       | Docker Hub                                                                                     | 1ms.run mirror                                                                                         |
+| ------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `deeppresenter-host`    | Host service for the web UI and orchestration runtime         | [`forceless/deeppresenter-host`](https://hub.docker.com/r/forceless/deeppresenter-host)       | [`docker.1ms.run/forceless/deeppresenter-host`](https://1ms.run/r/forceless/deeppresenter-host)       |
 | `deeppresenter-sandbox` | Sandbox image used by the runtime for isolated tool execution | [`forceless/deeppresenter-sandbox`](https://hub.docker.com/r/forceless/deeppresenter-sandbox) | [`docker.1ms.run/forceless/deeppresenter-sandbox`](https://1ms.run/r/forceless/deeppresenter-sandbox) |
 
 ### 2. Minimal Setup / Development: Build From Source
@@ -456,6 +456,7 @@ The service exposes the web UI on `http://localhost:7861`.
 ## Citation 🙏
 
 If you find this project helpful, please use the following to cite it:
+
 ```bibtex
 @inproceedings{zheng-etal-2025-pptagent,
     title = "{PPTA}gent: Generating and Evaluating Presentations Beyond Text-to-Slides",
