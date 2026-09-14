@@ -1,0 +1,6 @@
+# Converter API version verified by this skill.
+pptagent==1.1.37
+playwright==1.62.0
+PyYAML>=6
+Pillow>=10
+PyMuPDF>=1.24.3

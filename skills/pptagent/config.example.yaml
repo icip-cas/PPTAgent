@@ -1,0 +1,11 @@
+# multimodal uses the host image viewer; text uses the endpoint below.
+mode: multimodal
+
+visual:
+  base_url: ""
+  model: ""
+  api_key_env: VISUAL_API_KEY
+  timeout_seconds: 300
+
+delivery:
+  mode: strict  # best-effort only when the user accepts a draft

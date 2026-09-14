@@ -1,0 +1,14 @@
+{
+  "name": "pptagent-skill-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Node runtime dependencies for the standalone PPTAgent Skill",
+  "license": "MIT",
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "minimist": "^1.2.8",
+    "playwright": "1.62.0",
+    "pptxgenjs": "^4.0.1",
+    "sharp": "^0.34.5"
+  }
+}

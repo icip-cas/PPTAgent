@@ -2,6 +2,7 @@ __pycache__
 tmp
 build
 workspace
+/outputs/
 *ipynb
 .vscode
 oaib.txt
