@@ -47,27 +47,15 @@
 </table>
 
 > [!TIP]
-> **Recommended: PPTAgent Skill for Claude Code & Codex**
+> **PPTAgent Skill for Claude Code & Codex**
 >
-> Create, revise, and visually review editable PowerPoint decks with your coding agent. Start with a brief, refine the slides through conversation, and export your PPTX.
+> Create, revise, and visually review editable PowerPoint decks with your coding agent.
 >
-> **[Explore the Skill &amp; get started →](skills/pptagent/README.md)**
+> **[Install the Skill →](#install-skill)** · **[Use Atria Dawn Preview →](#quick-start)**
 >
-> For multimodal models, use the multimodal workflow (`mode: multimodal`, the default) so your host model can review the rendered slides directly.
+> **Free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria API](https://api.atria-asi.ai/)
 >
-> For text-only models, use the [text workflow](skills/pptagent/README.md#visual-review) (`mode: text`) and connect a visual model to review the slides. [See the Atria example →](skills/pptagent/README.md#try-atria)
-
-<details>
-<summary><strong>Self-hosted models · DeepPresenter-9B downloads</strong></summary>
-
-For self-hosted deployments, **DeepPresenter-9B** is our fine-tuned model for presentation generation. Choose quantized GGUF or full weights below.
-
-| Format           | HuggingFace                                                                              | ModelScope                                                                                     |
-| ---------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| GGUF (Quantized) | [Forceless/DeepPresenter-9B-GGUF](https://huggingface.co/Forceless/DeepPresenter-9B-GGUF) | [forceless/DeepPresenter-9B-GGUF](https://modelscope.cn/models/forceless/DeepPresenter-9B-GGUF) |
-| Full Weights     | [Forceless/DeepPresenter-9B](https://huggingface.co/Forceless/DeepPresenter-9B)           | [forceless/DeepPresenter-9B](https://modelscope.cn/models/forceless/DeepPresenter-9B)           |
-
-</details>
+> Multimodal models use `mode: multimodal` to review slides directly. Text-only models, including Atria, use `mode: text` with an external visual model. [Setup guide →](skills/pptagent/README.md#visual-review)
 
 ## 📅 News
 
@@ -82,7 +70,150 @@ For self-hosted deployments, **DeepPresenter-9B** is our fine-tuned model for pr
 - **[2025/05]** ⭐ Reached **1,000 stars** on GitHub!
 - **[2025/01]** 🔓 Open-sourced the PPTAgent codebase.
 
+<a id="install-skill"></a>
+
+## Install PPTAgent Skill 🧩
+
+**Requirements:** Claude Code or Codex CLI, Linux (including WSL) or macOS, [uv](https://docs.astral.sh/uv/getting-started/installation/), npm, and LibreOffice available as `libreoffice` on PATH. On macOS, also install Google Chrome for the converter.
+
+### 1. Install the runtime
+
+On Debian/Ubuntu, install the system dependencies first:
+
+```bash
+sudo apt-get install npm libreoffice-impress
+```
+
+Clone the repository and install the skill's dependencies. If you already have a checkout, start from its `skills/pptagent/` directory:
+
+```bash
+git clone https://github.com/icip-cas/PPTAgent.git
+cd PPTAgent/skills/pptagent
+
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/python -m playwright install --with-deps chromium
+```
+
+### 2. Register with your coding agent
+
+Run the command for your client from `skills/pptagent/`.
+
+**Claude Code**
+
+```bash
+.venv/bin/python scripts/install.py --client claude
+```
+
+**Codex CLI**
+
+```bash
+.venv/bin/python scripts/install.py --client codex
+```
+
+The installer prepares Node dependencies and links the skill into `~/.claude/skills/pptagent` or `~/.agents/skills/pptagent`. Keep the repository in place, then check the installation:
+
+```bash
+.venv/bin/python scripts/pptagent.py doctor
+```
+
+<a id="quick-start"></a>
+
+## Quick Start with Atria Dawn Preview 🚀
+
+This example uses **Atria Dawn Preview** to write and revise the slides, with an external visual model to review them. Complete the installation above, then create an API key in the [Atria console](https://api.atria-asi.ai/console/keys).
+
+### 1. Set up text-mode visual review
+
+In `skills/pptagent/config.yaml`, configure an image-capable reviewer. Replace the endpoint and model placeholders with your provider's values:
+
+```yaml
+mode: text
+visual:
+  base_url: "https://your-vision-provider.example/v1"
+  model: "<image-capable-model-id>"
+  api_key_env: VISUAL_API_KEY
+  timeout_seconds: 300
+delivery:
+  mode: strict
+```
+
+Save the reviewer's key in `skills/pptagent/.env`:
+
+```dotenv
+VISUAL_API_KEY=<your-visual-api-key>
+```
+
+Atria uses the text workflow; the reviewer must accept images through an OpenAI-compatible Chat Completions API. With an image-capable host model, you can use `mode: multimodal` instead. See [visual review configuration](skills/pptagent/README.md#visual-review) for details.
+
+### 2. Launch your coding agent with Atria
+
+Set your Atria key and open a separate task folder:
+
+```bash
+export ATRIA_API_KEY="<your-atria-api-key>"
+mkdir -p ~/pptagent-demo
+cd ~/pptagent-demo
+```
+
+Choose the client you registered during installation.
+
+**Claude Code** — launch through Atria's Messages API:
+
+```bash
+ANTHROPIC_BASE_URL=https://api.atria-asi.ai \
+ANTHROPIC_AUTH_TOKEN="$ATRIA_API_KEY" \
+claude --model Atria-Dawn-Preview
+```
+
+**Codex CLI** — merge the following into `~/.codex/config.toml`. Keep `model` and `model_provider` at the top level, before any section headers, and update existing entries rather than duplicating them:
+
+```toml
+model = "Atria-Dawn-Preview"
+model_provider = "atria"
+
+[model_providers.atria]
+name = "Atria"
+base_url = "https://api.atria-asi.ai/v1"
+env_key = "ATRIA_API_KEY"
+wire_api = "responses"
+```
+
+Then run `codex` from the same terminal. It uses Atria's Responses API and reads `ATRIA_API_KEY` from your environment.
+
+### 3. Create your first presentation
+
+Send this request in your Atria-powered session:
+
+```text
+Use the pptagent skill to create a 6-slide presentation about how our
+engineering team can adopt AI coding assistants. Use a clean 16:9 layout.
+Render and visually review the slides and the exported deck, then deliver
+an editable answer.pptx.
+```
+
+You can also invoke the skill explicitly with `/pptagent` in Claude Code or `$pptagent` in Codex. Continue in the same session to revise the deck:
+
+```text
+Turn slide 3 into a workflow diagram and shorten the recommendations.
+Keep the deck at 6 slides, rebuild it, and review the updated PPTX.
+```
+
+Your task folder keeps **`answer.pptx`**, editable HTML sources, previews, and the review report. See the [Skill guide](skills/pptagent/README.md) for details and [optional MinerU and search tools](skills/pptagent/README.md#configuration) for richer source material.
+
+<details>
+<summary><strong>Self-hosted setup · DeepPresenter-9B, CLI, Docker &amp; dependencies</strong></summary>
+
 ## Usage 📖
+
+### DeepPresenter-9B
+
+For self-hosted deployments, **DeepPresenter-9B** is our fine-tuned model for presentation generation. Choose quantized GGUF or full weights below.
+
+| Format           | HuggingFace                                                                              | ModelScope                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| GGUF (Quantized) | [Forceless/DeepPresenter-9B-GGUF](https://huggingface.co/Forceless/DeepPresenter-9B-GGUF) | [forceless/DeepPresenter-9B-GGUF](https://modelscope.cn/models/forceless/DeepPresenter-9B-GGUF) |
+| Full Weights     | [Forceless/DeepPresenter-9B](https://huggingface.co/Forceless/DeepPresenter-9B)           | [forceless/DeepPresenter-9B](https://modelscope.cn/models/forceless/DeepPresenter-9B)           |
 
 > [!IMPORTANT]
 > Windows is not supported. If you are on Windows, please use WSL.
@@ -213,6 +344,8 @@ docker compose up -d
 ```
 
 The service exposes the web UI on `http://localhost:7861`.
+
+</details>
 
 ## Case Study 💡
 
