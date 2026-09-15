@@ -125,26 +125,26 @@ This example uses **Atria Dawn Preview** to write and revise the slides, with an
 
 ### 1. Set up text-mode visual review
 
-In `skills/pptagent/config.yaml`, configure an image-capable reviewer. Replace the endpoint and model placeholders with your provider's values:
+Try **intern-s2** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1) as the multimodal reviewer. In `skills/pptagent/config.yaml`, use the example below and replace `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
 
 ```yaml
 mode: text
 visual:
-  base_url: "https://your-vision-provider.example/v1"
-  model: "<image-capable-model-id>"
+  base_url: "<OpenAI-compatible API base URL from the Duanyan console>"
+  model: "intern-s2"
   api_key_env: VISUAL_API_KEY
   timeout_seconds: 300
 delivery:
   mode: strict
 ```
 
-Save the reviewer's key in `skills/pptagent/.env`:
+Save your Duanyan API key in `skills/pptagent/.env`:
 
 ```dotenv
-VISUAL_API_KEY=<your-visual-api-key>
+VISUAL_API_KEY=<your-duanyan-api-key>
 ```
 
-Atria uses the text workflow; the reviewer must accept images through an OpenAI-compatible Chat Completions API. With an image-capable host model, you can use `mode: multimodal` instead. See [visual review configuration](skills/pptagent/README.md#visual-review) for details.
+Atria writes the slides through the text workflow; `intern-s2` reviews the rendered images. The skill appends `/chat/completions` to `base_url`; use the API prefix from the console, not the Token Plan webpage URL. With an image-capable host model, you can use `mode: multimodal` instead. See [visual review configuration](skills/pptagent/README.md#visual-review) for details.
 
 ### 2. Launch your coding agent with Atria
 
