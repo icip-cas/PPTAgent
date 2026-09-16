@@ -47,7 +47,7 @@
 </table>
 
 > [!TIP]
-> **PPTAgent Skill for Claude Code & Codex**
+> **PPTAgent Skill for Claude Code, Codex & OpenCode**
 >
 > Create, revise, and visually review editable PowerPoint decks with your coding agent.
 >
@@ -60,7 +60,7 @@
 ## 📅 News
 
 - **[2026/09]** 🚀 Introducing **Atria Dawn Preview**, a new agentic model jointly released by Shanghai AI Laboratory, Fudan University, the Institute of Software (Chinese Academy of Sciences), Renmin University of China, the Institute of Automation (Chinese Academy of Sciences), and East China Normal University. **Claim a generous free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/). [Use Atria with PPTAgent Skill →](skills/pptagent/README.md#try-atria)
-- **[2026/09]** 🧩 Released **[PPTAgent Skill](skills/pptagent/README.md)** for **Claude Code & Codex** — create, visually review, and export editable PowerPoint decks with your coding agent. [Get started →](skills/pptagent/README.md#quick-start)
+- **[2026/09]** 🧩 Released **[PPTAgent Skill](skills/pptagent/README.md)** for **Claude Code, Codex & OpenCode** — create, visually review, and export editable PowerPoint decks with your coding agent. [Get started →](skills/pptagent/README.md#quick-start)
 - **[2026/04]** 🎉 [DeepPresenter](https://arxiv.org/abs/2602.22839) accepted to **ACL 2026**!
 - **[2026/03]** 🤗 We released fine-tuned models and taskset on [Hugging Face](https://huggingface.co/collections/ICIP/deeppresenter).
 - **[2026/01]** 🆕 Freeform & template generation now support PPTX export and offline mode. Context management added to prevent context overflow.
@@ -74,7 +74,7 @@
 
 ## Install PPTAgent Skill 🧩
 
-**Requirements:** Claude Code or Codex CLI, Linux (including WSL) or macOS, [uv](https://docs.astral.sh/uv/getting-started/installation/), npm, and LibreOffice available as `libreoffice` on PATH. On macOS, also install Google Chrome for the converter.
+**Requirements:** Claude Code, Codex CLI, or OpenCode; Linux (including WSL) or macOS; [uv](https://docs.astral.sh/uv/getting-started/installation/); npm; and LibreOffice available as `libreoffice` on PATH. On macOS, also install Google Chrome for the converter.
 
 ### 1. Install the runtime
 
@@ -111,11 +111,20 @@ Run the command for your client from `skills/pptagent/`.
 .venv/bin/python scripts/install.py --client codex
 ```
 
-The installer prepares Node dependencies and links the skill into `~/.claude/skills/pptagent` or `~/.agents/skills/pptagent`. Keep the repository in place, then check the installation:
+**OpenCode**
+
+```bash
+.venv/bin/python scripts/install.py --client opencode
+```
+
+The installer prepares Node dependencies and registers the skill for the selected client. Keep the repository in place, then check the installation:
 
 ```bash
 .venv/bin/python scripts/pptagent.py doctor
 ```
+
+For OpenCode visual MCP configuration and the complete workflow, continue with
+the [Skill Quick Start](skills/pptagent/README.md#quick-start).
 
 <a id="quick-start"></a>
 
@@ -192,7 +201,7 @@ Render and visually review the slides and the exported deck, then deliver
 an editable answer.pptx.
 ```
 
-You can also invoke the skill explicitly with `/pptagent` in Claude Code or `$pptagent` in Codex. Continue in the same session to revise the deck:
+You can also invoke the skill explicitly with `/pptagent` in Claude Code or `$pptagent` in Codex. In OpenCode, ask it to use the `pptagent` skill. Continue in the same session to revise the deck:
 
 ```text
 Turn slide 3 into a workflow diagram and shorten the recommendations.
@@ -202,18 +211,9 @@ Keep the deck at 6 slides, rebuild it, and review the updated PPTX.
 Your task folder keeps **`answer.pptx`**, editable HTML sources, previews, and the review report. See the [Skill guide](skills/pptagent/README.md) for details and [optional MinerU and search tools](skills/pptagent/README.md#configuration) for richer source material.
 
 <details>
-<summary><strong>Self-hosted setup · DeepPresenter-9B, CLI, Docker &amp; dependencies</strong></summary>
+<summary><strong>CLI, Docker &amp; development setup</strong></summary>
 
 ## Usage 📖
-
-### DeepPresenter-9B
-
-For self-hosted deployments, **DeepPresenter-9B** is our fine-tuned model for presentation generation. Choose quantized GGUF or full weights below.
-
-| Format           | HuggingFace                                                                              | ModelScope                                                                                     |
-| ---------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| GGUF (Quantized) | [Forceless/DeepPresenter-9B-GGUF](https://huggingface.co/Forceless/DeepPresenter-9B-GGUF) | [forceless/DeepPresenter-9B-GGUF](https://modelscope.cn/models/forceless/DeepPresenter-9B-GGUF) |
-| Full Weights     | [Forceless/DeepPresenter-9B](https://huggingface.co/Forceless/DeepPresenter-9B)           | [forceless/DeepPresenter-9B](https://modelscope.cn/models/forceless/DeepPresenter-9B)           |
 
 > [!IMPORTANT]
 > Windows is not supported. If you are on Windows, please use WSL.

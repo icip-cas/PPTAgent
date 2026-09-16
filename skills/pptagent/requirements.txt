@@ -4,3 +4,4 @@ playwright==1.62.0
 PyYAML>=6
 Pillow>=10
 PyMuPDF>=1.24.3
+fastmcp>=2.10.0,<2.14.0

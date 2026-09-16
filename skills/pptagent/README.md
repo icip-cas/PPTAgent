@@ -12,7 +12,7 @@
 <div align="center">
   <img src="../../resource/pptagent-logo.jpg" width="240px" alt="PPTAgent">
   <h1>PPTAgent Skill</h1>
-  <p><strong>Turn your brief into an editable PowerPoint deck with Claude Code or Codex.</strong></p>
+  <p><strong>Turn your brief into an editable PowerPoint deck with Claude Code, Codex, or OpenCode.</strong></p>
   <p>Your agent authors the slides. PPTAgent renders, exports, and checks the result.</p>
   <p>
     <a href="#quick-start">🚀 Quick Start</a> ·
@@ -27,7 +27,7 @@
   <tr>
     <td width="33%" valign="top">
       <h3>✍️ Work with your agent</h3>
-      <p>Use your existing Claude Code or Codex model and research tools to turn a brief and source material into slides.</p>
+      <p>Use your existing Claude Code, Codex, or OpenCode model and research tools to turn a brief and source material into slides.</p>
     </td>
     <td width="33%" valign="top">
       <h3>🖼️ Review the result</h3>
@@ -68,12 +68,12 @@ uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python -m playwright install --with-deps chromium
 
-# Register with Codex; use --client claude for Claude Code.
-.venv/bin/python scripts/install.py --client codex
+# Choose claude, codex, or opencode.
+.venv/bin/python scripts/install.py --client opencode
 .venv/bin/python scripts/pptagent.py doctor
 ```
 
-The installer prepares Node dependencies and registers this directory with the selected host. Keep the skill directory in place. Its tools use the local virtual environment, so your host does not need to activate it.
+The installer prepares Node dependencies and registers this directory with the selected host. Keep the skill directory in place. Its tools use the local virtual environment, so your host does not need to activate it. OpenCode installs a small routing entry at `~/.config/opencode/skills/pptagent`; restart the client after registration.
 
 <a id="try-atria"></a>
 
@@ -276,6 +276,63 @@ VISUAL_API_KEY=<your-duanyan-api-key>
 The Token Plan link opens the service console; it is not an API endpoint. Use the console's exact model ID if it differs from `intern-s2`. The reviewer must accept image inputs through an OpenAI-compatible Chat Completions API. Set `base_url` to the API prefix, including `/v1` when required; the skill appends `/chat/completions`. `api_key_env` names the environment variable containing the key. Existing environment variables take precedence over `.env`.
 
 Run `.venv/bin/python scripts/pptagent.py doctor` from the skill directory to check local dependencies and required settings. It does not make an API request; the first `review-slides` call checks the actual endpoint. See the [text-mode guide](references/text.md) for the review response format.
+
+### OpenCode setup
+
+Complete [Quick Start](#quick-start), using `--client opencode`. Confirm that
+OpenCode discovers the skill:
+
+```bash
+opencode debug skill
+```
+
+The host model and API provider remain in your normal OpenCode configuration.
+For a text-only host, first configure the visual endpoint above, then initialize
+a separate presentation workspace:
+
+```bash
+.venv/bin/python scripts/pptagent.py init \
+  --workspace /absolute/path/to/pptagent-demo \
+  --slides 6
+```
+
+Create `opencode.json` in that workspace. Replace the three absolute paths:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "pptagent-visual": {
+      "type": "local",
+      "command": [
+        "/absolute/path/to/PPTAgent/skills/pptagent/.venv/bin/python",
+        "/absolute/path/to/PPTAgent/skills/pptagent/scripts/visual_mcp.py",
+        "--workspace",
+        "/absolute/path/to/pptagent-demo"
+      ],
+      "enabled": true,
+      "timeout": 1800000
+    }
+  }
+}
+```
+
+Start OpenCode in the workspace and verify the server:
+
+```bash
+cd /absolute/path/to/pptagent-demo
+opencode mcp list
+opencode
+```
+
+Ask OpenCode to use the `pptagent` skill. During generation it should call
+`review_slides`, fix reported issues, build `answer.pptx`, call `review_deck`,
+and run `finalize`. The MCP is a local stdio adapter; it does not open a network
+port. It reads `config.yaml` and `.env` from the Skill directory. `--config` and
+`--env` can select other files when needed.
+
+OpenCode documentation: [Skills](https://opencode.ai/docs/skills/) and
+[MCP servers](https://opencode.ai/docs/mcp-servers/).
 
 ### MinerU for source documents · optional
 

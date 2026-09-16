@@ -22,7 +22,9 @@ Set `SKILL_PYTHON` to that interpreter and run:
 Read [references/task-contract.md](references/task-contract.md) for file layout
 and HTML conversion constraints. The default `mode: multimodal` uses the host's
 image viewer. Only for `mode: text`, read [references/text.md](references/text.md).
-Configuration is optional; defaults live in `config.example.yaml`.
+When `review_slides` and `review_deck` MCP tools are available in text mode, use
+them for the corresponding review steps. Configuration is optional; defaults
+live in `config.example.yaml`.
 
 ## Create or revise
 

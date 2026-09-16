@@ -12,5 +12,8 @@ requires `severity` (`blocker`, `major`, `minor`), a positive `slide` number,
 `description`, and `suggested_fix`. A pass with major or blocker issues is
 rejected. Invalid JSON is surfaced for correction, not silently repaired.
 
+OpenCode can expose these operations as `review_slides` and `review_deck` MCP
+tools. Use those tools when present; otherwise run the matching CLI commands.
+
 Follow the normal authoring and delivery workflow. A missing key or failed
 visual call is a failed review, never an implicit pass.
