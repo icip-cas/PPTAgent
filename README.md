@@ -3,7 +3,7 @@
 </h1>
 
 > [!TIP]
-> **PPTAgent Skill for Claude Code, Codex & OpenCode**
+> **PPTAgent Skill for Claude Code, Codex & OpenCode Now Availible！**
 >
 > Create, revise, and visually review editable PowerPoint decks with your coding agent.
 >
