@@ -36,7 +36,7 @@
 <table>
   <tr>
     <td width="50%">
-      <video controls width="100%" src="https://github.com/user-attachments/assets/314bed6a-185e-4c81-9de5-35728e83e22a">
+      <video controls width="100%" src="https://cdn.jsdelivr.net/gh/icip-cas/PPTAgent@ffe3130/resource/skill%2Bcodex.mp4">
       </video>
     </td>
     <td width="50%">
@@ -579,6 +579,15 @@ The service exposes the web UI on `http://localhost:7861`.
             <img src=https://avatars.githubusercontent.com/u/81767213?v=4 width="80;"  alt=Zhenyu/>
             <br />
             <sub style="font-size:14px"><b>Zhenyu</b></sub>
+        </a>
+    </td>
+</tr>
+<tr>
+    <td align="center" style="word-wrap: break-word; width: 120.0; height: 120.0">
+        <a href=https://github.com/wangzh12023>
+            <img src=https://avatars.githubusercontent.com/u/146173014?v=4 width="80;"  alt="Zihan Wang"/>
+            <br />
+            <sub style="font-size:14px"><b>Zihan Wang</b></sub>
         </a>
     </td>
 </tr>
