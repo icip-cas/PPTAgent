@@ -20,9 +20,7 @@ class VisualMCPTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory(prefix="pptagent-mcp-") as directory:
             workspace = Path(directory)
             (workspace / "task.json").write_text(
-                json.dumps(
-                    {"slides": 1, "aspect_ratio": "16:9", "language": "en"}
-                ),
+                json.dumps({"slides": 1, "aspect_ratio": "16:9", "language": "en"}),
                 encoding="utf-8",
             )
             params = StdioServerParameters(

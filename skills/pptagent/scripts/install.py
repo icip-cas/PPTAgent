@@ -42,11 +42,14 @@ def main() -> None:
     parser.add_argument("--skip-runtime", action="store_true")
     args = parser.parse_args()
     source = Path(__file__).resolve().parents[1]
-    base = args.home / {
-        "claude": ".claude/skills",
-        "codex": ".agents/skills",
-        "opencode": ".config/opencode/skills",
-    }[args.client]
+    base = (
+        args.home
+        / {
+            "claude": ".claude/skills",
+            "codex": ".agents/skills",
+            "opencode": ".config/opencode/skills",
+        }[args.client]
+    )
     target = base / "pptagent"
     if (
         args.client != "opencode"
