@@ -29,7 +29,9 @@
   </details>
 </div>
 
-# PPTAgent
+<h1 align="center">
+  <img src="resource/pptagent.png" width="300" alt="PPTAgent">
+</h1>
 
 > [!TIP]
 > **PPTAgent Skill for Claude Code, Codex & OpenCode**
