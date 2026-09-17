@@ -29,22 +29,7 @@
   </details>
 </div>
 
-<div align="center">
-  <img src="resource/pptagent-logo.jpg" width="240px" alt="https://github.com/icip-cas/PPTAgent">
-</div>
-
-<table>
-  <tr>
-    <td width="50%">
-      <video controls width="100%" src="https://github.com/user-attachments/assets/eb88af30-0946-49fe-b0ff-ea679154c041">
-      </video>
-    </td>
-    <td width="50%">
-      <video controls width="100%" src="https://github.com/user-attachments/assets/96eee616-5f79-4ea1-bd7f-bcaa466eda9e">
-      </video>
-    </td>
-  </tr>
-</table>
+# PPTAgent
 
 > [!TIP]
 > **PPTAgent Skill for Claude Code, Codex & OpenCode**
@@ -56,6 +41,10 @@
 > **Free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria API](https://api.atria-asi.ai/)
 >
 > Multimodal models use `mode: multimodal` to review slides directly. Text-only models, including Atria, use `mode: text` with an external visual model. [Setup guide →](skills/pptagent/README.md#visual-review)
+
+<p align="center">
+  <img src="resource/pptagent-demo.gif" width="50%" alt="PPTAgent demo">
+</p>
 
 ## 📅 News
 
