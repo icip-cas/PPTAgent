@@ -36,7 +36,7 @@
 <table>
   <tr>
     <td width="50%">
-      <video controls width="100%" src="https://cdn.jsdelivr.net/gh/icip-cas/PPTAgent@ffe3130/resource/skill%2Bcodex.mp4">
+      <video controls width="100%" src="https://github.com/user-attachments/assets/eb88af30-0946-49fe-b0ff-ea679154c041">
       </video>
     </td>
     <td width="50%">
