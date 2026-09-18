@@ -252,7 +252,7 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-For a multimodal reviewer, try **intern-s2** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). Edit `config.yaml` as follows, replacing `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
+For a multimodal reviewer, try **deepseek-v4-flash-vision** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). Edit `config.yaml` as follows, replacing `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
 
 ```yaml
 mode: text
@@ -273,7 +273,7 @@ Set your Duanyan API key in the skill's `.env`:
 VISUAL_API_KEY=<your-duanyan-api-key>
 ```
 
-The Token Plan link opens the service console; it is not an API endpoint. Use the console's exact model ID if it differs from `intern-s2`. The reviewer must accept image inputs through an OpenAI-compatible Chat Completions API. Set `base_url` to the API prefix, including `/v1` when required; the skill appends `/chat/completions`. `api_key_env` names the environment variable containing the key. Existing environment variables take precedence over `.env`.
+The Token Plan link opens the service console; it is not an API endpoint. Use the console's exact model ID if it differs from `deepseek-v4-flash-vision`. The reviewer must accept image inputs through an OpenAI-compatible Chat Completions API. Set `base_url` to the API prefix, including `/v1` when required; the skill appends `/chat/completions`. `api_key_env` names the environment variable containing the key. Existing environment variables take precedence over `.env`.
 
 Run `.venv/bin/python scripts/pptagent.py doctor` from the skill directory to check local dependencies and required settings. It does not make an API request; the first `review-slides` call checks the actual endpoint. See the [text-mode guide](references/text.md) for the review response format.
 
