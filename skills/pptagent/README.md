@@ -259,7 +259,7 @@ mode: text
 
 visual:
   base_url: "<OpenAI-compatible API base URL from the Duanyan console>"
-  model: "intern-s2"
+  model: "deepseek-v4-flash-vision"
   api_key_env: VISUAL_API_KEY
   timeout_seconds: 300
 
