@@ -11,7 +11,7 @@
 >
 > **Free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria API](https://api.atria-asi.ai/)
 >
-> Multimodal models use `mode: multimodal` to review slides directly. Text-only models, including Atria, use `mode: text` with an external visual model. [Setup guide →](skills/pptagent/README.md#visual-review)
+> You can use a multimodal vision model as a multimodal reviewer and apply for an API token through the [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). We recommend `deepseek-v4-flash-vision` as the multimodal model. [Setup guide →](skills/pptagent/README.md#visual-review)
 
 > [!IMPORTANT]
 > **Looking for the previous runtime or reproducing the research papers?** Use
@@ -110,7 +110,9 @@ This example uses **Atria Dawn Preview** to write and revise the slides, with an
 
 ### 1. Set up text-mode visual review
 
-Try **deepseek-v4-flash-vision** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1) as the multimodal reviewer. In `skills/pptagent/config.yaml`, use the example below and replace `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
+You can use a multimodal vision model as a multimodal reviewer and apply for an API token through the [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). We recommend `deepseek-v4-flash-vision` as the multimodal model.
+
+In `skills/pptagent/config.yaml`, use the example below and replace `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
 
 ```yaml
 mode: text

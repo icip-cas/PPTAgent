@@ -31,7 +31,7 @@
 </table>
 
 > [!TIP]
-> Use the default multimodal mode when your host model can view images. With a text-only model, follow the [text workflow](#visual-review) to let an external visual model review the slides.
+> You can use a multimodal vision model as a multimodal reviewer and apply for an API token through the [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). We recommend `deepseek-v4-flash-vision` as the multimodal model. [Setup guide →](#visual-review)
 
 <a id="quick-start"></a>
 
@@ -252,7 +252,9 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-For a multimodal reviewer, try **deepseek-v4-flash-vision** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). Edit `config.yaml` as follows, replacing `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
+You can use a multimodal vision model as a multimodal reviewer and apply for an API token through the [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). We recommend `deepseek-v4-flash-vision` as the multimodal model.
+
+Edit `config.yaml` as follows, replacing `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
 
 ```yaml
 mode: text
