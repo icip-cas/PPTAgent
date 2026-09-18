@@ -116,7 +116,7 @@ Try **intern-s2** through [Duanyan (端砚) Token Plan](https://discovery.intern
 mode: text
 visual:
   base_url: "<OpenAI-compatible API base URL from the Duanyan console>"
-  model: "DeepSeek-V4-Flash-Vision"
+  model: "deepseek-v4-flash-vision"
   api_key_env: VISUAL_API_KEY
   timeout_seconds: 300
 delivery:
