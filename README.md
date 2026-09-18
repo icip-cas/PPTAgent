@@ -110,7 +110,7 @@ This example uses **Atria Dawn Preview** to write and revise the slides, with an
 
 ### 1. Set up text-mode visual review
 
-Try **intern-s2** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1) as the multimodal reviewer. In `skills/pptagent/config.yaml`, use the example below and replace `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
+Try **deepseek-v4-flash-vision** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1) as the multimodal reviewer. In `skills/pptagent/config.yaml`, use the example below and replace `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
 
 ```yaml
 mode: text
@@ -129,7 +129,7 @@ Save your Duanyan API key in `skills/pptagent/.env`:
 VISUAL_API_KEY=<your-duanyan-api-key>
 ```
 
-Atria writes the slides through the text workflow; `intern-s2` reviews the rendered images. The skill appends `/chat/completions` to `base_url`; use the API prefix from the console, not the Token Plan webpage URL. With an image-capable host model, you can use `mode: multimodal` instead. See [visual review configuration](skills/pptagent/README.md#visual-review) for details.
+Atria writes the slides through the text workflow; `deepseek-v4-flash-vision` reviews the rendered images. The skill appends `/chat/completions` to `base_url`; use the API prefix from the console, not the Token Plan webpage URL. With an image-capable host model, you can use `mode: multimodal` instead. See [visual review configuration](skills/pptagent/README.md#visual-review) for details.
 
 ### 2. Launch your coding agent with Atria
 
