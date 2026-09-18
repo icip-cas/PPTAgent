@@ -11,9 +11,8 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
-from pptagent_runtime import core
-
 from deeppresenter.utils.webview import PlaywrightConverter
+from pptagent_runtime import core
 
 
 class BrowserTests(unittest.IsolatedAsyncioTestCase):

@@ -29,7 +29,7 @@ class WorkflowTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="pptagent-test-")
         self.addCleanup(self.temporary.cleanup)
-        self.workspace = Path(self.temporary.name)
+        self.workspace = Path(self.temporary.name).resolve()
         (self.workspace / "task.json").write_text(
             json.dumps(
                 {

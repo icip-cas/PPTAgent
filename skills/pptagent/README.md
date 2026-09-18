@@ -445,7 +445,7 @@ Strict delivery is the default: the deck must pass review and match the current 
 - [Skill instructions](SKILL.md): the workflow followed by your host agent.
 - [Task and source contract](references/task-contract.md): workspace layout and authoring guidance.
 - [Configuration example](config.example.yaml): available settings.
-- [PPTAgent project](../../README.md): the CLI, server workflows, research, and examples.
+- [PPTAgent project](../../README.md): current releases, installation, and project history.
 
 <details>
 <summary>Installation and existing task notes</summary>

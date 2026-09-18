@@ -19,7 +19,7 @@ Steps to reproduce the behavior:
 
 **Desktop (please complete the following information):**
  - OS: [e.g. iOS]
- - Version [e.g. v0.1.0]
+ - Version [e.g. v3.0.0]
 
 **LLM Models (please complete the following information):**
   - Model Name: [e.g. gpt-4, gemini pro]
