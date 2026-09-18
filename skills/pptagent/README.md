@@ -9,19 +9,9 @@
   </details>
 </div>
 
-<div align="center">
-  <img src="../../resource/pptagent-logo.jpg" width="240px" alt="PPTAgent">
-  <h1>PPTAgent Skill</h1>
-  <p><strong>Turn your brief into an editable PowerPoint deck with Claude Code, Codex, or OpenCode.</strong></p>
-  <p>Your agent authors the slides. PPTAgent renders, exports, and checks the result.</p>
-  <p>
-    <a href="#quick-start">🚀 Quick Start</a> ·
-    <a href="#try-atria">✨ Try Atria</a> ·
-    <a href="#try-it">💬 Try It</a> ·
-    <a href="#configuration">⚙️ Configuration</a> ·
-    <a href="../../README.md">🏠 Project Home</a>
-  </p>
-</div>
+<h1 align="center">
+  <img src="../../resource/pptagent.png" width="300" alt="PPTAgent">
+</h1>
 
 <table>
   <tr>
