@@ -9,19 +9,9 @@
   </details>
 </div>
 
-<div align="center">
-  <img src="../../resource/pptagent-logo.jpg" width="240px" alt="PPTAgent">
-  <h1>PPTAgent Skill</h1>
-  <p><strong>Turn your brief into an editable PowerPoint deck with Claude Code, Codex, or OpenCode.</strong></p>
-  <p>Your agent authors the slides. PPTAgent renders, exports, and checks the result.</p>
-  <p>
-    <a href="#quick-start">🚀 Quick Start</a> ·
-    <a href="#try-atria">✨ Try Atria</a> ·
-    <a href="#try-it">💬 Try It</a> ·
-    <a href="#configuration">⚙️ Configuration</a> ·
-    <a href="../../README.md">🏠 Project Home</a>
-  </p>
-</div>
+<h1 align="center">
+  <img src="../../resource/pptagent.png" width="300" alt="PPTAgent">
+</h1>
 
 <table>
   <tr>
@@ -50,12 +40,22 @@
 **Requirements:** Linux (including WSL) or macOS, Python 3.11+, [uv](https://docs.astral.sh/uv/getting-started/installation/), npm, and LibreOffice available as `libreoffice` on PATH. On macOS, the upstream converter also uses an installed Google Chrome.
 
 <details>
-<summary>Linux system dependencies</summary>
+<summary>Linux and macOS system dependencies</summary>
 
 On Debian/Ubuntu, install npm and LibreOffice before continuing:
 
 ```bash
 sudo apt-get install npm libreoffice-impress
+```
+
+On macOS, install Node.js, LibreOffice, and Google Chrome with Homebrew. The
+runtime invokes LibreOffice through the `libreoffice` command, so expose the
+Homebrew-provided `soffice` command under that name:
+
+```bash
+brew install node
+brew install --cask libreoffice google-chrome
+ln -sf "$(command -v soffice)" "$(brew --prefix)/bin/libreoffice"
 ```
 
 </details>
@@ -252,14 +252,14 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-For a multimodal reviewer, try **intern-s2** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). Edit `config.yaml` as follows, replacing `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
+For a multimodal reviewer, try **deepseek-v4-flash-vision** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1). Edit `config.yaml` as follows, replacing `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
 
 ```yaml
 mode: text
 
 visual:
   base_url: "<OpenAI-compatible API base URL from the Duanyan console>"
-  model: "intern-s2"
+  model: "deepseek-v4-flash-vision"
   api_key_env: VISUAL_API_KEY
   timeout_seconds: 300
 
@@ -273,7 +273,7 @@ Set your Duanyan API key in the skill's `.env`:
 VISUAL_API_KEY=<your-duanyan-api-key>
 ```
 
-The Token Plan link opens the service console; it is not an API endpoint. Use the console's exact model ID if it differs from `intern-s2`. The reviewer must accept image inputs through an OpenAI-compatible Chat Completions API. Set `base_url` to the API prefix, including `/v1` when required; the skill appends `/chat/completions`. `api_key_env` names the environment variable containing the key. Existing environment variables take precedence over `.env`.
+The Token Plan link opens the service console; it is not an API endpoint. Use the console's exact model ID if it differs from `deepseek-v4-flash-vision`. The reviewer must accept image inputs through an OpenAI-compatible Chat Completions API. Set `base_url` to the API prefix, including `/v1` when required; the skill appends `/chat/completions`. `api_key_env` names the environment variable containing the key. Existing environment variables take precedence over `.env`.
 
 Run `.venv/bin/python scripts/pptagent.py doctor` from the skill directory to check local dependencies and required settings. It does not make an API request; the first `review-slides` call checks the actual endpoint. See the [text-mode guide](references/text.md) for the review response format.
 
@@ -435,7 +435,7 @@ Strict delivery is the default: the deck must pass review and match the current 
 - [Skill instructions](SKILL.md): the workflow followed by your host agent.
 - [Task and source contract](references/task-contract.md): workspace layout and authoring guidance.
 - [Configuration example](config.example.yaml): available settings.
-- [PPTAgent project](../../README.md): the CLI, server workflows, research, and examples.
+- [PPTAgent project](../../README.md): current releases, installation, and project history.
 
 <details>
 <summary>Installation and existing task notes</summary>
