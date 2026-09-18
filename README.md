@@ -13,6 +13,14 @@
 >
 > Multimodal models use `mode: multimodal` to review slides directly. Text-only models, including Atria, use `mode: text` with an external visual model. [Setup guide →](skills/pptagent/README.md#visual-review)
 
+> [!IMPORTANT]
+> **Looking for the previous runtime or reproducing the research papers?** Use
+> these pinned versions instead of the current development branch:
+>
+> - **Complete pre-Skill repository:** [v2.1.0](https://github.com/icip-cas/PPTAgent/tree/v2.1.0)
+> - **PPTAgent (EMNLP 2025):** [paper](https://arxiv.org/abs/2501.03936) · [code at v0.2.0](https://github.com/icip-cas/PPTAgent/tree/v0.2.0)
+> - **DeepPresenter (ACL 2026):** [paper](https://arxiv.org/abs/2602.22839) · [code at v1.1.37](https://github.com/icip-cas/PPTAgent/tree/v1.1.37)
+
 <p align="center">
   <img src="resource/pptagent-demo.gif" width="50%" alt="PPTAgent demo">
 </p>
