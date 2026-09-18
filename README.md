@@ -14,7 +14,7 @@
 > Multimodal models use `mode: multimodal` to review slides directly. Text-only models, including Atria, use `mode: text` with an external visual model. [Setup guide →](skills/pptagent/README.md#visual-review)
 
 <p align="center">
-  <img src="resource/pptagent-demo.gif" width="50%" alt="PPTAgent demo">
+  <img src="resource/pptagent-demo.gif" width="50%" alt="PPTAgent demo with Atria and deepseek-v4-flash-vision">
 </p>
 
 ## 📅 News
@@ -38,11 +38,34 @@
 
 ### 1. Install the runtime
 
-On Debian/Ubuntu, install the system dependencies first:
+Install the system dependencies for your platform first.
+
+<details>
+<summary>Linux (Debian/Ubuntu)</summary>
 
 ```bash
 sudo apt-get install npm libreoffice-impress
 ```
+
+</details>
+
+<details>
+<summary>macOS</summary>
+
+Install [Homebrew](https://brew.sh/) if it is not already available, then run:
+
+```bash
+brew install uv node
+brew install --cask libreoffice google-chrome
+
+export PATH="/Applications/LibreOffice.app/Contents/MacOS:$PATH"
+```
+
+Add the `export PATH` line to your shell configuration (`~/.zshrc` for the default macOS shell) so new terminal sessions can also find `libreoffice`. Launch your coding agent from a terminal with this PATH configured.
+
+The PowerPoint converter uses Google Chrome on macOS. Keep the Playwright Chromium installation step below as well; the skill uses it for browser rendering.
+
+</details>
 
 Clone the repository and install the skill's dependencies. If you already have a checkout, start from its `skills/pptagent/` directory:
 
@@ -94,13 +117,13 @@ This example uses **Atria Dawn Preview** to write and revise the slides, with an
 
 ### 1. Set up text-mode visual review
 
-Try **intern-s2** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1) as the multimodal reviewer. In `skills/pptagent/config.yaml`, use the example below and replace `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
+Try **deepseek-v4-flash-vision** through [Duanyan (端砚) Token Plan](https://discovery.intern-ai.org.cn/token-plan/home?tabIndex=1) as the multimodal reviewer. In `skills/pptagent/config.yaml`, use the example below and replace `base_url` with the OpenAI-compatible API base URL shown in your Duanyan console:
 
 ```yaml
 mode: text
 visual:
   base_url: "<OpenAI-compatible API base URL from the Duanyan console>"
-  model: "intern-s2"
+  model: "deepseek-v4-flash-vision"
   api_key_env: VISUAL_API_KEY
   timeout_seconds: 300
 delivery:
@@ -113,7 +136,7 @@ Save your Duanyan API key in `skills/pptagent/.env`:
 VISUAL_API_KEY=<your-duanyan-api-key>
 ```
 
-Atria writes the slides through the text workflow; `intern-s2` reviews the rendered images. The skill appends `/chat/completions` to `base_url`; use the API prefix from the console, not the Token Plan webpage URL. With an image-capable host model, you can use `mode: multimodal` instead. See [visual review configuration](skills/pptagent/README.md#visual-review) for details.
+Atria writes the slides through the text workflow; `deepseek-v4-flash-vision` reviews the rendered images. The skill appends `/chat/completions` to `base_url`; use the API prefix from the console, not the Token Plan webpage URL. With an image-capable host model, you can use `mode: multimodal` instead. See [visual review configuration](skills/pptagent/README.md#visual-review) for details.
 
 ### 2. Launch your coding agent with Atria
 
