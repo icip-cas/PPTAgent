@@ -50,12 +50,22 @@
 **Requirements:** Linux (including WSL) or macOS, Python 3.11+, [uv](https://docs.astral.sh/uv/getting-started/installation/), npm, and LibreOffice available as `libreoffice` on PATH. On macOS, the upstream converter also uses an installed Google Chrome.
 
 <details>
-<summary>Linux system dependencies</summary>
+<summary>Linux and macOS system dependencies</summary>
 
 On Debian/Ubuntu, install npm and LibreOffice before continuing:
 
 ```bash
 sudo apt-get install npm libreoffice-impress
+```
+
+On macOS, install Node.js, LibreOffice, and Google Chrome with Homebrew. The
+runtime invokes LibreOffice through the `libreoffice` command, so expose the
+Homebrew-provided `soffice` command under that name:
+
+```bash
+brew install node
+brew install --cask libreoffice google-chrome
+ln -sf "$(command -v soffice)" "$(brew --prefix)/bin/libreoffice"
 ```
 
 </details>

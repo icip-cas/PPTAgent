@@ -3,7 +3,7 @@
 </h1>
 
 > [!TIP]
-> **PPTAgent Skill for Claude Code, Codex & OpenCode Now Availible！**
+> **PPTAgent Skill for Claude Code, Codex & OpenCode Now Available!**
 >
 > Create, revise, and visually review editable PowerPoint decks with your coding agent.
 >
@@ -42,6 +42,14 @@ On Debian/Ubuntu, install the system dependencies first:
 
 ```bash
 sudo apt-get install npm libreoffice-impress
+```
+
+On macOS, install the system dependencies with Homebrew:
+
+```bash
+brew install node
+brew install --cask libreoffice google-chrome
+ln -sf "$(command -v soffice)" "$(brew --prefix)/bin/libreoffice"
 ```
 
 Clone the repository and install the skill's dependencies. If you already have a checkout, start from its `skills/pptagent/` directory:
@@ -84,7 +92,7 @@ The installer prepares Node dependencies and registers the skill for the selecte
 ```
 
 For OpenCode visual MCP configuration and the complete workflow, continue with
-the [Skill Quick Start](skills/pptagent/README.md#quick-start).
+the [OpenCode setup guide](skills/pptagent/README.md#opencode-setup).
 
 <a id="quick-start"></a>
 
@@ -149,6 +157,10 @@ wire_api = "responses"
 ```
 
 Then run `codex` from the same terminal. It uses Atria's Responses API and reads `ATRIA_API_KEY` from your environment.
+
+**OpenCode** — configure Atria through your normal OpenCode provider settings,
+then follow the [OpenCode setup guide](skills/pptagent/README.md#opencode-setup)
+to connect the visual review tools.
 
 ### 3. Create your first presentation
 
