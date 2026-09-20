@@ -353,7 +353,7 @@ Your task folder keeps **`answer.pptx`**, editable HTML sources, previews, and t
 </tr>
 </table>
 
-[![Star History Chart](https://api.star-history.com/svg?repos=icip-cas/PPTAgent&type=Date)](https://star-history.com/#icip-cas/PPTAgent&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=icip-cas/PPTAgent&type=Date)](https://star-history.dera.page/#icip-cas/PPTAgent&Date)
 
 ## Citation 🙏
 
