@@ -68,12 +68,16 @@ uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python -m playwright install --with-deps chromium
 
-# Choose claude, codex, or opencode.
-.venv/bin/python scripts/install.py --client opencode
+# Choose claude, codex, gigacode, or opencode.
+.venv/bin/python scripts/install.py --client gigacode
 .venv/bin/python scripts/pptagent.py doctor
 ```
 
-The installer prepares Node dependencies and registers this directory with the selected host. Keep the skill directory in place. Its tools use the local virtual environment, so your host does not need to activate it. OpenCode installs a small routing entry at `~/.config/opencode/skills/pptagent`; restart the client after registration.
+The installer prepares Node dependencies and registers this directory with the selected host. Keep the skill directory in place. Its tools use the local virtual environment, so your host does not need to activate it. `claude`, `codex`, and `gigacode` symlink this directory into the host's skills folder (`~/.claude/skills`, `~/.agents/skills`, and `~/.gigacode/skills` respectively); OpenCode installs a small routing entry at `~/.config/opencode/skills/pptagent`. Restart the client after registration.
+
+### GigaCode Desktop
+
+GigaCode Desktop reads skills from `~/.gigacode/skills` and follows `SKILL.md` like other Claude Code–compatible agents. Register with `--client gigacode`, then restart the client so it re-reads the skill list. Invoke the skill by asking the agent to use `pptagent` for your presentation request. The skill's tools run through the local virtual environment created in Quick Start; the host model and API provider stay in your normal GigaCode Desktop configuration. For a text-only host model, configure the [visual reviewer](#visual-review) first.
 
 <a id="try-atria"></a>
 

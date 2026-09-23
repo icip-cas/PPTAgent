@@ -36,7 +36,9 @@ def register_opencode(source: Path, base: Path) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Register this PPTAgent Skill")
     parser.add_argument(
-        "--client", choices=("claude", "codex", "opencode"), required=True
+        "--client",
+        choices=("claude", "codex", "gigacode", "opencode"),
+        required=True,
     )
     parser.add_argument("--home", type=Path, default=Path.home())
     parser.add_argument("--skip-runtime", action="store_true")
@@ -47,6 +49,7 @@ def main() -> None:
         / {
             "claude": ".claude/skills",
             "codex": ".agents/skills",
+            "gigacode": ".gigacode/skills",
             "opencode": ".config/opencode/skills",
         }[args.client]
     )

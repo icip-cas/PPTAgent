@@ -43,6 +43,21 @@ class InstallTests(unittest.TestCase):
         self.assertIn(str(ROOT / "SKILL.md"), registration)
         self.assertIn(sys.executable, registration)
 
+    def test_gigacode_registration_symlinks_source(self) -> None:
+        for _ in range(2):
+            result = self.install("gigacode")
+            self.assertEqual(result.returncode, 0, result.stderr)
+        target = self.home / ".gigacode/skills/pptagent"
+        self.assertTrue(target.is_symlink())
+        self.assertEqual(target.resolve(), ROOT)
+
+    def test_gigacode_registration_refuses_foreign_directory(self) -> None:
+        target = self.home / ".gigacode/skills/pptagent"
+        target.mkdir(parents=True)
+        (target / "SKILL.md").write_text("user-owned skill", encoding="utf-8")
+        self.assertEqual(self.install("gigacode").returncode, 2)
+        self.assertFalse(target.is_symlink())
+
     def test_opencode_registration_preserves_existing_skill(self) -> None:
         target = self.home / ".config/opencode/skills/pptagent"
         target.mkdir(parents=True)
