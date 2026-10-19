@@ -8,14 +8,14 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.18
+    rev: v0.17.1
     hooks:
       - id: ruff-check
         args: ["--select", "I", "--fix"]
       - id: ruff-format
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.2
+    rev: v3.22.0
     hooks:
       - id: pyupgrade
         args: [--py311-plus]
