@@ -1,6 +1,11 @@
 <h1 align="center">
   <img src="resource/pptagent.png" width="300" alt="PPTAgent">
 </h1>
+<p align="center">
+  <a href="https://atomgit.com/icip-cas/PPTAgent">
+    <img src="https://atomgit.com/icip-cas/PPTAgent/star/new_badge.svg" alt="AtomGit Stars">
+  </a>
+</p>
 
 > [!TIP]
 > **PPTAgent Skill for Claude Code, Codex & OpenCode Now Available!**
@@ -24,6 +29,7 @@
   <img src="resource/pptagent-demo.gif" width="50%" alt="PPTAgent demo">
 </p>
 
+  
 ## 📅 News
 
 - **[2026/09]** 🚀 Introducing **Atria Dawn Preview**, a new agentic model jointly released by Shanghai AI Laboratory, Fudan University, the Institute of Software (Chinese Academy of Sciences), Renmin University of China, the Institute of Automation (Chinese Academy of Sciences), and East China Normal University. **Claim a generous free Token Plan:** [Discovery](https://discovery-home.intern-ai.org.cn/) · [Atria](https://api.atria-asi.ai/). [Use Atria with PPTAgent Skill →](skills/pptagent/README.md#try-atria)
