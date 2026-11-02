@@ -34,6 +34,9 @@ live in `config.example.yaml`.
 - Use available research tools as needed and preserve sources for checkable
   claims. A manuscript or asset manifest is useful for complex decks, not a
   prerequisite for every edit.
+- When the optional `pptagent-search` MCP is configured, use `search_web` to
+  find current sources and `fetch_url` to inspect relevant pages. Preserve their
+  URLs in the research notes or slide notes.
 - Use `scaffold` if starter HTML is useful; it preserves existing slides.
   Author exactly the requested page count and replace the starter text.
 - Run `review-slides`, inspect every returned image, then record each result:
