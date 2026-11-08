@@ -353,26 +353,27 @@ After connecting the tool, ask: “Convert `report.pdf` into an empty `research/
 
 ### Research and retrieval · optional
 
-Use your host's existing search tools if they already meet your needs. For additional web and image search, the installed package includes `deeppresenter.tools.search`, which exposes `search_web`, `search_images`, `fetch_url`, and `download_file`.
+Use your host's existing search tools if they already meet your needs. For additional search, configure the skill's single local MCP server at `skills/pptagent/scripts/search_mcp.py`. It exposes `search_web`, `fetch_url`, and `download_file`; `search_images` remains available when a legacy provider key is configured.
 
 | Provider | Setting | Use |
 | --- | --- | --- |
-| [Tavily](https://www.tavily.com/) | `TAVILY_API_KEY` | Web results and images for gathering presentation sources. |
-| [SerpAPI](https://serpapi.com/) | `SERPAPI_KEY` | Google web and image search. |
+| [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp.md) | `SEARCH_PROVIDER=parallel` or `auto` with no legacy key | Keyless web search for current presentation sources. |
+| [SerpAPI](https://serpapi.com/) | `SERPAPI_KEY` | Google web and image search; selected by `auto` when present. |
+| [Tavily](https://www.tavily.com/) | `TAVILY_API_KEY` | Web results and images; selected by `auto` when SerpAPI is not configured. |
 
-Configure one provider. SerpAPI takes precedence if both keys are present; without either key, this server provides URL fetching and downloading but does not register web/image search. Your host model plans queries and synthesizes the results, so there is no separate `search.model` setting in the skill.
+`SEARCH_PROVIDER` defaults to `auto`: SerpAPI keeps precedence when its key is set, Tavily is selected when only its key is set, and keyless Parallel Search MCP is used when neither legacy key is configured. Choose `parallel`, `serpapi`, or `tavily` explicitly to select a web provider. A configured provider failure is returned as an error rather than silently falling back. Parallel currently supports web search only; a requested `time_range` is rejected instead of being ignored, and image search remains on the configured legacy provider. The host plans queries and synthesizes the returned sources, so there is no separate `search.model` setting in the skill.
 
 For example: “Find recent primary sources for this topic, record their URLs and dates, and use them to support the presentation's claims.” Search access through a custom model provider depends on the host's available tools; configuring Atria alone does not add a search service.
 
 <details>
 <summary><strong>Connect the optional document and search tools · Claude Code / Codex</strong></summary>
 
-These servers use the Python environment installed in [Quick Start](#quick-start). Add only the servers you need. In your presentation task folder, export the workspace and the keys for your chosen services before launching the host:
+These servers use the Python environment installed in [Quick Start](#quick-start). Add only the servers you need. In your presentation task folder, export the workspace and the keys for your chosen services before launching the host. Leave both search keys unset for the keyless Parallel route:
 
 ```bash
 export WORKSPACE="$PWD"
+export SEARCH_PROVIDER=auto
 export MINERU_API_KEY="<your-mineru-api-key>"
-export TAVILY_API_KEY="<your-tavily-api-key>"
 ```
 
 Update `WORKSPACE` when switching task folders. These MCP servers read their own environment; putting their keys only in the skill's `.env` does not configure them.
@@ -394,9 +395,11 @@ Update `WORKSPACE` when switching task folders. These MCP servers read their own
     "pptagent-search": {
       "type": "stdio",
       "command": "/absolute/path/to/PPTAgent/skills/pptagent/.venv/bin/python",
-      "args": ["-m", "deeppresenter.tools.search"],
+      "args": ["/absolute/path/to/PPTAgent/skills/pptagent/scripts/search_mcp.py"],
       "env": {
         "WORKSPACE": "${WORKSPACE}",
+        "SEARCH_PROVIDER": "${SEARCH_PROVIDER}",
+        "SERPAPI_KEY": "${SERPAPI_KEY}",
         "TAVILY_API_KEY": "${TAVILY_API_KEY}"
       }
     }
@@ -416,13 +419,13 @@ tool_timeout_sec = 1800
 
 [mcp_servers.pptagent-search]
 command = "/absolute/path/to/PPTAgent/skills/pptagent/.venv/bin/python"
-args = ["-m", "deeppresenter.tools.search"]
-env_vars = ["WORKSPACE", "TAVILY_API_KEY"]
+args = ["/absolute/path/to/PPTAgent/skills/pptagent/scripts/search_mcp.py"]
+env_vars = ["WORKSPACE", "SEARCH_PROVIDER", "SERPAPI_KEY", "TAVILY_API_KEY"]
 startup_timeout_sec = 30
 tool_timeout_sec = 120
 ```
 
-For self-hosted MinerU or SerpAPI, replace the corresponding key name in both the exports and the MCP configuration with `MINERU_API_URL` or `SERPAPI_KEY`. For large PDFs in Claude Code, you can extend the tool timeout before launch with `export MCP_TOOL_TIMEOUT=1800000` (milliseconds).
+For self-hosted MinerU, replace its key name in both the exports and the MCP configuration with `MINERU_API_URL`. The Parallel path needs no Parallel API key. Parallel receives each query and the MCP session ID for the running server. The outbound `User-Agent` includes the stable `PPTAgent` token for aggregate MCP usage measurement; it contains no user or installation identifier. For large PDFs in Claude Code, you can extend the tool timeout before launch with `export MCP_TOOL_TIMEOUT=1800000` (milliseconds).
 
 Start a new host session and check that the tools appear in `/mcp`. Confirm document conversion on a small file or search on a simple query before using a large source set. See the [Claude Code MCP guide](https://code.claude.com/docs/en/mcp) and [Codex MCP guide](https://developers.openai.com/codex/mcp/) for host configuration details.
 
